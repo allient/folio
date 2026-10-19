@@ -5,7 +5,7 @@
 Folio (project and code name: Knotes) is a local-only Android app for handwritten notes, with a built-in PDF and EPUB reader. Its layout and tools follow BOOX Handwritten Notes. There are no accounts, no cloud sync and no internet permission; the only runtime permission is `RECORD_AUDIO`, for voice notes.
 
 - App name: **Folio**. Store title: **Folio: Handwritten Notes & eReader**.
-- Application ID: `com.allient.folio`. Kotlin source packages are still `com.example.knotes` (see [Publishing](#publishing)).
+- Application ID and Kotlin packages: `com.allient.folio`.
 - Platforms: **Android only**. The iOS app is still the Kotlin Multiplatform starter shell (see [Platforms](#platforms)).
 - Tested on: the `Knotes_Tablet` emulator (API 36, 1200×1920) and an XPPen MagicNotePad MNP1095 (Android 14).
 
@@ -197,7 +197,6 @@ The application ID is `com.allient.folio` since 2026-10-19. Builds installed ear
 
 Before the first store release:
 
-1. Optionally rename the Kotlin namespace and source packages from `com.example.knotes` to `com.allient.folio` in one dedicated commit (it touches every source file; do it when no other work is in progress). The application ID does not depend on it.
 2. Create the release signing key and keep it outside the repository (`*.jks` is git-ignored). Losing it means the store app can never be updated.
 3. Set `PRODUCT_BUNDLE_IDENTIFIER` in `iosApp/Configuration/Config.xcconfig` to the final iOS bundle ID when the iOS app ships.
 

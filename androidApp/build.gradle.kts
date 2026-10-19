@@ -44,7 +44,7 @@ dependencies {
 }
 
 android {
-    namespace = "com.example.knotes"
+    namespace = "com.allient.folio"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {

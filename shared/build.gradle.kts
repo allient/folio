@@ -19,7 +19,7 @@ kotlin {
     }
     
     android {
-       namespace = "com.example.knotes.shared"
+       namespace = "com.allient.folio.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
        minSdk = libs.versions.android.minSdk.get().toInt()
     
