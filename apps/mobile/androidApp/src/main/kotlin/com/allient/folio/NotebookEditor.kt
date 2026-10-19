@@ -1099,7 +1099,7 @@ internal fun NotebookEditor(
                 "share & export" -> {
                     ToolAction(InkIcon.Pages, "Save PDF", "All ${notebook.pages.size} pages") { export("pdf") }
                     ToolAction(InkIcon.Paper, "Save PNG", "Current page") { export("png") }
-                    ToolAction(InkIcon.Save, "Save Folio backup (.knotes)", "Editable notebook including local media") { export("knotes") }
+                    ToolAction(InkIcon.Save, "Save Folio backup (.folio)", "Editable notebook including local media") { export("folio") }
                     ToolAction(InkIcon.Share, "Share PDF") { export("pdf", true) }
                     ToolAction(InkIcon.Share, "Share current page") { export("png", true) }
                 }

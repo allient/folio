@@ -87,7 +87,7 @@ internal class FrontBufferedInkController(
             active = view.startStroke(input(point, style), engine.brushFor(style), transform)
             activeStyle = style
             view.post {
-                if (attached && authoring === view) android.util.Log.i("KnotesInk",
+                if (attached && authoring === view) android.util.Log.i("FolioInk",
                     "Ink authoring: API=${Build.VERSION.SDK_INT}; surfaceAttached=${hasSurface(view)}; filteredInput=true")
             }
         } else {

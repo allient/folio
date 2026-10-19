@@ -128,9 +128,9 @@ internal class LocalBackupStore(context: Context, name: String = PREFERENCES) {
 internal data class BackupVersion(val id: String, val name: String, val createdAt: Long, val size: Long, val partial: Boolean = false)
 
 internal object BackupNames {
-    private val pattern = Regex("""^(Folio|Knotes)-Backup-(\d{8}-\d{6})(?:-(\d{3}))?\.knotes(\.partial)?$""")
+    private val pattern = Regex("""^(Folio|Knotes)-Backup-(\d{8}-\d{6})(?:-(\d{3}))?\.(?:folio|knotes)(\.partial)?$""")
     fun create(now: Long): String =
-        "Folio-Backup-${java.text.SimpleDateFormat("yyyyMMdd-HHmmss-SSS", java.util.Locale.US).format(java.util.Date(now))}.knotes"
+        "Folio-Backup-${java.text.SimpleDateFormat("yyyyMMdd-HHmmss-SSS", java.util.Locale.US).format(java.util.Date(now))}.${FolioFormat.EXTENSION}"
     fun isOwned(name: String) = pattern.matches(name)
     fun isPartial(name: String) = name.endsWith(".partial") && isOwned(name)
     /** The creation time in the name (local time, as written), or null for a name this app did not create. */
@@ -216,7 +216,7 @@ internal object BackupArchiveVerifier {
         } catch (error: IOException) { throw error }
         catch (error: Exception) { throw IOException("Backup archive could not be read back: ${error.message}", error) }
         val found = requireNotNullIo(manifest) { "Backup archive has no manifest." }
-        if (found.optString("format") != "application/vnd.knotes.archive+zip" || found.optString("archiveType") != "library") throw IOException("Backup archive has an unexpected manifest.")
+        if (found.optString("format") !in FolioFormat.archiveFormats || found.optString("archiveType") != "library") throw IOException("Backup archive has an unexpected manifest.")
         if (found.optInt("notebookCount", -1) != expectedNotebookCount || notebookEntries != expectedNotebookCount) throw IOException("Backup archive notebook count does not match the library.")
         if (!library) throw IOException("Backup archive has no library index.")
         val directoryEntries = tail.endOfCentralDirectoryEntries() ?: throw IOException("Backup archive is truncated.")
@@ -439,9 +439,9 @@ internal class LocalBackupRunner(
  * the app replaces it with a backup two minutes later. A 6-hour periodic job is a safety net.
  */
 internal object LocalBackupScheduler {
-    const val CHANGE = "knotes-local-backup-change"
+    const val CHANGE = "folio-local-backup-change"
     const val PERIODIC = "folio-local-backup-periodic"
-    const val NOW = "knotes-local-backup-now"
+    const val NOW = "folio-local-backup-now"
     private const val LEGACY_DAILY = "knotes-local-backup-daily"
     // Queued under the pre-com.allient.folio worker class name, which no longer exists.
     private const val LEGACY_PERIODIC = "knotes-local-backup-periodic"

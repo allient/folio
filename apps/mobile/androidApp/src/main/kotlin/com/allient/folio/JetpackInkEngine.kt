@@ -153,7 +153,7 @@ internal class JetpackInkEngine {
             mapOf(
                 "Pen" to BrushFamily(
                     tip = BrushTip(behaviors = listOf(pressureBehavior(TargetNode.Target.SIZE_MULTIPLIER, .28f, 1.45f))),
-                    inputModel = model, developerComment = "Knotes v3 smooth pressure pen"),
+                    inputModel = model, developerComment = "Folio v3 smooth pressure pen"),
                 "Pencil" to BrushFamily(
                     coats = listOf(
                         BrushCoat(
@@ -169,11 +169,11 @@ internal class JetpackInkEngine {
                                     pressureBehavior(TargetNode.Target.SIZE_MULTIPLIER, .32f, 1.45f),
                                     pressureBehavior(TargetNode.Target.OPACITY_MULTIPLIER, .3f, 1f))),
                             paint = BrushPaint(colorFunctions = listOf(BrushPaint.ColorFunction.OpacityMultiplier(.42f))))
-                    ), inputModel = model, developerComment = "Knotes v3 layered graphite pencil"),
+                    ), inputModel = model, developerComment = "Folio v3 layered graphite pencil"),
                 "Fountain pen" to BrushFamily(
                     tip = BrushTip(scaleX = .55f, scaleY = 1.35f, rotationDegrees = -35f,
                         behaviors = listOf(pressureBehavior(TargetNode.Target.SIZE_MULTIPLIER, .3f, 1.65f))),
-                    inputModel = model, developerComment = "Knotes v3 angled fountain nib"),
+                    inputModel = model, developerComment = "Folio v3 angled fountain nib"),
                 "Brush pen" to BrushFamily(
                     coats = listOf(
                         BrushCoat(tip = BrushTip(scaleX = 1.12f, scaleY = .86f, cornerRounding = 1f,
@@ -185,7 +185,7 @@ internal class JetpackInkEngine {
                             particleGapDistanceScale = .18f,
                             behaviors = listOf(pressureBehavior(TargetNode.Target.SIZE_MULTIPLIER, .15f, 2.1f))),
                             paint = BrushPaint(colorFunctions = listOf(BrushPaint.ColorFunction.OpacityMultiplier(.24f))))
-                    ), inputModel = model, developerComment = "Knotes v3 flexible brush with subtle fiber dabs"),
+                    ), inputModel = model, developerComment = "Folio v3 flexible brush with subtle fiber dabs"),
             )
         }
 
@@ -212,7 +212,7 @@ internal class JetpackInkEngine {
                     if (pencil) add(behavior(TargetNode.Target.OPACITY_MULTIPLIER, .35f, 1f))
                 }),
                 inputModel = StockBrushes.pressurePen(StockBrushes.PressurePenVersion.V1).inputModel,
-                developerComment = "Knotes v2: full-range filtered pressure to width; no extra activation threshold",
+                developerComment = "Folio v2: full-range filtered pressure to width; no extra activation threshold",
             )
         }
         const val DOCUMENT_WIDTH = 600f

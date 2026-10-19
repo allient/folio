@@ -25,7 +25,7 @@ Knotes follows the requested [BOOX Handwritten Notes reference](https://help.boo
 | Audio | Record microphone audio as a notebook attachment, stop and save it, and open it with an audio-capable app. | Requires microphone permission. Recording stops when the editor leaves the foreground. Audio is not synchronized with ink or a playback timeline. |
 | Navigation and search | Notebook tags, selected-ink tags, page outlines, tag/outline navigation, and search through titles, typed text, outlines, and tags. | Handwritten words are not searchable unless manually tagged. |
 | Viewport | Two-finger pinch/pan, pan tool, optional single-finger pan when zoomed, zoom badge and fit/reset view. | Page content remains bounded; no expanding or infinite canvas. |
-| Export and sharing | All-page PDF; current-page PNG; editable `.knotes` backup with assets; Android file picker for saving and Android sharing. | Export page size is 1200 × 1920. `.knotes` is a custom ZIP format, not BOOX `.note` compatibility. |
+| Export and sharing | All-page PDF; current-page PNG; editable `.folio` backup with assets; Android file picker for saving and Android sharing. | Export page size is 1200 × 1920. `.folio` is a custom ZIP format, not BOOX `.note` compatibility. |
 | Local persistence | SQLite notebook/page storage, private media files, background serialized saves, explicit save progress/errors, and migration of the earlier JSON library. | No application cloud sync or collaboration. See [local storage](/architecture/local-storage/). |
 
 ## Features outside this implementation

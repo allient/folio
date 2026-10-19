@@ -150,7 +150,7 @@ fun BackupSettingsScreen(state: BackupSettingsUi, onBack: () -> Unit, onEnabled:
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                         Text("Choose a folder in Documents", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         Text("In the Android folder picker, open Documents. You can create a folder called Folio Backups, open it, then tap Use this folder.", fontSize = 13.sp, color = muted, lineHeight = 21.sp)
-                        Text("A .knotes backup includes notebooks and their attachments, plus reader titles, file references, reading positions, highlights and notes. PDF and EPUB files stay in this tablet's storage and are not copied; after restoring on another device, reimport a book to reopen it. Matching books reconnect to their saved annotations. Restoring adds copies and never erases your library. Backups stay on this device; nothing is sent online.", fontSize = 12.sp, color = muted, lineHeight = 19.sp)
+                        Text("A .folio backup includes notebooks and their attachments, plus reader titles, file references, reading positions, highlights and notes. PDF and EPUB files stay in this tablet's storage and are not copied; after restoring on another device, reimport a book to reopen it. Matching books reconnect to their saved annotations. Restoring adds copies and never erases your library. Backups stay on this device; nothing is sent online.", fontSize = 12.sp, color = muted, lineHeight = 19.sp)
                     }
                 }
                 OutlinedButton(onClick = onRestore, enabled = !busy, shape = RoundedCornerShape(16.dp),

@@ -86,7 +86,7 @@
 
 - Autosave: a background queue saves the latest state. A retry button appears only if a save fails.
 - Export all pages as PDF, or the current page as PNG (1200×1920).
-- `.knotes` backups of one notebook or the whole library, editable after import.
+- `.folio` backups of one notebook or the whole library, editable after import. Older `.knotes` backups still import.
 - Smart backups (optional) to a folder you pick: a library backup about 2 minutes after you close a note, close a book or leave the app, and at most every 15 minutes during long sessions. Nothing is written when nothing changed. Each copy is verified before older ones are removed. Folio keeps the 5 most recent backups plus the newest of each of the last 7 days, 4 weeks and 6 months (at most 22 files), skips a backup when free space is low, and leaves other files in the folder alone. PDF and EPUB originals are not copied; their titles, positions, highlights and notes are. Settings lists the kept versions; restoring one merges it into the library and never erases anything.
 - Import PDF pages into a notebook as page backgrounds (1–200 pages).
 
@@ -179,7 +179,7 @@ Storage uses plain `SQLiteOpenHelper` and `org.json`, with no Room or SQLDelight
 - `knotes.db`: tables `notebooks`, `pages` and `settings`, schema v1, with notebooks stored as JSON (version 2).
 - `knotes-reader.db`: reader documents and annotations (WAL, foreign keys).
 - Media is stored in the app's private `files/media/` folder. Android's cloud backup is off (`allowBackup="false"`), and nothing is encrypted yet.
-- `.knotes` files are ZIP archives with a `manifest.json` and Zstandard-compressed JSON. Stroke engines are versioned (`jetpack-ink-v1`, `jetpack-ink-v2`, `shape-v1`, `fill-cut-v1`), so old ink still renders the same way.
+- `.folio` files are ZIP archives with a `manifest.json` and Zstandard-compressed JSON. Stroke engines are versioned (`jetpack-ink-v1`, `jetpack-ink-v2`, `shape-v1`, `fill-cut-v1`), so old ink still renders the same way.
 
 Details: [local storage](apps/docs/src/content/docs/architecture/local-storage.md), [portable format](apps/docs/src/content/docs/architecture/portable-format.md), [SQLite migrations](apps/docs/src/content/docs/architecture/sqlite-migrations.md), and the [JSON schemas](apps/docs/public/schemas).
 
@@ -323,14 +323,14 @@ Planned store listing:
 | App name (launcher) | Folio |
 | Application ID | `com.allient.folio` |
 
-Test builds from before 2026-10-19 used the starter ID `com.example.knotes` and install as a separate app; export a `.knotes` backup from them if needed, import it into Folio, then uninstall them.
+Test builds from before 2026-10-19 used the starter ID `com.example.knotes` and install as a separate app; export a `.knotes` backup from them if needed (Folio still imports that legacy format), import it into Folio, then uninstall them.
 
 Before the first store release:
 
 1. Create the release signing key and keep it outside the repository (`*.jks` is git-ignored). Losing it means the store app can never be updated.
 2. Set `PRODUCT_BUNDLE_IDENTIFIER` in `apps/mobile/iosApp/Configuration/Config.xcconfig` to the final iOS bundle ID when the iOS app ships.
 
-Unchanged on purpose: the `.knotes` backup extension and its format ID (`application/vnd.knotes.archive+zip`), and the database file names (`knotes.db`, `knotes-reader.db`). Renaming them would break existing backups and data.
+Backups and exports use the Folio format: `.folio` files with the format ID `application/vnd.folio.archive+zip`. Legacy `.knotes` archives (`application/vnd.knotes.archive+zip`) and `Knotes-Backup-*.knotes` files in the backup folder are still recognised and imported. The private database file names (`knotes.db`, `knotes-reader.db`) stay unchanged on purpose: they never leave the device, and renaming a live database risks the library.
 
 ## Documentation
 
@@ -344,7 +344,7 @@ The documentation lives in the Starlight site (`apps/docs`); run `bun run dev:do
 | [jetpack-ink-implementation.md](apps/docs/src/content/docs/architecture/jetpack-ink-implementation.md) | Jetpack Ink integration notes |
 | [mnp1095-mesh-crash.md](apps/docs/src/content/docs/investigations/mnp1095-mesh-crash.md) | Android 14 mesh rendering crash: analysis and fix |
 | [local-storage.md](apps/docs/src/content/docs/architecture/local-storage.md) | On-device storage, backup and import limits |
-| [portable-format.md](apps/docs/src/content/docs/architecture/portable-format.md) | `.knotes` archive format |
+| [portable-format.md](apps/docs/src/content/docs/architecture/portable-format.md) | `.folio` archive format (and legacy `.knotes`) |
 | [sqlite-migrations.md](apps/docs/src/content/docs/architecture/sqlite-migrations.md) | Database migration rules |
 | [reader.md](apps/docs/src/content/docs/architecture/reader.md) | PDF and EPUB reader |
 | [validation.md](apps/docs/src/content/docs/testing/validation.md) | Test results and UI flow replays |

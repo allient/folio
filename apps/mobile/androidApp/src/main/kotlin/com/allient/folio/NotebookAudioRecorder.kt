@@ -20,7 +20,7 @@ internal class NotebookAudioRecorder(
 ) {
     private val context = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
-    private val worker = Executors.newSingleThreadExecutor { runnable -> Thread(runnable, "knotes-audio") }
+    private val worker = Executors.newSingleThreadExecutor { runnable -> Thread(runnable, "folio-audio") }
     private var recorder: MediaRecorder? = null
     private var output: File? = null
     private var notebookId: String? = null
@@ -70,7 +70,7 @@ internal class NotebookAudioRecorder(
         closing = true
         worker.execute {
             try { stopOnWorker() }
-            catch (error: Exception) { android.util.Log.e("Knotes", "Could not finish recording while closing", error) }
+            catch (error: Exception) { android.util.Log.e("Folio", "Could not finish recording while closing", error) }
             finally { onClosed() }
         }
         worker.shutdown()

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:folio:schema:library:1",
+  "title": "Folio library index v1",
+  "type": "object",
+  "required": ["schemaVersion", "folders", "downloadedTemplates", "notebooks"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "folders": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "name"],
+        "properties": { "id": { "type": "string", "minLength": 1 }, "name": { "type": "string", "minLength": 1 } },
+        "additionalProperties": true
+      }
+    },
+    "downloadedTemplates": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "notebooks": {
+      "type": "array",
+      "items": {
+        "type": "object", "required": ["id", "path"],
+        "properties": { "id": { "type": "string", "minLength": 1 }, "path": { "type": "string", "pattern": "^notebooks/[^/]+/notebook\\.json\\.zst$" } },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -28,6 +28,20 @@ import java.util.zip.Deflater
 import com.github.luben.zstd.Zstd
 import com.github.luben.zstd.ZstdInputStream
 
+/**
+ * Folio's file format. Exports and backups are written as `.folio` with the Folio archive id;
+ * archives from before the rename (`.knotes`, `application/vnd.knotes.archive+zip`) still import.
+ */
+internal object FolioFormat {
+    const val EXTENSION = "folio"
+    const val LEGACY_EXTENSION = "knotes"
+    const val ARCHIVE = "application/vnd.folio.archive+zip"
+    const val LEGACY_ARCHIVE = "application/vnd.knotes.archive+zip"
+    val archiveFormats = setOf(ARCHIVE, LEGACY_ARCHIVE)
+    const val NOTEBOOK_SCHEMA = "urn:folio:schema:notebook:2"
+    const val LIBRARY_SCHEMA = "urn:folio:schema:library:1"
+}
+
 internal data class ImportedLibrary(
     val notebooks: List<Notebook>,
     val settings: com.allient.folio.home.LibrarySettings,
@@ -75,7 +89,7 @@ internal class NotebookFiles(private val context: Context) {
         } finally { canvas.restore() }
     }
 
-    /** A .knotes ZIP package. JSON uses the standard Zstandard frame format; legacy ZIP exports remain importable. */
+    /** A .folio ZIP package (legacy .knotes packages import the same way). JSON uses the standard Zstandard frame format; legacy ZIP exports remain importable. */
     fun exportBackup(note: Notebook): File {
         val json = JSONObject(serializeNotebook(note))
         val assets = linkedMapOf<String, File>()
@@ -97,7 +111,7 @@ internal class NotebookFiles(private val context: Context) {
         }
         require(jsonBytes.size.toLong() + assets.values.sumOf { it.length() } <= MAX_BACKUP_BYTES) { "Notebook backup exceeds the 2 GiB restore limit." }
         val manifest = archiveManifest("notebook", 1).put("notebookPath", "notebook.json.zst")
-        return exportFile(note.title, "knotes").also { output ->
+        return exportFile(note.title, FolioFormat.EXTENSION).also { output ->
             writeZip(output, linkedMapOf(
                 "manifest.json" to manifest.toString().toByteArray(Charsets.UTF_8),
                 "notebook.json.zst" to Zstd.compress(jsonBytes, ZSTD_LEVEL),
@@ -148,7 +162,7 @@ internal class NotebookFiles(private val context: Context) {
         val manifest = archiveManifest("library", notebooks.size)
             .put("libraryPath", "library.json.zst")
             .put("notebookCount", notebooks.size)
-        return exportFile("Folio Library Backup", "knotes").also { output ->
+        return exportFile("Folio Library Backup", FolioFormat.EXTENSION).also { output ->
             writeZip(output, linkedMapOf("manifest.json" to manifest.toString().toByteArray(Charsets.UTF_8)) + files, assets)
         }
     }
@@ -219,7 +233,7 @@ internal class NotebookFiles(private val context: Context) {
                 }
             } }
             val archiveManifest = requireNotNull(manifest) { "Backup archive manifest is missing." }
-            require(archiveManifest.optString("format") == "application/vnd.knotes.archive+zip" && archiveManifest.optInt("formatVersion") == 1) { "Unsupported backup archive version." }
+            require(archiveManifest.optString("format") in FolioFormat.archiveFormats && archiveManifest.optInt("formatVersion") == 1) { "Unsupported backup archive version." }
             require(archiveManifest.optString("archiveType") == "library" && archiveManifest.optString("compression") == "zip+zstd-json") { "This is not a supported Folio library backup." }
             val libraryBytes = decompressJson(requireNotNull(jsonEntries.remove("library.json.zst")) { "Library index is missing." })
             var decodedJsonBytes = libraryBytes.size.toLong()
@@ -295,13 +309,13 @@ internal class NotebookFiles(private val context: Context) {
     }
 
     private fun archiveManifest(type: String, notebookCount: Int) = JSONObject()
-        .put("format", "application/vnd.knotes.archive+zip")
+        .put("format", FolioFormat.ARCHIVE)
         .put("formatVersion", 1)
         .put("archiveType", type)
         .put("createdAt", System.currentTimeMillis())
         .put("compression", "zip+zstd-json")
-        .put("notebookSchema", "urn:knotes:schema:notebook:2")
-        .put("librarySchema", "urn:knotes:schema:library:1")
+        .put("notebookSchema", FolioFormat.NOTEBOOK_SCHEMA)
+        .put("librarySchema", FolioFormat.LIBRARY_SCHEMA)
         .put("encrypted", false)
         .put("notebookCount", notebookCount)
 
@@ -382,7 +396,7 @@ internal class NotebookFiles(private val context: Context) {
                                 }
                                 else if (entry.name == "manifest.json") {
                                     val manifest = JSONObject(bytes.toString("UTF-8"))
-                                    require(manifest.optString("format") == "application/vnd.knotes.archive+zip" && manifest.optInt("formatVersion") == 1) { "Unsupported backup archive version." }
+                                    require(manifest.optString("format") in FolioFormat.archiveFormats && manifest.optInt("formatVersion") == 1) { "Unsupported backup archive version." }
                                     require(manifest.optString("compression") in setOf("zip-deflate", "zip+zstd-json")) { "Unsupported backup compression format." }
                                     require(manifest.optString("archiveType") == "notebook") { "This is a whole-library backup, which is not yet supported by the single-notebook import flow." }
                                 } else if (entry.name == "library.json" || entry.name == "library.json.zst" || entry.name.endsWith("/notebook.json") || entry.name.endsWith("/notebook.json.zst")) {

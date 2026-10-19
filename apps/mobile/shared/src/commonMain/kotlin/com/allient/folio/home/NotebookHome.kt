@@ -497,7 +497,7 @@ fun NotebookHome(
             ))
     } }
     exportId?.let { id -> AlertDialog(onDismissRequest = { exportId = null }, title = { Text("Share and export") }, text = {
-        Column { listOf("pdf" to "PDF · all pages", "png" to "PNG · current page", "knotes" to "Folio backup (.knotes) · editable").forEach { (format, label) ->
+        Column { listOf("pdf" to "PDF · all pages", "png" to "PNG · current page", "folio" to "Folio backup (.folio) · editable").forEach { (format, label) ->
             TextButton(onClick = { exportId = null; onExport(id, format) }) { Text(label) }
         } }
     }, confirmButton = { TextButton(onClick = { exportId = null }) { Text("Cancel") } }) }

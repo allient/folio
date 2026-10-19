@@ -2,7 +2,7 @@
 title: "Local storage and portable backups"
 ---
 
-Knotes stores notes on the Android device. It has no application account, sync service, network storage, or Internet permission. The manifest sets `android:allowBackup="false"` to disable Android's ordinary automatic app backup; manual `.knotes` exports provide the portable backup workflow. Device transfer behavior can also depend on the Android version and manufacturer.
+Folio stores notes on the Android device. It has no application account, sync service, network storage, or Internet permission. The manifest sets `android:allowBackup="false"` to disable Android's ordinary automatic app backup; manual `.folio` exports provide the portable backup workflow. Device transfer behavior can also depend on the Android version and manufacturer.
 
 ## Saved data
 
@@ -12,7 +12,7 @@ Knotes stores notes on the Android device. It has no application account, sync s
 | App-private `files/media/` | Copied images and attachments, rendered PDF page images, imported backup assets, and microphone recordings. |
 | App-private preferences `editor` | Pressure profile, threshold, curve control points, finger-writing preference, and toolbar side. |
 | App-private preferences `home-preferences` | Library look and behaviour: `accent`, `corners`, `view_mode`, `sort`, `start_fullscreen` and `trash_retention_days` (7, 30, or 0 for never). Unknown values fall back to the defaults. |
-| App-private `cache/exports/` | Temporary PDF, PNG, and `.knotes` export files before saving or sharing. Android may clear cache files. |
+| App-private `cache/exports/` | Temporary PDF, PNG, and `.folio` export files before saving or sharing. Android may clear cache files. |
 | App-private `cache/pdf-import-*.pdf` | Bounded temporary copy of a selected PDF, providing the seekable descriptor required by Android's PDF renderer. Deleted after import, including failure. |
 | Legacy `files/knotes-notebooks.json` | Earlier library imported once into SQLite. Migration is transactional and leaves this original file in place. The database migration marker prevents reimporting it. |
 
@@ -38,7 +38,7 @@ All three are fields inside existing JSON payloads, so no SQLite schema migratio
 - **Folders:** a deleted folder does not take its contents with it. Its notebooks and books keep their `folderId` but show in the main library, unfiled, while the folder is in Trash; restoring the folder puts them back inside. This way deleting a folder never starts a purge timer on notes the user did not delete. Deleting the folder permanently unfiles its contents for good.
 - **Delete permanently** removes only items that are already in Trash. For notebooks it removes the database rows; as before, unreferenced media files are kept (there is no media garbage collector yet). For books it removes the document and its annotations; the content-addressed original in `files/media/reader/` is kept, as before.
 - **Auto-delete:** when the app starts, after both databases load, items whose `deletedAt` is older than the retention setting (default 30 days) are deleted permanently. With "Never auto-delete" nothing is purged.
-- **Backups:** `.knotes` library backups (manual export and smart folder backups) include items in Trash with their `deletedAt`, so a backup taken after deleting something still contains it. On restore, these items are added to Trash again, with `deletedAt` set to the restore time so they get a full retention period instead of being purged at the next start. A single-notebook import is never placed in Trash.
+- **Backups:** `.folio` library backups (manual export and smart folder backups) include items in Trash with their `deletedAt`, so a backup taken after deleting something still contains it. On restore, these items are added to Trash again, with `deletedAt` set to the restore time so they get a full retention period instead of being purged at the next start. A single-notebook import is never placed in Trash.
 
 ## Exporting and importing
 
@@ -46,11 +46,11 @@ All three are fields inside existing JSON payloads, so no SQLite schema migratio
 
 Smart backups (Settings → Smart backups) copy the whole library to a folder the user picks through the Storage Access Framework. No storage permission and no network are used. Implementation: `LocalBackup.kt`.
 
-**When a backup runs.** A WorkManager one-time job, unique name `knotes-local-backup-change`:
+**When a backup runs.** A WorkManager one-time job, unique name `folio-local-backup-change`:
 
 - Every queued library save (`NotebookViewModel.saveNotes`) and every reader write (`ReaderStore`: documents, positions, annotations) calls `LocalBackupScheduler.changed`. It records the first change since the last backup (`firstUnbackedChange`) and, at most once a minute, enqueues the job with policy KEEP and a 15-minute delay. A long editing session therefore gets one backup at most every 15 minutes.
 - Leaving a notebook (back to home or to another notebook, observed in `MainActivity` from `openNotebookId`), returning from the reader, and the app going to the background (`ProcessLifecycleOwner` ON_STOP) call `LocalBackupScheduler.soon`. If there are unbacked changes it enqueues the same job with policy REPLACE and a 2-minute delay, which supersedes the 15-minute one.
-- A periodic job every 6 hours (`knotes-local-backup-periodic`) is a safety net for missed triggers. **Back up now** uses `knotes-local-backup-now` and always writes a new version. The old `knotes-local-backup-daily` job is cancelled when backups are enabled.
+- A periodic job every 6 hours (`folio-local-backup-periodic`) is a safety net for missed triggers. **Back up now** uses `folio-local-backup-now` and always writes a new version. The old `knotes-local-backup-daily` job is cancelled when backups are enabled.
 
 The worker computes a SHA-256 signature of all notebooks, folders, template selections and the reader snapshot. If it matches the last successful backup (and the last run had no error), nothing is written and the pending-change marker is cleared.
 
@@ -92,4 +92,4 @@ Sharing uses a non-exported FileProvider scoped to `files/media/` and `cache/exp
 
 Backup import rejects unexpected ZIP file entries, traversal names, duplicate media entries, and missing referenced assets. It limits entries to 1,000, notebook JSON to 32 MiB, each asset to 128 MiB, and combined extracted content to 2 GiB. Asset paths in imported JSON must refer to files supplied by the archive. Failed imports remove their staging directory. Copied attachments and PDF source files are capped at 128 MiB; failed image/PDF imports remove partially created media.
 
-Exported files are ordinary unencrypted PDF, PNG, or `.knotes` ZIP files. Private Android app storage protects the live library through the app sandbox; the application does not add a separate encryption or password layer. The app-level encryption work is tracked in `docs/portable-format.md` for a later phase.
+Exported files are ordinary unencrypted PDF, PNG, or `.folio` ZIP files. Private Android app storage protects the live library through the app sandbox; the application does not add a separate encryption or password layer. The app-level encryption work is tracked in `docs/portable-format.md` for a later phase.

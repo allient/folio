@@ -231,7 +231,7 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
                 Text("Version $version", Modifier.padding(top = 4.dp).testTag("about-version"), fontSize = 14.sp, color = HomeMuted)
                 Text("Folio keeps everything on this device. There are no accounts and no cloud sync, and the app has no internet permission. " +
                     "Notebooks, folders and reading notes are stored in the app's private storage (SQLite databases and the media folder). " +
-                    "Uninstalling Folio or clearing its data removes them, so export a .knotes backup to keep a copy.",
+                    "Uninstalling Folio or clearing its data removes them, so export a .folio backup to keep a copy.",
                     Modifier.padding(top = 20.dp), fontSize = 15.sp, lineHeight = 23.sp, color = HomeInk)
                 Text("Open-source libraries", Modifier.padding(top = 28.dp, bottom = 8.dp), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
                 listOf("Jetpack Ink" to "Handwriting strokes and rendering", "PDFium" to "PDF rendering", "PdfBox-Android" to "Annotated PDF export",

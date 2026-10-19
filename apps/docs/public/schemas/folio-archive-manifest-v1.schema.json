@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:folio:schema:archive-manifest:1",
+  "title": "Folio archive manifest v1",
+  "type": "object",
+  "required": ["format", "formatVersion", "archiveType", "createdAt", "compression", "encrypted", "notebookCount"],
+  "properties": {
+    "format": { "const": "application/vnd.folio.archive+zip" },
+    "formatVersion": { "const": 1 },
+    "archiveType": { "enum": ["notebook", "library"] },
+    "createdAt": { "type": "integer", "minimum": 0 },
+    "compression": { "const": "zip+zstd-json" },
+    "notebookSchema": { "const": "urn:folio:schema:notebook:2" },
+    "librarySchema": { "const": "urn:folio:schema:library:1" },
+    "encrypted": { "const": false },
+    "notebookCount": { "type": "integer", "minimum": 0 },
+    "notebookPath": { "type": "string" },
+    "libraryPath": { "type": "string" }
+  },
+  "additionalProperties": true
+}

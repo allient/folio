@@ -22,7 +22,7 @@ internal object NotebookImageStore {
     private val main = Handler(Looper.getMainLooper())
     private val decoder = ThreadPoolExecutor(
         2, 2, 0L, TimeUnit.MILLISECONDS, LinkedBlockingQueue(),
-        { runnable -> Thread(runnable, "knotes-image-decoder") },
+        { runnable -> Thread(runnable, "folio-image-decoder") },
     )
 
     fun get(path: String, filesDir: File?, allowDecode: Boolean, maxEdge: Int = 2400): Bitmap? {

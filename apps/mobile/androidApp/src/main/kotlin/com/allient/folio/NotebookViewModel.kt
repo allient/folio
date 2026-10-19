@@ -55,7 +55,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
     private val storage = NotebookStorage(application)
     private val main = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "knotes-local-storage")
+        Thread(runnable, "folio-local-storage")
     }
     private val lock = Any()
     private val waitingImports = java.util.ArrayDeque<Uri>()
@@ -543,7 +543,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                     storage.save(merged, finalLibrary)
                 }
             } catch (error: Exception) {
-                android.util.Log.e("Knotes", "Could not persist a completed import while closing", error)
+                android.util.Log.e("Folio", "Could not persist a completed import while closing", error)
             } finally {
                 synchronized(lock) { activeRecordingPlacement = null }
                 storage.close()

@@ -680,7 +680,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (!backendReported) {
-            android.util.Log.i("KnotesInk", "Jetpack Ink 1.1.0-alpha09; hardwareCanvas=${canvas.isHardwareAccelerated}; commandCache=${Build.VERSION.SDK_INT >= 29 && canvas.isHardwareAccelerated}")
+            android.util.Log.i("FolioInk", "Jetpack Ink 1.1.0-alpha09; hardwareCanvas=${canvas.isHardwareAccelerated}; commandCache=${Build.VERSION.SDK_INT >= 29 && canvas.isHardwareAccelerated}")
             backendReported = true
         }
         canvas.save()

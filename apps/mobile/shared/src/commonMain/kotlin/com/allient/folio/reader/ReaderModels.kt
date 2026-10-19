@@ -15,7 +15,7 @@ data class ReaderDocument(
     val openedAt: Long = 0,
     /** User-selected original's content URI; a backup keeps this as a reference, never the file bytes. */
     val sourceUri: String = "",
-    /** Knotes folder assignment, stored as metadata alongside the source URI reference. */
+    /** Folio folder assignment, stored as metadata alongside the source URI reference. */
     val folderId: String? = null,
     val favorite: Boolean = false,
     /** Import time; 0 for books imported before this field existed. */

@@ -27,7 +27,7 @@ internal class CompletedInkPageCache {
             fun record(key: String, source: Any, draw: (Canvas) -> Unit) {
                 used += key
                 val previous = blocks[key]
-                val node = previous?.node ?: RenderNode("Knotes $key")
+                val node = previous?.node ?: RenderNode("Folio $key")
                 if (dimensionsChanged || previous?.source != source || !node.hasDisplayList()) {
                     node.setPosition(0, 0, w, h)
                     val recording = node.beginRecording(w, h)

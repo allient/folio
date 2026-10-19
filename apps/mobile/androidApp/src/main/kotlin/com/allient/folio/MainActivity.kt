@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
         val reader = ViewModelProvider(this)[ReaderViewModel::class.java]
         LocalBackupScheduler.observeProcess(this)
         setContent {
-            androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) { KnotesApp(repository, backup, reader) }
+            androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) { FolioApp(repository, backup, reader) }
         }
         intent.data?.let(reader::import)
     }
@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun KnotesApp(repository: NotebookViewModel, backup: LocalBackupViewModel, reader: ReaderViewModel) {
+private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel, reader: ReaderViewModel) {
     val context = LocalContext.current
     val files = remember(context) { NotebookFiles(context.applicationContext) }
     val scope = rememberCoroutineScope()
@@ -150,7 +150,7 @@ private fun KnotesApp(repository: NotebookViewModel, backup: LocalBackupViewMode
                 val archive = withContext(Dispatchers.IO) { files.exportLibraryBackup(repository.notebooks, repository.library) }
                 pendingLibraryBackup = archive
                 val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
-                saveLibraryBackup.launch("Folio-Full-Library-$stamp.knotes")
+                saveLibraryBackup.launch("Folio-Full-Library-$stamp.${FolioFormat.EXTENSION}")
             } catch (error: CancellationException) { throw error }
             catch (error: Exception) { backupExportMessage = error.message ?: "Could not create the library backup." }
         }
@@ -348,10 +348,10 @@ private fun KnotesApp(repository: NotebookViewModel, backup: LocalBackupViewMode
                                 try {
                                     val output = withContext(Dispatchers.IO) { when (format) {
                                         "png" -> files.exportPng(note, note.pages.firstOrNull { it.id == note.lastViewedPageId } ?: note.pages.first())
-                                        "knotes" -> files.exportBackup(note)
+                                        "folio" -> files.exportBackup(note)
                                         else -> files.exportPdf(note)
                                     } }
-                                    files.shareFile(output, when (format) { "png" -> "image/png"; "knotes" -> "application/zip"; else -> "application/pdf" })
+                                    files.shareFile(output, when (format) { "png" -> "image/png"; "folio" -> "application/zip"; else -> "application/pdf" })
                                 } catch (error: CancellationException) { throw error }
                                 catch (error: Exception) { importError = error.message ?: "Could not export this notebook." }
                             }
