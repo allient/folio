@@ -21,6 +21,10 @@ The JSON schemas document the current portable contract. Format changes must add
 
 The app can import either a single-notebook archive or a full-library archive. Importing a library backup merges it as fresh copies with new notebook, page, stroke, text, image, attachment, and folder IDs; it keeps the existing library intact.
 
+## Object transforms and stacking order
+
+Images, text boxes and blocks (tables, sticky notes) may carry `rotation` (degrees), `flipX`, `flipY` and `z`. Within a layer they are drawn from low to high `z`; ink is drawn at the fixed level 2, so objects with `z < 2` sit under the writing and objects with `z >= 2` cover it. Missing values keep the original order: images 0, blocks 1, text 3. Older readers ignore these properties.
+
 ## Legacy `.knotes` archives
 
 Before the rename, archives were written as `.knotes` with the format ID `application/vnd.knotes.archive+zip` and schema IDs `urn:knotes:schema:…`. The content is identical. Folio imports them through the same path (`FolioFormat.archiveFormats` accepts both IDs), and the smart backup folder still lists and prunes `Knotes-Backup-*.knotes` files. Their schemas are kept in `apps/docs/public/schemas/legacy/`.

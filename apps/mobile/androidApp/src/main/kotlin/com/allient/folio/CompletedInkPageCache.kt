@@ -41,15 +41,13 @@ internal class CompletedInkPageCache {
             }
             for (layer in page.layers) {
                 if (!layer.visible) continue
-                val layerImages = page.images.filter { it.layerId == layer.id }
-                if (layerImages.isNotEmpty()) record("${layer.id}/images", layerImages to images) { target ->
-                    NotebookRenderer.drawPage(target, page.copy(layers = listOf(layer), strokes = emptyList(), texts = emptyList(), images = layerImages, blocks = emptyList()), w, h, filesDir,
+                // Objects under the ink, back to front (see PageOrder).
+                val layerObjects = PageOrder.objects(page, layer.id)
+                val below = layerObjects.filter { PageOrder.z(it) < PageOrder.INK }
+                if (below.isNotEmpty()) record("${layer.id}/below", below to images) { target ->
+                    NotebookRenderer.drawPage(target, page.copy(layers = listOf(layer), strokes = emptyList(), images = below.filterIsInstance<InkImage>(),
+                        blocks = below.filterIsInstance<InkBlock>(), texts = below.filterIsInstance<InkText>()), w, h, filesDir,
                         allowImageDecode = false, imageBitmaps = images, drawBackground = false)
-                }
-                val layerBlocks = page.blocks.filter { it.layerId == layer.id }
-                if (layerBlocks.isNotEmpty()) record("${layer.id}/blocks", layerBlocks) { target ->
-                    NotebookRenderer.drawPage(target, page.copy(layers = listOf(layer), strokes = emptyList(), texts = emptyList(), images = emptyList(), blocks = layerBlocks), w, h, filesDir,
-                        allowImageDecode = false, drawBackground = false)
                 }
                 page.strokes.filter { it.layerId == layer.id }.chunked(32).forEachIndexed { index, strokes ->
                     record("${layer.id}/ink/$index", strokes) { target ->
@@ -57,10 +55,11 @@ internal class CompletedInkPageCache {
                     }
                 }
                 if (layer.id == activeLayerId) next += null // live ink below this layer's text
-                val texts = page.texts.filter { it.layerId == layer.id }
-                if (texts.isNotEmpty()) record("${layer.id}/text", texts) { target ->
-                    NotebookRenderer.drawPage(target, page.copy(layers = listOf(layer), strokes = emptyList(), images = emptyList(), texts = texts, blocks = emptyList()), w, h, filesDir,
-                        allowImageDecode = false, drawBackground = false)
+                val above = layerObjects.filter { PageOrder.z(it) >= PageOrder.INK }
+                if (above.isNotEmpty()) record("${layer.id}/above", above to images) { target ->
+                    NotebookRenderer.drawPage(target, page.copy(layers = listOf(layer), strokes = emptyList(), images = above.filterIsInstance<InkImage>(),
+                        blocks = above.filterIsInstance<InkBlock>(), texts = above.filterIsInstance<InkText>()), w, h, filesDir,
+                        allowImageDecode = false, imageBitmaps = images, drawBackground = false)
                 }
             }
             val iterator = blocks.iterator()

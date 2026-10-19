@@ -52,6 +52,8 @@ internal enum class InkIcon(val path: String) {
     RectangleSelect("M3 8 V3 H8 M16 3 H21 V8 M21 16 V21 H16 M8 21 H3 V16 M3 11 V13 M11 3 H13 M21 11 V13 M11 21 H13"),
     Rotate("M4 8 A8 8 0 1 1 4 16 M4 3 V8 H9"),
     Paste("M9 3 H15 V6 H9 Z M7 4.5 H5 V21 H19 V4.5 H17 M9 11 H15 M9 15 H13"),
+    BringFront("M10 10 H21 V21 H10 Z M3 14 V3 H14 M3 7 H7 M7 3 V7"),
+    SendBack("M3 3 H14 V14 H3 Z M17 10 H21 V21 H10 V17 M17 21 V17 H21"),
     RotateRight("M20 8 A8 8 0 1 0 20 16 M20 3 V8 H15"),
     FlipHorizontal("M12 2 V5 M12 8 V11 M12 14 V16 M12 19 V22 M9 6 L3 18 H9 Z M15 6 L21 18 H15 Z"),
     FlipVertical("M2 12 H5 M8 12 H11 M14 12 H16 M19 12 H22 M6 9 L18 3 V9 Z M6 15 L18 21 V15 Z"),

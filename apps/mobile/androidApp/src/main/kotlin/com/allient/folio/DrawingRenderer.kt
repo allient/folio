@@ -9,6 +9,44 @@ import android.graphics.DashPathEffect
 import android.graphics.Typeface
 import java.io.File
 
+/**
+ * Stacking order of a layer's images, notes/tables and text. Each has a z; ink is drawn at [INK].
+ * Defaults keep the original order: images (0) and notes (1) under the ink, text (3) over it.
+ */
+internal object PageOrder {
+    const val INK = 2f
+    fun z(item: Any): Float = when (item) { is InkImage -> item.z; is InkBlock -> item.z; is InkText -> item.z; else -> INK }
+    /** The layer's objects from back to front. Ties keep images, then notes, then text. */
+    fun objects(page: NotebookPage, layerId: String): List<Any> =
+        (page.images.filter { it.layerId == layerId } + page.blocks.filter { it.layerId == layerId } + page.texts.filter { it.layerId == layerId })
+            .sortedBy { z(it) }
+
+    enum class Move { Front, Forward, Backward, Back }
+
+    /**
+     * Moves one image, note or text box in its layer's stack. The ink level counts as a step, so
+     * "forward" from under the ink lands just above it. Every object in the layer is renumbered.
+     */
+    fun reorder(page: NotebookPage, id: String, move: Move): NotebookPage {
+        val layerId = page.images.firstOrNull { it.id == id }?.layerId ?: page.blocks.firstOrNull { it.id == id }?.layerId
+            ?: page.texts.firstOrNull { it.id == id }?.layerId ?: return page
+        val ink = Any()
+        val stack = (objects(page, layerId).filter { z(it) < INK } + ink + objects(page, layerId).filter { z(it) >= INK }).toMutableList()
+        val index = stack.indexOfFirst { idOf(it) == id }
+        if (index < 0) return page
+        val item = stack.removeAt(index)
+        val target = when (move) { Move.Front -> stack.size; Move.Back -> 0; Move.Forward -> (index + 1).coerceAtMost(stack.size); Move.Backward -> (index - 1).coerceAtLeast(0) }
+        stack.add(target, item)
+        val inkAt = stack.indexOf(ink)
+        val zs = stack.withIndex().filter { it.value !== ink }.associate { (i, value) -> idOf(value) to INK + (i - inkAt) }
+        return page.copy(
+            images = page.images.map { zs[it.id]?.let { z -> it.copy(z = z) } ?: it },
+            blocks = page.blocks.map { zs[it.id]?.let { z -> it.copy(z = z) } ?: it },
+            texts = page.texts.map { zs[it.id]?.let { z -> it.copy(z = z) } ?: it })
+    }
+    private fun idOf(item: Any) = when (item) { is InkImage -> item.id; is InkBlock -> item.id; is InkText -> item.id; else -> "" }
+}
+
 /** One renderer for the editor, page thumbnails, PNG and PDF output. */
 internal object NotebookRenderer {
     private class Scratch {
@@ -30,51 +68,59 @@ internal object NotebookRenderer {
         val scratch = local.get()!!
         for (layer in page.layers) {
             if (!layer.visible) continue
-            for (image in page.images) {
-                if (image.layerId != layer.id) continue
-                val bitmap = if (imageBitmaps != null) imageBitmaps[image.path] else NotebookImageStore.get(image.path, filesDir, allowImageDecode)
-                if (bitmap == null) continue
-                scratch.bounds.set(image.x * w, image.y * h, (image.x + image.width) * w, (image.y + image.height) * h)
-                val transformed = image.rotation != 0f || image.flipX || image.flipY
-                if (transformed) {
-                    canvas.save()
-                    canvas.rotate(image.rotation, scratch.bounds.centerX(), scratch.bounds.centerY())
-                    canvas.scale(if (image.flipX) -1f else 1f, if (image.flipY) -1f else 1f, scratch.bounds.centerX(), scratch.bounds.centerY())
-                }
-                canvas.drawBitmap(bitmap, null, scratch.bounds, scratch.imagePaint)
-                if (transformed) canvas.restore()
-            }
-            for (block in page.blocks) if (block.layerId == layer.id) drawBlock(canvas, block, w, h)
+            // Images, notes and text are stacked by their z; ink sits at a fixed level between them.
+            val objects = PageOrder.objects(page, layer.id)
+            for (item in objects) if (PageOrder.z(item) < PageOrder.INK) drawObject(canvas, item, w, h, scratch, filesDir, allowImageDecode, imageBitmaps)
             for (stroke in page.strokes) if (stroke.layerId == layer.id) drawStroke(canvas, stroke, w, h, ink, viewportZoom)
-            for (text in page.texts) {
-                if (text.layerId != layer.id) continue
-                if (text.kind != "plain") {
-                    drawEmbedCard(canvas, text, w, h, scratch)
-                    continue
-                }
-                val paint = scratch.paint
-                paint.reset(); paint.isAntiAlias = true; paint.color = text.color; paint.textSize = text.size * w / 600f
-                val family = when (text.font) { "Serif" -> Typeface.SERIF; "Mono" -> Typeface.MONOSPACE; else -> Typeface.SANS_SERIF }
-                val style = (if (text.bold) Typeface.BOLD else Typeface.NORMAL) or (if (text.italic) Typeface.ITALIC else Typeface.NORMAL)
-                paint.typeface = Typeface.create(family, style); paint.isUnderlineText = text.underline
-                paint.textAlign = when (text.alignment) { "Center" -> Paint.Align.CENTER; "End" -> Paint.Align.RIGHT; else -> Paint.Align.LEFT }
-                val transformed = text.rotation != 0f || text.flipX || text.flipY
-                if (transformed) {
-                    canvas.save()
-                    canvas.rotate(text.rotation, text.x * w, text.y * h)
-                    canvas.scale(if (text.flipX) -1f else 1f, if (text.flipY) -1f else 1f, text.x * w, text.y * h)
-                }
-                // Walk newline offsets rather than creating a list of lines during every recording.
-                var start = 0; var line = 0
-                while (start <= text.text.length) {
-                    val end = text.text.indexOf('\n', start).let { if (it < 0) text.text.length else it }
-                    canvas.drawText(text.text, start, end, text.x * w, text.y * h + line * paint.fontSpacing * text.lineSpacing.coerceIn(.6f, 2.5f), paint)
-                    if (end == text.text.length) break
-                    start = end + 1; line++
-                }
-                if (transformed) canvas.restore()
-            }
+            for (item in objects) if (PageOrder.z(item) >= PageOrder.INK) drawObject(canvas, item, w, h, scratch, filesDir, allowImageDecode, imageBitmaps)
         }
+    }
+
+    private fun drawObject(canvas: Canvas, item: Any, w: Float, h: Float, scratch: Scratch, filesDir: File?, allowImageDecode: Boolean,
+                           imageBitmaps: Map<String, android.graphics.Bitmap>?) {
+        when (item) {
+            is InkImage -> drawImage(canvas, item, w, h, scratch, filesDir, allowImageDecode, imageBitmaps)
+            is InkBlock -> drawBlock(canvas, item, w, h)
+            is InkText -> if (item.kind != "plain") drawEmbedCard(canvas, item, w, h, scratch) else drawText(canvas, item, w, h, scratch)
+        }
+    }
+
+    private fun drawImage(canvas: Canvas, image: InkImage, w: Float, h: Float, scratch: Scratch, filesDir: File?, allowImageDecode: Boolean,
+                          imageBitmaps: Map<String, android.graphics.Bitmap>?) {
+        val bitmap = (if (imageBitmaps != null) imageBitmaps[image.path] else NotebookImageStore.get(image.path, filesDir, allowImageDecode)) ?: return
+        scratch.bounds.set(image.x * w, image.y * h, (image.x + image.width) * w, (image.y + image.height) * h)
+        val transformed = image.rotation != 0f || image.flipX || image.flipY
+        if (transformed) {
+            canvas.save()
+            canvas.rotate(image.rotation, scratch.bounds.centerX(), scratch.bounds.centerY())
+            canvas.scale(if (image.flipX) -1f else 1f, if (image.flipY) -1f else 1f, scratch.bounds.centerX(), scratch.bounds.centerY())
+        }
+        canvas.drawBitmap(bitmap, null, scratch.bounds, scratch.imagePaint)
+        if (transformed) canvas.restore()
+    }
+
+    private fun drawText(canvas: Canvas, text: InkText, w: Float, h: Float, scratch: Scratch) {
+        val paint = scratch.paint
+        paint.reset(); paint.isAntiAlias = true; paint.color = text.color; paint.textSize = text.size * w / 600f
+        val family = when (text.font) { "Serif" -> Typeface.SERIF; "Mono" -> Typeface.MONOSPACE; else -> Typeface.SANS_SERIF }
+        val style = (if (text.bold) Typeface.BOLD else Typeface.NORMAL) or (if (text.italic) Typeface.ITALIC else Typeface.NORMAL)
+        paint.typeface = Typeface.create(family, style); paint.isUnderlineText = text.underline
+        paint.textAlign = when (text.alignment) { "Center" -> Paint.Align.CENTER; "End" -> Paint.Align.RIGHT; else -> Paint.Align.LEFT }
+        val transformed = text.rotation != 0f || text.flipX || text.flipY
+        if (transformed) {
+            canvas.save()
+            canvas.rotate(text.rotation, text.x * w, text.y * h)
+            canvas.scale(if (text.flipX) -1f else 1f, if (text.flipY) -1f else 1f, text.x * w, text.y * h)
+        }
+        // Walk newline offsets rather than creating a list of lines during every recording.
+        var start = 0; var line = 0
+        while (start <= text.text.length) {
+            val end = text.text.indexOf('\n', start).let { if (it < 0) text.text.length else it }
+            canvas.drawText(text.text, start, end, text.x * w, text.y * h + line * paint.fontSpacing * text.lineSpacing.coerceIn(.6f, 2.5f), paint)
+            if (end == text.text.length) break
+            start = end + 1; line++
+        }
+        if (transformed) canvas.restore()
     }
 
     /** Embedded links, recordings, and dates use the same geometry in the editor and exports. */

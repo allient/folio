@@ -564,8 +564,12 @@ internal fun NotebookEditor(
         if (!notebook.infiniteCanvas) { x = x.coerceIn(0f, (1f - width).coerceAtLeast(0f)); y = y.coerceIn(0f, (1f - height).coerceAtLeast(0f)) }
         return android.graphics.RectF(x, y, x + width, y + height)
     }
-    fun addBlock(block: InkBlock) {
+    /** A z just in front of the active layer's items under the ink, so a new sticker or note lands on top of them. */
+    fun frontUnderInk(): Float = PageOrder.objects(page, activeLayer).map { PageOrder.z(it) }.filter { it < PageOrder.INK }.maxOrNull()
+        ?.let { (it + PageOrder.INK) / 2f } ?: 0f
+    fun addBlock(added: InkBlock) {
         canvas?.flushInput()
+        val block = added.copy(z = frontUnderInk())
         applyPage(page.copy(blocks = page.blocks + block)); selectedBlockId = block.id; selectedIds = emptySet(); sheet = null
         // Tables open in Arrange mode for cell editing; sticky notes stay selected in the current tool, like a new shape.
         if (block.kind == InkBlock.Table) mode = CanvasMode.Objects else canvas?.selectBlock(block.id)
@@ -587,7 +591,7 @@ internal fun NotebookEditor(
         val box = placeBlock(.2f, 1f)
         val file = runCatching { renderStickerFile(context, emoji) }.getOrElse { message = "Could not create this sticker."; return }
         canvas?.flushInput()
-        val sticker = InkImage(path = file.absolutePath, x = box.left, y = box.top, width = box.width(), height = box.height(), layerId = activeLayer)
+        val sticker = InkImage(path = file.absolutePath, x = box.left, y = box.top, width = box.width(), height = box.height(), layerId = activeLayer, z = frontUnderInk())
         applyPage(page.copy(images = page.images + sticker))
         // Selected right away in the current tool, like a new shape: drag to move, handles to resize.
         selectedBlockId = null; sheet = null; canvas?.selectObject(sticker.id, isText = false)
@@ -633,6 +637,7 @@ internal fun NotebookEditor(
             CanvasAction.Cut -> { canvas?.flushInput(); clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection() }
             CanvasAction.Paste -> paste()
             CanvasAction.Fill -> sheet = if (page.blocks.any { it.id == selectedBlockId && it.kind == InkBlock.Sticky }) "note style" else "selection style"
+            CanvasAction.Arrange -> sheet = "arrange"
             CanvasAction.More -> sheet = "selection"
             CanvasAction.Edit -> page.blocks.firstOrNull { it.id == selectedBlockId && it.kind == InkBlock.Sticky }?.let { editingStickyId = it.id }
                 ?: page.texts.firstOrNull { it.id == selectedObjectId && it.kind == "plain" }?.let { editingTextId = it.id; draft = it.text; sheet = "edit text" }
@@ -812,8 +817,23 @@ internal fun NotebookEditor(
                     ToolAction(InkIcon.Add, "Larger 10%") { transformSelection(scale = 1.1f); sheet = null }
                     ToolAction(InkIcon.Zoom, "Smaller 10%") { transformSelection(scale = 1f / 1.1f); sheet = null }
                     ToolAction(InkIcon.Layers, "Move to layer") { sheet = "selection layer" }
+                    ToolAction(InkIcon.BringFront, "Bring to front", "Above other ink on this layer") {
+                        canvas?.flushInput(); applyPage(page.copy(strokes = page.strokes.filterNot { it.id in selectedIds } + page.strokes.filter { it.id in selectedIds })); sheet = null
+                    }
+                    ToolAction(InkIcon.SendBack, "Send to back", "Under other ink on this layer") {
+                        canvas?.flushInput(); applyPage(page.copy(strokes = page.strokes.filter { it.id in selectedIds } + page.strokes.filterNot { it.id in selectedIds })); sheet = null
+                    }
                     ToolAction(InkIcon.Tag, "Tag selection") { draft = ""; sheet = "tags" }
                     ToolAction(InkIcon.Close, "Deselect") { selectedIds = emptySet(); if (mode == CanvasMode.MoveSelection) mode = CanvasMode.Lasso; sheet = null }
+                }
+                "arrange" -> {
+                    val target = selectedObjectId ?: selectedBlockId
+                    fun move(step: PageOrder.Move) { canvas?.flushInput(); target?.let { applyPage(PageOrder.reorder(page, it, step)) } }
+                    Text("Order of overlapping items on this layer. Ink stays between: items in front cover your writing, items at the back sit under it.", fontSize = 12.sp, color = ChromeMuted)
+                    ToolAction(InkIcon.BringFront, "Bring to front") { move(PageOrder.Move.Front); sheet = null }
+                    ToolAction(InkIcon.BringFront, "Bring forward", "One step up") { move(PageOrder.Move.Forward) }
+                    ToolAction(InkIcon.SendBack, "Send backward", "One step down") { move(PageOrder.Move.Backward) }
+                    ToolAction(InkIcon.SendBack, "Send to back") { move(PageOrder.Move.Back); sheet = null }
                 }
                 "note style" -> page.blocks.firstOrNull { it.id == selectedBlockId }?.let { block -> StickyStyleControls(block) { changed -> updateBlock { changed } } }
                 "selection layer" -> LayerControls(page, activeLayer, { activeLayer = it }, ::applyPage,

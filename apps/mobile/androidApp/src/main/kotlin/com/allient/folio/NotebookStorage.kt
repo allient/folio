@@ -60,6 +60,8 @@ internal data class InkText(
     val rotation: Float = 0f,
     val flipX: Boolean = false,
     val flipY: Boolean = false,
+    /** Stacking order within the layer; see PageOrder. */
+    val z: Float = 3f,
 )
 
 internal data class InkImage(
@@ -73,6 +75,8 @@ internal data class InkImage(
     val rotation: Float = 0f,
     val flipX: Boolean = false,
     val flipY: Boolean = false,
+    /** Stacking order within the layer; see PageOrder. */
+    val z: Float = 0f,
 )
 
 /** Tables and sticky notes. Geometry is page-normalised like images; a table's rows and columns are fractions of its height and width. */
@@ -97,6 +101,8 @@ internal data class InkBlock(
     val headerFill: Int = 0xFFC0C0C3.toInt(),
     /** Merged cell ranges as [firstRow, firstColumn, lastRow, lastColumn]. */
     val merges: List<List<Int>> = emptyList(),
+    /** Stacking order within the layer; see PageOrder. */
+    val z: Float = 1f,
 ) { companion object { const val Table = "table"; const val Sticky = "sticky" } }
 
 internal data class NoteAttachment(
@@ -392,12 +398,12 @@ internal class NotebookStorage(context: Context) {
                     text.optString("font", "Sans"), text.optBoolean("bold", false), text.optBoolean("italic", false),
                     text.optBoolean("underline", false), text.optString("alignment", "Start"), text.number("lineSpacing", 1f, .6f, 2.5f),
                     text.optString("kind", "plain"), text.optString("target", ""), text.number("boxWidth", .32f, .08f, 1f),
-                    text.number("rotation", 0f, -360f, 360f), text.optBoolean("flipX", false), text.optBoolean("flipY", false))
+                    text.number("rotation", 0f, -360f, 360f), text.optBoolean("flipX", false), text.optBoolean("flipY", false), text.number("z", 3f, -1e6f, 1e6f))
             }
             val images = page.objects("images").map { image ->
                 InkImage(image.id(), image.optString("path", ""), image.coordinate("x", note, .1f), image.coordinate("y", note, .1f),
                     image.number("width", .6f, .001f, 1f), image.number("height", .4f, .001f, 1f), image.layer(),
-                    image.number("rotation", 0f, -360f, 360f), image.optBoolean("flipX", false), image.optBoolean("flipY", false))
+                    image.number("rotation", 0f, -360f, 360f), image.optBoolean("flipX", false), image.optBoolean("flipY", false), image.number("z", 0f, -1e6f, 1e6f))
             }
             val blocks = page.objects("blocks").map { block ->
                 fun fractions(key: String) = block.optJSONArray(key)?.let { a -> (0 until a.length()).map { a.optDouble(it, 0.0).toFloat().coerceIn(.001f, 1f) } }.orEmpty()
@@ -406,7 +412,8 @@ internal class NotebookStorage(context: Context) {
                     block.optString("text", ""), block.number("textSize", 16f, 6f, 96f), fractions("rows"), fractions("columns"),
                     block.optBoolean("headerRow", true), block.optBoolean("headerColumn", true), block.number("borderWidth", 3f, 0f, 16f),
                     block.optInt("borderColor", 0xFF8E8E93.toInt()), block.optInt("headerFill", 0xFFC0C0C3.toInt()),
-                    block.optJSONArray("merges")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optJSONArray(i)?.takeIf { it.length() == 4 }?.let { m -> List(4) { k -> m.optInt(k) } } } }.orEmpty())
+                    block.optJSONArray("merges")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optJSONArray(i)?.takeIf { it.length() == 4 }?.let { m -> List(4) { k -> m.optInt(k) } } } }.orEmpty(),
+                    block.number("z", 1f, -1e6f, 1e6f))
             }
             val referencedLayers = (strokes.map { it.layerId } + texts.map { it.layerId } + images.map { it.layerId } + blocks.map { it.layerId }).distinct()
             val recoveredLayers = referencedLayers.filter { id -> layers.none { it.id == id } }.map { InkLayer(id = it, name = "Recovered layer") }
@@ -454,18 +461,18 @@ internal class NotebookStorage(context: Context) {
                         .put("font", text.font).put("bold", text.bold).put("italic", text.italic).put("underline", text.underline)
                         .put("alignment", text.alignment).put("lineSpacing", finite(text.lineSpacing, 1f).toDouble())
                         .put("kind", text.kind).put("target", text.target).put("boxWidth", finite(text.boxWidth, .32f).toDouble())
-                        .put("rotation", finite(text.rotation).toDouble()).put("flipX", text.flipX).put("flipY", text.flipY)
+                        .put("rotation", finite(text.rotation).toDouble()).put("flipX", text.flipX).put("flipY", text.flipY).put("z", finite(text.z, 3f).toDouble())
                 })).put("images", array(page.images.map { image ->
                     JSONObject().put("id", image.id).put("path", image.path).put("x", finite(image.x).toDouble()).put("y", finite(image.y).toDouble())
                         .put("width", finite(image.width, .6f).toDouble()).put("height", finite(image.height, .4f).toDouble()).put("layerId", image.layerId)
-                        .put("rotation", finite(image.rotation).toDouble()).put("flipX", image.flipX).put("flipY", image.flipY)
+                        .put("rotation", finite(image.rotation).toDouble()).put("flipX", image.flipX).put("flipY", image.flipY).put("z", finite(image.z).toDouble())
                 })).put("blocks", array(page.blocks.map { block ->
                     JSONObject().put("id", block.id).put("kind", block.kind).put("x", finite(block.x).toDouble()).put("y", finite(block.y).toDouble())
                         .put("width", finite(block.width, .5f).toDouble()).put("height", finite(block.height, .3f).toDouble()).put("layerId", block.layerId)
                         .put("fill", block.fill).put("text", block.text).put("textSize", finite(block.textSize, 16f).toDouble())
                         .put("rows", array(block.rows.map { finite(it, 1f).toDouble() })).put("columns", array(block.columns.map { finite(it, 1f).toDouble() }))
                         .put("headerRow", block.headerRow).put("headerColumn", block.headerColumn).put("borderWidth", finite(block.borderWidth, 3f).toDouble())
-                        .put("borderColor", block.borderColor).put("headerFill", block.headerFill)
+                        .put("borderColor", block.borderColor).put("headerFill", block.headerFill).put("z", finite(block.z, 1f).toDouble())
                         .put("merges", array(block.merges.map { array(it) }))
                 }))
         }))

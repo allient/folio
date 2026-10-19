@@ -25,10 +25,10 @@ private const val ROTATE_HANDLE_DP = 40f
 /** Buttons of the bar shown next to a selection. Copy, Edit and More are handled by the editor. */
 internal enum class CanvasAction(val icon: InkIcon) {
     Cut(InkIcon.Cut), Copy(InkIcon.Copy), Paste(InkIcon.Paste), Edit(InkIcon.Rename), MirrorX(InkIcon.FlipHorizontal), MirrorY(InkIcon.FlipVertical),
-    RotateLeft(InkIcon.Rotate), Rotate(InkIcon.RotateRight), Fill(InkIcon.Fill), Delete(InkIcon.Trash), More(InkIcon.More);
+    RotateLeft(InkIcon.Rotate), Rotate(InkIcon.RotateRight), Fill(InkIcon.Fill), Arrange(InkIcon.BringFront), Delete(InkIcon.Trash), More(InkIcon.More);
 
     /** Clipboard, styling and the full menu live in the editor; the canvas only reports them. */
-    val handledByEditor get() = this in setOf(Cut, Copy, Paste, Edit, Fill, More)
+    val handledByEditor get() = this in setOf(Cut, Copy, Paste, Edit, Fill, Arrange, More)
 }
 
 internal enum class CanvasMode { Write, Lasso, MoveSelection, Shape, Pan, FreeZoom, Fill, Objects, ColorPicker, ZoomWindow }
@@ -141,9 +141,9 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         set(value) { if (field != value) { field = value; invalidate() } }
     private val strokeActions get() = listOfNotNull(CanvasAction.Copy, CanvasAction.Paste.takeIf { canPaste },
         CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Fill, CanvasAction.Delete, CanvasAction.More)
-    private fun blockActions(block: InkBlock) = if (block.kind == InkBlock.Sticky) listOf(CanvasAction.Edit, CanvasAction.Fill, CanvasAction.Delete) else listOf(CanvasAction.Delete)
+    private fun blockActions(block: InkBlock) = if (block.kind == InkBlock.Sticky) listOf(CanvasAction.Edit, CanvasAction.Fill, CanvasAction.Arrange, CanvasAction.Delete) else listOf(CanvasAction.Arrange, CanvasAction.Delete)
     private fun objectActions() = listOfNotNull(CanvasAction.Edit.takeIf { selectedObjectIsText },
-        CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Delete)
+        CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Arrange, CanvasAction.Delete)
     private val rotateGlyph by lazy { androidx.core.graphics.PathParser.createPathFromPathData(InkIcon.RotateRight.path) }
     private val scaler = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
@@ -495,12 +495,17 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         fun inside(b: RectF): Boolean = if (tap != null) b.contains(tap.x * width, tap.y * documentHeight)
             else InkGeometry.contains(Offset(b.centerX() / width, b.centerY() / documentHeight), polygon)
         for (layer in layers.asReversed().filter { it.visible && !it.locked }) {
-            texts.asReversed().firstOrNull { it.layerId == layer.id && inside(textBounds(it)) }?.let { selectObject(it.id, true); return true }
-            images.asReversed().firstOrNull { it.layerId == layer.id && inside(imageBounds(it)) }?.let { selectObject(it.id, false); return true }
-            blockContent.asReversed().firstOrNull { it.layerId == layer.id && inside(blockBounds(it)) }?.let { selectBlock(it.id); return true }
+            when (val hit = frontToBack(layer.id).firstOrNull { item ->
+                when (item) { is InkText -> inside(textBounds(item)); is InkImage -> inside(imageBounds(item)); is InkBlock -> inside(blockBounds(item)); else -> false }
+            }) {
+                is InkText -> { selectObject(hit.id, true); return true }
+                is InkImage -> { selectObject(hit.id, false); return true }
+                is InkBlock -> { selectBlock(hit.id); return true }
+            }
         }
         return false
     }
+    private fun frontToBack(layerId: String) = PageOrder.objects(NotebookPage(texts = texts, images = images, blocks = blockContent), layerId).asReversed()
     fun deselectObject() { selectedObjectId = null; selectedBlockId = null; onBlockSelectionChanged(null); onObjectSelectionChanged(null, false); invalidate() }
     val zoom: Float get() = zoomValue
     val viewportCenterX: Float get() = if (width > 0) ((width / 2f - panX) / width / zoomValue).let { if (infiniteCanvas) it else it.coerceIn(0f, 1f) } else .5f
@@ -705,10 +710,15 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         } else {
             // Software/API 25–28 fallback preserves the same layer order and vector data.
             val index = layers.indexOfFirst { it.id == activeLayerId }.coerceAtLeast(0)
-            NotebookRenderer.drawPage(canvas, page.copy(layers = layers.take(index + 1), texts = texts.filter { it.layerId != activeLayerId }),
+            // The active layer's objects above the ink (z >= PageOrder.INK) are drawn after the live stroke.
+            fun over(layerId: String, z: Float) = layerId == activeLayerId && z >= PageOrder.INK
+            NotebookRenderer.drawPage(canvas, page.copy(layers = layers.take(index + 1), texts = texts.filterNot { over(it.layerId, it.z) },
+                images = images.filterNot { over(it.layerId, it.z) }, blocks = blocks.filterNot { over(it.layerId, it.z) }),
                 width, documentHeight, context.filesDir, allowImageDecode = false, ink = ink, viewportZoom = zoomValue, imageBitmaps = imageBitmaps)
             drawLive(canvas)
-            NotebookRenderer.drawPage(canvas, page.copy(layers = layers.drop(index), strokes = strokes.filter { it.layerId != activeLayerId }, images = images.filter { it.layerId != activeLayerId }, blocks = blocks.filter { it.layerId != activeLayerId }),
+            NotebookRenderer.drawPage(canvas, page.copy(layers = layers.drop(index), strokes = strokes.filter { it.layerId != activeLayerId },
+                texts = texts.filter { it.layerId != activeLayerId || it.z >= PageOrder.INK }, images = images.filter { it.layerId != activeLayerId || it.z >= PageOrder.INK },
+                blocks = blocks.filter { it.layerId != activeLayerId || it.z >= PageOrder.INK }),
                 width, documentHeight, context.filesDir, allowImageDecode = false, ink = ink, viewportZoom = zoomValue, imageBitmaps = imageBitmaps, drawBackground = false)
         }
         selectionBounds()?.let { drawTransformBox(canvas, it) }
@@ -1371,20 +1381,25 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             }
         }
         selectedObjectId = null; selectedBlockId = null
+        // Front to back, so the item on top of an overlap is the one picked.
         for (layer in layers.asReversed().filter { it.visible && !it.locked }) {
-            val text = texts.asReversed().firstOrNull { t ->
-                val local = if (t.kind == "plain") toObjectFrame(x, y, t.x * width, t.y * documentHeight, t.rotation, t.flipX, t.flipY) else Offset(x, y)
-                t.layerId == layer.id && textBounds(t).apply { inset(-8f, -8f) }.contains(local.x, local.y)
+            val hit = frontToBack(layer.id).firstOrNull { item ->
+                when (item) {
+                    is InkText -> {
+                        val local = if (item.kind == "plain") toObjectFrame(x, y, item.x * width, item.y * documentHeight, item.rotation, item.flipX, item.flipY) else Offset(x, y)
+                        textBounds(item).apply { inset(-8f, -8f) }.contains(local.x, local.y)
+                    }
+                    is InkImage -> { val b = imageBounds(item); val local = toObjectFrame(x, y, b.centerX(), b.centerY(), item.rotation, false, false); b.contains(local.x, local.y) }
+                    is InkBlock -> blockBounds(item).contains(x, y)
+                    else -> false
+                }
             }
-            if (text != null) { selectedObjectId = text.id; selectedObjectIsText = true; break }
-            val image = images.asReversed().firstOrNull { i ->
-                val b = imageBounds(i)
-                val local = toObjectFrame(x, y, b.centerX(), b.centerY(), i.rotation, false, false)
-                i.layerId == layer.id && b.contains(local.x, local.y)
+            when (hit) {
+                is InkText -> { selectedObjectId = hit.id; selectedObjectIsText = true }
+                is InkImage -> { selectedObjectId = hit.id; selectedObjectIsText = false }
+                is InkBlock -> selectedBlockId = hit.id
             }
-            if (image != null) { selectedObjectId = image.id; selectedObjectIsText = false; break }
-            val block = blockContent.asReversed().firstOrNull { it.layerId == layer.id && blockBounds(it).contains(x, y) }
-            if (block != null) { selectedBlockId = block.id; break }
+            if (hit != null) break
         }
         draggingObject = selectedObjectId != null
         onObjectSelectionChanged(selectedObjectId, selectedObjectIsText)
