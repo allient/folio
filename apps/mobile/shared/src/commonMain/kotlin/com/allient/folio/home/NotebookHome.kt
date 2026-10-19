@@ -1,5 +1,7 @@
 package com.allient.folio.home
 
+import com.allient.folio.penPressureFilter
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -282,7 +284,7 @@ fun NotebookHome(
                                     Box {
                                         HomeIconButton(Symbol.Dots, "Library menu", menu || sortMenu, { menu = !menu })
                                         val check: @Composable (Boolean) -> Unit = { on -> if (on) HomeSymbol(Symbol.Check, Modifier.size(18.dp), tint = style.accent) }
-                                        DropdownMenu(menu, { menu = false }) {
+                                        DropdownMenu(menu, { menu = false }, modifier = Modifier.penPressureFilter()) {
                                             DropdownMenuItem(text = { Text("Select") }, modifier = Modifier.testTag("home-select"), onClick = { menu = false; selecting = true; selected = emptySet() })
                                             DropdownMenuItem(text = { Text("Sort by (${HomeSort.all.first { it.first == preferences.sort }.second})") }, modifier = Modifier.testTag("home-sort"),
                                                 trailingIcon = { HomeSymbol(Symbol.ChevronRight, Modifier.size(14.dp)) }, onClick = { menu = false; sortMenu = true })
@@ -296,7 +298,7 @@ fun NotebookHome(
                                             DropdownMenuItem(text = { Text("Export full library backup") }, modifier = Modifier.testTag("home-export-library-backup"), onClick = { menu = false; onExportLibraryBackup() })
                                             DropdownMenuItem(text = { Text("Backup settings") }, modifier = Modifier.testTag("home-settings"), onClick = { menu = false; onOpenSettings() })
                                         }
-                                        DropdownMenu(sortMenu, { sortMenu = false }) {
+                                        DropdownMenu(sortMenu, { sortMenu = false }, modifier = Modifier.penPressureFilter()) {
                                             Text("Sort by", Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontSize = 12.sp, color = Muted)
                                             HomeSort.all.forEach { (id, label) ->
                                                 DropdownMenuItem(text = { Text(label) }, modifier = Modifier.testTag("home-sort-$id"), trailingIcon = { check(preferences.sort == id) },
@@ -435,7 +437,7 @@ fun NotebookHome(
                                     modifier = Modifier.size(60.dp).testTag("create-notebook").semantics { contentDescription = "Create" }) {
                                     Box(contentAlignment = Alignment.Center) { HomeSymbol(Symbol.Plus, Modifier.size(24.dp), tint = Color.White) }
                                 }
-                                DropdownMenu(fabMenu, { fabMenu = false }) {
+                                DropdownMenu(fabMenu, { fabMenu = false }, modifier = Modifier.penPressureFilter()) {
                                     DropdownMenuItem(text = { Text("New notebook") }, modifier = Modifier.testTag("home-new-notebook"), leadingIcon = { HomeSymbol(Symbol.Notes, Modifier.size(20.dp)) }, onClick = { fabMenu = false; newNote(false) })
                                     DropdownMenuItem(text = { Text("New infinite canvas") }, modifier = Modifier.testTag("home-new-canvas"), leadingIcon = { HomeSymbol(Symbol.All, Modifier.size(20.dp)) }, onClick = { fabMenu = false; newNote(true) })
                                     DropdownMenuItem(text = { Text("New folder") }, modifier = Modifier.testTag("home-new-folder"), leadingIcon = { HomeSymbol(Symbol.Folder, Modifier.size(20.dp)) }, onClick = { fabMenu = false; editedFolder = null; folderDialog = true })
@@ -624,7 +626,7 @@ private fun InfinitePaperSection(template: String, onTemplate: (String) -> Unit)
                     Box(Modifier.size(18.dp).clip(CircleShape).background(Color(paper.background)).border(1.5.dp, Line, CircleShape))
                     Text(InfinitePaper.colors.first { it.first == paper.color }.second + " ▾", Modifier.padding(start = 8.dp), fontSize = 13.sp, color = Ink)
                 }
-                DropdownMenu(colorMenu, { colorMenu = false }) {
+                DropdownMenu(colorMenu, { colorMenu = false }, modifier = Modifier.penPressureFilter()) {
                     InfinitePaper.colors.forEach { (id, label) ->
                         DropdownMenuItem(text = { Text(label + if (id == paper.color) "  ✓" else "") }, onClick = { onTemplate(paper.copy(color = id).template); colorMenu = false },
                             leadingIcon = { Box(Modifier.size(20.dp).clip(CircleShape).background(Color(InfinitePaper.colorArgb(id))).border(1.5.dp, Line, CircleShape)) })
@@ -633,7 +635,7 @@ private fun InfinitePaperSection(template: String, onTemplate: (String) -> Unit)
             }
             if (paper.pattern != "blank") Box {
                 TextButton(onClick = { spacingMenu = true }, modifier = Modifier.testTag("infinite-paper-spacing")) { Text("Spacing ${paper.spacing} ▾", fontSize = 13.sp, color = Ink) }
-                DropdownMenu(spacingMenu, { spacingMenu = false }) {
+                DropdownMenu(spacingMenu, { spacingMenu = false }, modifier = Modifier.penPressureFilter()) {
                     Row(Modifier.width(240.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Slider(paper.spacing.toFloat(), { onTemplate(paper.copy(spacing = it.roundToInt().coerceIn(1, 8)).template) }, Modifier.weight(1f), valueRange = 1f..8f, steps = 6)
                         Text("${paper.spacing}", Modifier.padding(start = 12.dp), fontSize = 14.sp)

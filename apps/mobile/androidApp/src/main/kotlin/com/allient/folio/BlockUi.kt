@@ -163,7 +163,7 @@ internal fun ColorMenuDot(color: Int, label: String, options: List<Int>, onPick:
     var open by remember { mutableStateOf(false) }
     Box {
         ColorDot(color, false, label) { open = true }
-        DropdownMenu(open, { open = false }) {
+        DropdownMenu(open, { open = false }, modifier = Modifier.penPressureFilter()) {
             Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 options.forEach { option -> ColorDot(option, option == color, "$label ${option.toUInt().toString(16)}") { onPick(option); open = false } }
             }

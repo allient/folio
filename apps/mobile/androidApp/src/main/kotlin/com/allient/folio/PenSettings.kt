@@ -22,7 +22,10 @@ internal object PenSettings {
 
     /** Contact below this pressure is treated as hovering. Read on every pen touch. */
     @Volatile var threshold: Float = pressureProfiles[1].threshold
-        private set
+        private set(value) { field = value; thresholdState.floatValue = value }
+
+    /** The same value for Compose, provided to every screen as LocalPenThreshold. */
+    val thresholdState = mutableFloatStateOf(pressureProfiles[1].threshold)
 
     fun init(context: Context) {
         if (listener != null) return
@@ -32,7 +35,37 @@ internal object PenSettings {
         listener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
             if (key == "threshold") threshold = prefs.getFloat("threshold", pressureProfiles[1].threshold)
         }.also(preferences::registerOnSharedPreferenceChangeListener)
+        installDialogFilter()
     }
+
+    /**
+     * Dialogs have their own window, which the activity's touch filter never sees. Every Compose
+     * root reports itself here; the ones inside a dialog get the same filter on their window.
+     */
+    private fun installDialogFilter() {
+        val previous = androidx.compose.ui.platform.ViewRootForTest.onViewCreatedCallback
+        androidx.compose.ui.platform.ViewRootForTest.onViewCreatedCallback = { root ->
+            previous?.invoke(root)
+            if (root.view.isAttachedToWindow) filterDialogOf(root.view)
+            root.view.addOnAttachStateChangeListener(object : android.view.View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(view: android.view.View) = filterDialogOf(view)
+                override fun onViewDetachedFromWindow(view: android.view.View) = Unit
+            })
+        }
+    }
+}
+
+private fun filterDialogOf(view: android.view.View) {
+    var parent = view.parent
+    while (parent != null && parent !is androidx.compose.ui.window.DialogWindowProvider) parent = parent.parent
+    val window = (parent as? androidx.compose.ui.window.DialogWindowProvider)?.window ?: return
+    val callback = window.callback ?: return
+    if (callback !is PenFilteringCallback) window.callback = PenFilteringCallback(callback)
+}
+
+private class PenFilteringCallback(private val delegate: android.view.Window.Callback) : android.view.Window.Callback by delegate {
+    private val filter = PenPressureFilter()
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean = filter.dispatch(event) { delegate.dispatchTouchEvent(it) }
 }
 
 /**

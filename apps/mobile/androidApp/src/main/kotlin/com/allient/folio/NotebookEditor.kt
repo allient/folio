@@ -602,6 +602,15 @@ internal fun NotebookEditor(
         val ids = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }.map { it.id }.toSet()
         applyPage(page.copy(strokes = InkSelection.transform(page.strokes, ids, scale, rotation, flipX, flipY, unbounded = notebook.infiniteCanvas)))
     }
+    /** Actions from the bar next to a selection that need the editor (clipboard, text editing, the full menu). */
+    fun handleCanvasAction(action: CanvasAction) {
+        when (action) {
+            CanvasAction.Copy -> { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; message = "Copied. Paste from More or the lasso panel." }
+            CanvasAction.More -> sheet = "selection"
+            CanvasAction.Edit -> page.texts.firstOrNull { it.id == selectedObjectId && it.kind == "plain" }?.let { editingTextId = it.id; draft = it.text; sheet = "edit text" }
+            else -> Unit
+        }
+    }
     /** Rotates or mirrors the selected image or plain text box. */
     fun transformObject(rotation: Float = 0f, flipX: Boolean = false, flipY: Boolean = false) {
         canvas?.flushInput()
@@ -672,7 +681,7 @@ internal fun NotebookEditor(
                             Text(pin.name, Modifier.weight(1f).clickable { canvas?.jumpTo(pin.x, pin.y, pin.zoom); sheet = null }.padding(12.dp), fontSize = 13.sp)
                             Box {
                                 InkToolButton(InkIcon.More, "Options for ${pin.name}", { pinMenu = pin.id })
-                                DropdownMenu(pinMenu == pin.id, { pinMenu = null }) {
+                                DropdownMenu(pinMenu == pin.id, { pinMenu = null }, modifier = Modifier.penPressureFilter()) {
                                     DropdownMenuItem(text = { Text("Rename") }, onClick = { editingPin = pin; pinName = pin.name; pendingPin = Offset(pin.x, pin.y); pinMenu = null })
                                     DropdownMenuItem(text = { Text("Delete") }, onClick = { latestOnChange(latestNotebook.copy(pins = latestNotebook.pins.filterNot { it.id == pin.id }, updatedAt = System.currentTimeMillis())); pinMenu = null })
                                 }
@@ -789,6 +798,8 @@ internal fun NotebookEditor(
                     if (clipboard.isNotEmpty()) ToolAction(InkIcon.Copy, "Paste strokes") { paste(); sheet = null }
                 }
                 "selection" -> {
+                    ToolAction(InkIcon.Copy, "Copy") { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; sheet = null }
+                    if (clipboard.isNotEmpty()) ToolAction(InkIcon.Add, "Paste") { paste(); sheet = null }
                     ToolAction(InkIcon.Hand, "Move selection", "Drag anywhere on the canvas to move the selected ink") { canvas?.flushInput(); mode = CanvasMode.MoveSelection; sheet = null }
                     ToolAction(InkIcon.Cut, "Cut selection") { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection(); sheet = null }
                     ToolAction(InkIcon.Rotate, "Rotate left") { transformSelection(rotation = -90f); sheet = null }
@@ -799,6 +810,8 @@ internal fun NotebookEditor(
                     ToolAction(InkIcon.Zoom, "Smaller 10%") { transformSelection(scale = 1f / 1.1f); sheet = null }
                     ToolAction(InkIcon.Fill, "Fill and border") { sheet = "selection style" }
                     ToolAction(InkIcon.Layers, "Move to layer") { sheet = "selection layer" }
+                    ToolAction(InkIcon.Tag, "Tag selection") { draft = ""; sheet = "tags" }
+                    ToolAction(InkIcon.Close, "Deselect") { selectedIds = emptySet(); if (mode == CanvasMode.MoveSelection) mode = CanvasMode.Lasso; sheet = null }
                 }
                 "selection layer" -> LayerControls(page, activeLayer, { activeLayer = it }, ::applyPage,
                     onChooseDestination = { updated, destination ->
@@ -1301,7 +1314,7 @@ internal fun NotebookEditor(
                                 }, onReorderEnd = { brushDragRemainder = 0f })
                             }
                         }
-                        DropdownMenu(showBrush, onDismissRequest = { showBrush = false }, modifier = Modifier.width(360.dp).heightIn(max = 900.dp)) { BrushSettings(selectedBrush, brushOptions, ::updateBrush, ::addBrush, ::deleteBrush, drawingViewportWidthPx, panelXdpi, ::pickPageColor) }
+                        DropdownMenu(showBrush, onDismissRequest = { showBrush = false }, modifier = Modifier.penPressureFilter().width(360.dp).heightIn(max = 900.dp)) { BrushSettings(selectedBrush, brushOptions, ::updateBrush, ::addBrush, ::deleteBrush, drawingViewportWidthPx, panelXdpi, ::pickPageColor) }
                     }
                     ChromeDivider()
                     InkToolButton(InkIcon.Eraser, "Eraser", {
@@ -1363,6 +1376,7 @@ internal fun NotebookEditor(
                                             if (ids.isNotEmpty() && lassoAutoSwitch && mode == CanvasMode.Lasso) { selectedBrush = previousPen; mode = CanvasMode.Write }
                                         },
                                         onObjectSelection = { id, text -> if (model.id == page.id) { selectedObjectId = id; selectedObjectIsText = text } },
+                                        onCanvasAction = { handleCanvasAction(it) },
                                         onColorPicked = { picked ->
                                             val receiver = pageColorReceiver; pageColorReceiver = null
                                             mode = colorReturnMode; sheet = colorReturnSheet; receiver?.invoke(picked)
@@ -1382,6 +1396,7 @@ internal fun NotebookEditor(
                                     view.onStrokesChanged = { updated -> applyPage(page.copy(strokes = updated.filter { stroke -> page.layers.any { it.id == stroke.layerId } })) }
                                     view.onObjectsChanged = { texts, images -> applyPage(page.copy(texts = texts, images = images)) }
                                     view.onObjectSelectionChanged = { id, text -> selectedObjectId = id; selectedObjectIsText = text }
+                                    view.onCanvasAction = { handleCanvasAction(it) }
                                     view.brush = selectedBrush; view.threshold = threshold
                                     view.infiniteCanvas = notebook.infiniteCanvas
                                     view.onAddPin = { location -> editingPin = null; pendingPin = location; pinName = "Pin ${latestNotebook.pins.size + 1}" }
@@ -1566,27 +1581,10 @@ internal fun NotebookEditor(
                             }
                         }
                     }
-                    if (selectedIds.isNotEmpty()) {
-                        Surface(Modifier.align(Alignment.TopCenter).padding(10.dp), shadowElevation = 3.dp, border = androidx.compose.foundation.BorderStroke(1.dp, ChromeLine), shape = RoundedCornerShape(16.dp)) {
-                            Row(Modifier.horizontalScroll(rememberScrollState()).padding(3.dp), verticalAlignment = Alignment.CenterVertically) {
-                                InkToolButton(InkIcon.Cut, "Cut selection", { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection() })
-                                InkToolButton(InkIcon.Copy, "Copy selection", { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) } })
-                                InkToolButton(InkIcon.Add, "Paste selection", ::paste, enabled = clipboard.isNotEmpty())
-                                InkToolButton(InkIcon.Fill, "Change fill and border", { sheet = "selection style" }, tint = Color(page.strokes.firstOrNull { it.id in selectedIds }?.let { it.fillColor ?: it.color } ?: fillColor))
-                                InkToolButton(InkIcon.Tag, "Tag selection", { draft = ""; sheet = "tags" })
-                                InkToolButton(InkIcon.FlipHorizontal, "Mirror left-right", { transformSelection(flipX = true) })
-                                InkToolButton(InkIcon.FlipVertical, "Mirror top-bottom", { transformSelection(flipY = true) })
-                                InkToolButton(InkIcon.Rotate, "Rotate left 90°", { transformSelection(rotation = -90f) })
-                                InkToolButton(InkIcon.RotateRight, "Rotate right 90°", { transformSelection(rotation = 90f) })
-                                InkToolButton(InkIcon.Layers, "Move selection to layer", { sheet = "selection layer" })
-                                InkToolButton(InkIcon.Trash, "Delete selection", { canvas?.flushInput(); sheet = "delete selection" })
-                                InkToolButton(InkIcon.Tools, "More selection actions", { sheet = "selection" })
-                                InkToolButton(InkIcon.Close, "Deselect", { selectedIds = emptySet(); if (mode == CanvasMode.MoveSelection) mode = CanvasMode.Lasso })
-                            }
-                        }
-                    }
-                    if (mode == CanvasMode.Objects && selectedObjectId != null) {
-                        val selectedText = page.texts.firstOrNull { it.id == selectedObjectId }
+                    // Images and plain text use the bar next to the selection; cards (dates, recordings, links) keep this one.
+                    val selectedCard = page.texts.firstOrNull { it.id == selectedObjectId && it.kind != "plain" }
+                    if (mode == CanvasMode.Objects && selectedObjectId != null && selectedCard != null) {
+                        val selectedText: InkText? = selectedCard
                         Surface(Modifier.align(Alignment.TopCenter).padding(10.dp), shape = RoundedCornerShape(16.dp), shadowElevation = 3.dp) {
                             Row(Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(when (selectedText?.kind) { "timestamp" -> "Date marker"; "audio" -> "Recording"; "link-note", "link-web", "link-file" -> "Link"; else -> if (selectedObjectIsText) "Text box" else "Image" }, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp))
@@ -1719,6 +1717,7 @@ private fun NotebookPageCanvas(
     onPageChange: (NotebookPage) -> Unit,
     onSelection: (Set<String>) -> Unit,
     onObjectSelection: (String?, Boolean) -> Unit,
+    onCanvasAction: (CanvasAction) -> Unit,
     onColorPicked: (Int) -> Unit,
     onZoom: (InkCanvasView, Float) -> Unit,
     onEraseFinished: () -> Unit,
@@ -1731,6 +1730,7 @@ private fun NotebookPageCanvas(
                 view.onStrokesChanged = { updated -> onPageChange(model.copy(strokes = updated.filter { s -> model.layers.any { it.id == s.layerId } })) }
                 view.onObjectsChanged = { texts, images -> onPageChange(model.copy(texts = texts, images = images)) }
                 view.onObjectSelectionChanged = { id, isText -> if (isActive) onObjectSelection(id, isText) }
+                view.onCanvasAction = { if (isActive) onCanvasAction(it) }
                 view.brush = brush; view.threshold = threshold
                 view.pressureCurve = pressureCurve; view.pressureCurveEnabled = pressureCurveEnabled
                 view.velocityCurveEnabled = velocityCurveEnabled; view.velocityCurve = velocityCurve

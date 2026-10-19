@@ -138,7 +138,7 @@ internal fun NoteToolbox(
                     enabled = when(tool) { "Undo" -> canUndo; "Redo" -> canRedo; else -> true }) }
                 Box {
                     InkToolButton(InkIcon.More, "More toolbar options", { panel = "more" })
-                    DropdownMenu(panel == "more", { panel = null }) {
+                    DropdownMenu(panel == "more", { panel = null }, modifier = Modifier.penPressureFilter()) {
                         DropdownMenuItem(text = { Text("Brush options") }, onClick = { panel = "brush" })
                         DropdownMenuItem(text = { Text("Customize Toolbar") }, onClick = { panel = "customize" })
                         DropdownMenuItem(text = { Text(if (vertical) "Horizontal toolbar" else "Vertical toolbar") }, onClick = {
@@ -149,7 +149,7 @@ internal fun NoteToolbox(
                 }
                 Box {
                     InkToolButton(InkIcon.Tools, "ToolBox: $scenario", { panel = "toolbox" })
-                    DropdownMenu(panel == "toolbox", { panel = null }) {
+                    DropdownMenu(panel == "toolbox", { panel = null }, modifier = Modifier.penPressureFilter()) {
                         names.forEach { name -> DropdownMenuItem(text = { Text(if (name == scenario) "✓ $name" else name) }, onClick = {
                             saveBrushes(scenario); val restored = restoreBrushes(name)
                             scenario = name; tools = toolsFor(name)

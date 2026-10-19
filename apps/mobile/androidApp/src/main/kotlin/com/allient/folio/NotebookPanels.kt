@@ -155,7 +155,7 @@ private fun PageManagerCard(page: NotebookPage, index: Int, selected: Boolean, o
                 Text("Page ${index + 1}${if (selected) " · Current" else ""}", Modifier.weight(1f).clickable(onClick = onSelect), fontSize = 12.sp, color = ChromeInk)
                 Box {
                     InkToolButton(InkIcon.More, "Page ${index + 1} actions", { menu = true }, buttonSize = 30.dp)
-                    DropdownMenu(menu, { menu = false }) {
+                    DropdownMenu(menu, { menu = false }, modifier = Modifier.penPressureFilter()) {
                         listOf("outline" to "Edit outline", "duplicate" to "Duplicate", "move-up" to "Move earlier", "move-down" to "Move later", "delete" to "Delete").forEach { (action, label) ->
                             DropdownMenuItem(text = { Text(label) }, onClick = { menu = false; onPageAction(page.id, action) })
                         }
@@ -171,7 +171,7 @@ private fun PageActions(index: Int, lastIndex: Int, pageCount: Int, onAction: (S
     var menu by remember(index) { mutableStateOf(false) }
     Box {
         InkToolButton(InkIcon.More, "Page ${index + 1} actions", { menu = true }, buttonSize = 32.dp)
-        DropdownMenu(menu, { menu = false }) {
+        DropdownMenu(menu, { menu = false }, modifier = Modifier.penPressureFilter()) {
             listOf("outline" to "Edit outline", "duplicate" to "Duplicate", "move-up" to "Move earlier", "move-down" to "Move later", "delete" to "Delete").forEach { (action, label) ->
                 val enabled = when(action) { "move-up" -> index > 0; "move-down" -> index < lastIndex; "delete" -> pageCount > 1; else -> true }
                 DropdownMenuItem(text = { Text(label) }, enabled = enabled, onClick = { menu = false; onAction(action) })
@@ -251,7 +251,7 @@ internal fun LayerControls(
                     { changeLayer(layer.copy(locked = !layer.locked)) }, selected = layer.locked, buttonSize = 40.dp)
                 Box {
                     InkToolButton(InkIcon.More, "${layer.name} actions", { menu = true }, buttonSize = 36.dp)
-                    DropdownMenu(menu, { menu = false }) {
+                    DropdownMenu(menu, { menu = false }, modifier = Modifier.penPressureFilter()) {
                         DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; renaming = layer.id; layerName = layer.name })
                         DropdownMenuItem(text = { Text("Move up") }, enabled = page.layers.indexOf(layer) < page.layers.lastIndex, onClick = { menu = false; moveLayer(layer, 1) })
                         DropdownMenuItem(text = { Text("Move down") }, enabled = page.layers.indexOf(layer) > 0, onClick = { menu = false; moveLayer(layer, -1) })

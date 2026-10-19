@@ -50,7 +50,9 @@ class MainActivity : ComponentActivity() {
         val backup = ViewModelProvider(this)[LocalBackupViewModel::class.java]
         val reader = ViewModelProvider(this)[ReaderViewModel::class.java]
         LocalBackupScheduler.observeProcess(this)
-        setContent { KnotesApp(repository, backup, reader) }
+        setContent {
+            androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) { KnotesApp(repository, backup, reader) }
+        }
         intent.data?.let(reader::import)
     }
 
