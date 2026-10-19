@@ -982,8 +982,16 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             return
         }
         val drawingContact = gestureMode == CanvasMode.Write || gestureMode == CanvasMode.Shape
-        // Moving a selection is not drawing: pen pressure below the ink threshold must not end the drag.
-        if ((drawingContact && (raw <= threshold || !raw.isFinite())) || (movingSelection && !raw.isFinite()) || !point.x.isFinite() || !point.y.isFinite() ||
+        if (!drawingContact && (raw <= threshold || !raw.isFinite())) {
+            // The pressure filter covers every pen action. A hovering or too-light pen must not move,
+            // resize, rotate or select anything; wait for a firmer press without ending the gesture.
+            if (movingSelection && dragBaseline != null && !resizingSelection && !rotatingSelection && point.x.isFinite() && point.y.isFinite()) {
+                dragBaseline = strokes; dragOrigin = point
+            }
+            if (point.x.isFinite() && point.y.isFinite()) lastPosition = point
+            return
+        }
+        if ((drawingContact && (raw <= threshold || !raw.isFinite())) || !point.x.isFinite() || !point.y.isFinite() ||
             (!infiniteCanvas && !movingSelection && (point.x !in 0f..1f || point.y !in 0f..1f))) {
             // A faulty stylus can keep emitting MOVE after lift. Finish this drag once
             // and wait for a new contact instead of turning the remaining MOVE into a lasso.
