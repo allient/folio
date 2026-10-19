@@ -792,9 +792,9 @@ internal fun NotebookEditor(
                     ToolAction(InkIcon.Hand, "Move selection", "Drag anywhere on the canvas to move the selected ink") { canvas?.flushInput(); mode = CanvasMode.MoveSelection; sheet = null }
                     ToolAction(InkIcon.Cut, "Cut selection") { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection(); sheet = null }
                     ToolAction(InkIcon.Rotate, "Rotate left") { transformSelection(rotation = -90f); sheet = null }
-                    ToolAction(InkIcon.Rotate, "Rotate right") { transformSelection(rotation = 90f); sheet = null }
-                    ToolAction(InkIcon.Flip, "Flip horizontally") { transformSelection(flipX = true); sheet = null }
-                    ToolAction(InkIcon.Flip, "Flip vertically") { transformSelection(flipY = true); sheet = null }
+                    ToolAction(InkIcon.RotateRight, "Rotate right") { transformSelection(rotation = 90f); sheet = null }
+                    ToolAction(InkIcon.FlipHorizontal, "Flip horizontally") { transformSelection(flipX = true); sheet = null }
+                    ToolAction(InkIcon.FlipVertical, "Flip vertically") { transformSelection(flipY = true); sheet = null }
                     ToolAction(InkIcon.Add, "Larger 10%") { transformSelection(scale = 1.1f); sheet = null }
                     ToolAction(InkIcon.Zoom, "Smaller 10%") { transformSelection(scale = 1f / 1.1f); sheet = null }
                     ToolAction(InkIcon.Fill, "Fill and border") { sheet = "selection style" }
@@ -1574,10 +1574,10 @@ internal fun NotebookEditor(
                                 InkToolButton(InkIcon.Add, "Paste selection", ::paste, enabled = clipboard.isNotEmpty())
                                 InkToolButton(InkIcon.Fill, "Change fill and border", { sheet = "selection style" }, tint = Color(page.strokes.firstOrNull { it.id in selectedIds }?.let { it.fillColor ?: it.color } ?: fillColor))
                                 InkToolButton(InkIcon.Tag, "Tag selection", { draft = ""; sheet = "tags" })
-                                InkToolButton(InkIcon.Flip, "Mirror left-right", { transformSelection(flipX = true) })
-                                InkToolButton(InkIcon.Flip, "Mirror top-bottom", { transformSelection(flipY = true) })
+                                InkToolButton(InkIcon.FlipHorizontal, "Mirror left-right", { transformSelection(flipX = true) })
+                                InkToolButton(InkIcon.FlipVertical, "Mirror top-bottom", { transformSelection(flipY = true) })
                                 InkToolButton(InkIcon.Rotate, "Rotate left 90°", { transformSelection(rotation = -90f) })
-                                InkToolButton(InkIcon.Rotate, "Rotate right 90°", { transformSelection(rotation = 90f) })
+                                InkToolButton(InkIcon.RotateRight, "Rotate right 90°", { transformSelection(rotation = 90f) })
                                 InkToolButton(InkIcon.Layers, "Move selection to layer", { sheet = "selection layer" })
                                 InkToolButton(InkIcon.Trash, "Delete selection", { canvas?.flushInput(); sheet = "delete selection" })
                                 InkToolButton(InkIcon.Tools, "More selection actions", { sheet = "selection" })
@@ -1594,10 +1594,10 @@ internal fun NotebookEditor(
                                     selectedText?.let { editingTextId = it.id; draft = it.text; sheet = if (it.kind == "timestamp") "timestamp" else "edit text" }
                                 })
                                 if (selectedText == null || selectedText.kind == "plain") {
-                                    InkToolButton(InkIcon.Flip, "Mirror left-right", { transformObject(flipX = true) })
-                                    InkToolButton(InkIcon.Flip, "Mirror top-bottom", { transformObject(flipY = true) })
+                                    InkToolButton(InkIcon.FlipHorizontal, "Mirror left-right", { transformObject(flipX = true) })
+                                    InkToolButton(InkIcon.FlipVertical, "Mirror top-bottom", { transformObject(flipY = true) })
                                     InkToolButton(InkIcon.Rotate, "Rotate left 90°", { transformObject(rotation = -90f) })
-                                    InkToolButton(InkIcon.Rotate, "Rotate right 90°", { transformObject(rotation = 90f) })
+                                    InkToolButton(InkIcon.RotateRight, "Rotate right 90°", { transformObject(rotation = 90f) })
                                 }
                                 if (selectedText != null && selectedText.kind in listOf("link-note", "link-web", "link-file", "audio")) InkToolButton(InkIcon.Next, "Open selected item", { openEmbedded(selectedText) })
                                 InkToolButton(InkIcon.Trash, if (selectedText?.kind != "plain" && selectedText != null) "Remove marker" else "Delete selected object", {

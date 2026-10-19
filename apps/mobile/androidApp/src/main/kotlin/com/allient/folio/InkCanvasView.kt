@@ -892,7 +892,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 if (event.getToolType(index) == MotionEvent.TOOL_TYPE_ERASER) {
                     activeBrush = brushes.first { it.eraser }; gestureMode = CanvasMode.Write
                 }
-                if (gestureMode == CanvasMode.Write && activeBrush.eraser) { selectedStrokeIds = emptySet(); onSelectionChanged(emptySet()) }
+                if ((gestureMode == CanvasMode.Write && activeBrush.eraser) || (gestureMode == CanvasMode.Shape && !selectionDrag)) { selectedStrokeIds = emptySet(); onSelectionChanged(emptySet()) }
                 engageRuler(event.getX(index), event.getY(index))
                 lastPosition = gesturePosition(event.getX(index), event.getY(index))
                 lastSampleTime = event.eventTime
@@ -1268,7 +1268,11 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun commitShape() {
         val stroke = shapeStroke()
         shapeStart = null; shapeEnd = null
-        if (stroke != null) { strokes = strokes + stroke; onStrokesChanged(strokes) }
+        if (stroke != null) {
+            strokes = strokes + stroke; onStrokesChanged(strokes)
+            // Select the new shape so its handles (resize, rotate) and the mirror/rotate bar show at once.
+            selectedStrokeIds = setOf(stroke.id); onSelectionChanged(selectedStrokeIds)
+        }
     }
     private fun canErase(stroke: InkStroke) = editable(stroke.layerId) && (!eraseActiveLayerOnly || stroke.layerId == activeLayerId)
     private fun lassoPolygon(): List<Offset> {
