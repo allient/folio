@@ -37,14 +37,14 @@ import java.util.Locale
 import kotlin.math.sin
 
 @Composable
-internal fun InkColorOptions(color: Int, onChange: (Int) -> Unit, onPickFromPage: ((Int) -> Unit) -> Unit, onClear: (() -> Unit)? = null, transparentSelected: Boolean = false) {
+internal fun InkColorOptions(color: Int, onChange: (Int) -> Unit, onPickFromPage: ((Int) -> Unit) -> Unit, onClear: (() -> Unit)? = null, transparentSelected: Boolean = false, title: String = "Colors") {
     var custom by remember { mutableStateOf(false) }
     val pick = { custom = false; onPickFromPage { picked -> onChange((color and 0xFF000000.toInt()) or (picked and 0xFFFFFF)) } }
     if (custom) BrushColorPicker(color, { custom = false }, { onChange(it); custom = false }, pick)
     val palette = listOf(0xFF000000, 0xFF555555, 0xFF888888, 0xFFBBBBBB, 0xFFFFFFFF, 0xFFB96868, 0xFF286851, 0xFF252F63,
         0xFF71B0AB, 0xFF84508C, 0xFFA58D48, 0xFFB5B75B, 0xFF244D32, 0xFF6B5179, 0xFF508DA7, 0xFF995B40)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text("Colors", fontSize = 12.sp)
+        Text(title, fontSize = 12.sp)
         Text(String.format(java.util.Locale.US, "#%08X", color), fontSize = 11.sp, color = ChromeMuted)
     }
     val swatches: List<Long?> = if (onClear != null) listOf(null) + palette else palette

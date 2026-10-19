@@ -188,6 +188,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         set(value) { if (field != value) finishGesture(); field = value }
     var shapeFilled: Boolean = false
         set(value) { if (field != value) finishGesture(); field = value }
+    var shapeFillColor: Int = Color.WHITE
     var shapeColor: Int = Color.BLACK
         set(value) { if (field != value) { field = value; postInvalidateOnAnimation() } }
     var shapeWidth: Float = 1f
@@ -1485,7 +1486,8 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         val outline = ShapeGeometry.points(shapeKind, start, end, width.toFloat(), documentHeight.toFloat(), unbounded = infiniteCanvas)
         return makeStroke(outline.map { InkPoint(it.x, it.y, 1f) })
             .copy(engine = "shape-v1", brush = "Fineliner", color = shapeColor, width = shapeWidth,
-                lineStyle = shapeLineStyle.name.lowercase(), filled = shapeFilled && shapeKind.closed)
+                lineStyle = shapeLineStyle.name.lowercase(), filled = shapeFilled && shapeKind.closed,
+                fillColor = if (shapeFilled && shapeKind.closed) shapeFillColor else null)
     }
     private fun commitShape() {
         val stroke = shapeStroke()
