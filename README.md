@@ -149,6 +149,18 @@ bun run test:android     # shared module host tests
 bun run build            # everything
 ```
 
+A [`justfile`](justfile) wraps the common tasks (`just` lists them):
+
+```bash
+just docs                     # docs dev server
+just install-debug            # build + install debug APK on emulator-5554
+just install-release <serial> # build, sign (local debug key) and install release APK
+just crashlog <serial>        # error and crash log
+just vibe                     # zellij session with the vibe layout
+```
+
+Set `FOLIO_TABLET=<adb serial>` in your shell to make the tablet the default for `install-release` and `crashlog`.
+
 Gradle can also be run directly from `apps/mobile`:
 
 ```bash
