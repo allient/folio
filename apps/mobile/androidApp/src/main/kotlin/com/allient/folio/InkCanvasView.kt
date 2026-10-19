@@ -20,7 +20,7 @@ import kotlin.math.hypot
 import kotlin.math.max
 
 /** Distance of the rotation handle above the selection box. */
-private const val ROTATE_HANDLE_DP = 28f
+private const val ROTATE_HANDLE_DP = 40f
 
 internal enum class CanvasMode { Write, Lasso, MoveSelection, Shape, Pan, FreeZoom, Fill, Objects, ColorPicker, ZoomWindow }
 internal enum class ShapeKind(val label: String, val closed: Boolean = true) {
@@ -77,6 +77,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private var movingSelection = false
     private var resizingSelection = false
     private var rotatingSelection = false
+    /** Side handle being dragged: 0 none, 1 width (left/right), 2 height (top/bottom). */
+    private var stretchAxis = 0
+    private var stretchPivot = 0f
+    private var stretchStart = 0f
     private var rotatePivot = Offset.Zero
     private var rotateStartAngle = 0f
     private var resizeVector = Offset.Zero
@@ -112,6 +116,17 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         color = Color.rgb(55, 108, 177); style = Paint.Style.STROKE; strokeWidth = 2f
         pathEffect = DashPathEffect(floatArrayOf(10f, 6f), 0f)
     }
+    private val transformFrame = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(55, 108, 177); style = Paint.Style.STROKE }
+    private val transformFill = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE }
+    private val actionBarBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(205, 210, 214); style = Paint.Style.STROKE }
+    private val actionIconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(30, 43, 40); style = Paint.Style.STROKE; strokeWidth = 1.8f; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
+    }
+    /** On-canvas actions under a selection: mirror left-right, mirror top-bottom, rotate left, rotate right. */
+    private val selectionActionIcons by lazy {
+        listOf(InkIcon.FlipHorizontal, InkIcon.FlipVertical, InkIcon.Rotate, InkIcon.RotateRight).map { androidx.core.graphics.PathParser.createPathFromPathData(it.path) }
+    }
+    private val rotateGlyph by lazy { androidx.core.graphics.PathParser.createPathFromPathData(InkIcon.RotateRight.path) }
     private val scaler = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean {
             finishGesture(); resetFrontInk()
@@ -614,18 +629,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             NotebookRenderer.drawPage(canvas, page.copy(layers = layers.drop(index), strokes = strokes.filter { it.layerId != activeLayerId }, images = images.filter { it.layerId != activeLayerId }, blocks = blocks.filter { it.layerId != activeLayerId }),
                 width, documentHeight, context.filesDir, allowImageDecode = false, ink = ink, viewportZoom = zoomValue, imageBitmaps = imageBitmaps, drawBackground = false)
         }
-        selectionBounds()?.let {
-            canvas.drawRect(it, selectionPaint)
-            val radius = 7f * resources.displayMetrics.density / zoomValue
-            val rotateY = it.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue
-            canvas.drawLine(it.centerX(), it.top, it.centerX(), rotateY, selectionPaint)
-            canvas.drawCircle(it.centerX(), rotateY, radius + 2f / zoomValue, selectionHandleBackground)
-            canvas.drawCircle(it.centerX(), rotateY, radius, handlePaint)
-            listOf(Offset(it.left, it.top), Offset(it.right, it.top), Offset(it.right, it.bottom), Offset(it.left, it.bottom)).forEach { handle ->
-                canvas.drawCircle(handle.x, handle.y, radius + 2f / zoomValue, selectionHandleBackground)
-                canvas.drawCircle(handle.x, handle.y, radius, handlePaint)
-            }
-        }
+        selectionBounds()?.let { drawTransformBox(canvas, it) }
         if (mode == CanvasMode.Objects) blockContent.firstOrNull { it.id == selectedBlockId }?.let { block ->
             val bounds = blockBounds(block)
             canvas.drawRect(bounds, selectionPaint)
@@ -805,7 +809,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             val previousEdits = editBaseline; editBaseline = null
             if (previousEdits != null) strokes = previousEdits
             lastEraserPoint = null; eraseGesture = false; eraserCursor = null
-            draggingObject = false; resizingImage = false; rotatingObject = false; resizingSelection = false; rotatingSelection = false
+            draggingObject = false; resizingImage = false; rotatingObject = false; resizingSelection = false; rotatingSelection = false; stretchAxis = 0
             horizontalSwipeTracking = false; horizontalSwipeConsumed = false
             activePointerId = MotionEvent.INVALID_POINTER_ID; multitouch = false; postInvalidateOnAnimation(); return true
         }
@@ -856,6 +860,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 // display. Keep a central drag region even for small/flat shapes.
                 val threshold = minOf(30f * resources.displayMetrics.density / zoomValue,
                     bounds?.let { minOf(it.width(), it.height()) * .3f } ?: Float.MAX_VALUE)
+                if (selectionTool && bounds != null && selectedStrokeIds.isNotEmpty()) {
+                    val action = selectionActionRects(bounds).indexOfFirst { it.contains(px, py) }
+                    if (action >= 0) { applySelectionAction(action); return true }
+                }
                 val handles = bounds?.let { b -> listOf(
                     Offset(b.left, b.top) to Offset(b.right, b.bottom), Offset(b.right, b.top) to Offset(b.left, b.bottom),
                     Offset(b.right, b.bottom) to Offset(b.left, b.top), Offset(b.left, b.bottom) to Offset(b.right, b.top),
@@ -871,13 +879,22 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 }
                 val rotateHandle = bounds?.let { Offset(it.centerX(), it.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue) }
                 rotatingSelection = selectionTool && !resizingSelection && rotateHandle != null &&
-                    hypot(px - rotateHandle.x, py - rotateHandle.y) <= 30f * resources.displayMetrics.density / zoomValue
+                    hypot(px - rotateHandle.x, py - rotateHandle.y) <= 20f * resources.displayMetrics.density / zoomValue
                 if (rotatingSelection && bounds != null) {
                     rotatePivot = Offset(bounds.centerX(), bounds.centerY())
                     rotateStartAngle = kotlin.math.atan2(py - rotatePivot.y, px - rotatePivot.x)
                 }
+                if (selectionTool && bounds != null && !resizingSelection && !rotatingSelection) {
+                    val reach = 24f * resources.displayMetrics.density / zoomValue
+                    when {
+                        hypot(px - bounds.left, py - bounds.centerY()) <= reach -> { stretchAxis = 1; stretchPivot = bounds.right - 8f; stretchStart = px }
+                        hypot(px - bounds.right, py - bounds.centerY()) <= reach -> { stretchAxis = 1; stretchPivot = bounds.left + 8f; stretchStart = px }
+                        hypot(px - bounds.centerX(), py - bounds.top) <= reach -> { stretchAxis = 2; stretchPivot = bounds.bottom - 8f; stretchStart = py }
+                        hypot(px - bounds.centerX(), py - bounds.bottom) <= reach -> { stretchAxis = 2; stretchPivot = bounds.top + 8f; stretchStart = py }
+                    }
+                }
                 val selectionDrag = selectedStrokeIds.isNotEmpty() && selectionTool &&
-                    (resizingSelection || rotatingSelection || mode == CanvasMode.MoveSelection || bounds?.contains(point.x * width, point.y * documentHeight) == true)
+                    (resizingSelection || rotatingSelection || stretchAxis != 0 || mode == CanvasMode.MoveSelection || bounds?.contains(point.x * width, point.y * documentHeight) == true)
                 val pageSwipeGesture = singlePageFingerSwipeEnabled && !fingerDrawing && mode == CanvasMode.Write && !brush.eraser
                 val panByFinger = !stylus && !mouse && !fingerDrawing && !selectionDrag && (infiniteCanvas || zoomValue > 1.01f)
                 if (!stylus && !mouse && !fingerDrawing && !selectionDrag && !pageSwipeGesture && mode != CanvasMode.Pan && !panByFinger) return true
@@ -985,7 +1002,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         if (!drawingContact && (raw <= threshold || !raw.isFinite())) {
             // The pressure filter covers every pen action. A hovering or too-light pen must not move,
             // resize, rotate or select anything; wait for a firmer press without ending the gesture.
-            if (movingSelection && dragBaseline != null && !resizingSelection && !rotatingSelection && point.x.isFinite() && point.y.isFinite()) {
+            if (movingSelection && dragBaseline != null && !resizingSelection && !rotatingSelection && stretchAxis == 0 && point.x.isFinite() && point.y.isFinite()) {
                 dragBaseline = strokes; dragOrigin = point
             }
             if (point.x.isFinite() && point.y.isFinite()) lastPosition = point
@@ -997,7 +1014,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             // and wait for a new contact instead of turning the remaining MOVE into a lasso.
             if (movingSelection) activePointerId = MotionEvent.INVALID_POINTER_ID
             commitSegment(); commitShape(); finishLasso(); movingSelection = false; publishDrag(); publishObjects(); publishEdits()
-            lastEraserPoint = null; eraserCursor = null; resizingSelection = false; rotatingSelection = false
+            lastEraserPoint = null; eraserCursor = null; resizingSelection = false; rotatingSelection = false; stretchAxis = 0
             return
         }
         val normalizedPressure = ((raw.coerceIn(0f, 1f) - threshold) / max(.0001f, 1f - threshold)).coerceIn(0f, 1f)
@@ -1046,7 +1063,20 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 if (selected.isNotEmpty()) {
                     val minX = selected.minOf { it.x }; val maxX = selected.maxOf { it.x }
                     val minY = selected.minOf { it.y }; val maxY = selected.maxOf { it.y }
-                    if (rotatingSelection) {
+                    if (stretchAxis != 0) {
+                        val current = if (stretchAxis == 1) point.x * width else point.y * documentHeight
+                        val span = stretchStart - stretchPivot
+                        val factor = if (kotlin.math.abs(span) < 1f) 1f else ((current - stretchPivot) / span).coerceIn(.05f, 20f)
+                        strokes = baseline.map { if (it.id in selectedStrokeIds && editable(it.layerId)) it.copy(points = it.points.map { p ->
+                            if (stretchAxis == 1) {
+                                val nx = (stretchPivot + (p.x * width - stretchPivot) * factor) / width
+                                p.copy(x = if (infiniteCanvas) nx else nx.coerceIn(0f, 1f))
+                            } else {
+                                val ny = (stretchPivot + (p.y * documentHeight - stretchPivot) * factor) / documentHeight
+                                p.copy(y = if (infiniteCanvas) ny else ny.coerceIn(0f, 1f))
+                            }
+                        }) else it }
+                    } else if (rotatingSelection) {
                         val delta = kotlin.math.atan2(point.y * documentHeight - rotatePivot.y, point.x * width - rotatePivot.x) - rotateStartAngle
                         val cosine = kotlin.math.cos(delta); val sine = kotlin.math.sin(delta)
                         strokes = baseline.map { if (it.id in selectedStrokeIds && editable(it.layerId)) it.copy(points = it.points.map { p ->
@@ -1262,7 +1292,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun finishGesture() {
         commitSegment(); commitShape(); finishLasso(); publishDrag(); publishObjects(); movingSelection = false
         activePointerId = MotionEvent.INVALID_POINTER_ID; lastEraserPoint = null; eraserCursor = null
-        publishEdits(); resizingSelection = false; rotatingSelection = false; rulerSnapSide = 0; postInvalidateOnAnimation()
+        publishEdits(); resizingSelection = false; rotatingSelection = false; stretchAxis = 0; rulerSnapSide = 0; postInvalidateOnAnimation()
     }
     private fun publishDrag() { if (dragBaseline != null) { dragBaseline = null; onStrokesChanged(strokes) } }
     private fun shapeStroke(): InkStroke? {
@@ -1306,6 +1336,65 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         editBaseline = null; eraseGesture = false
         if (previous != null && previous != strokes) onStrokesChanged(strokes)
         if (erased) onEraseFinished()
+    }
+    /** The standard transform frame: corners scale, side bars stretch, the top knob rotates, the bar below mirrors and turns. */
+    private fun drawTransformBox(canvas: Canvas, b: RectF) {
+        val d = resources.displayMetrics.density / zoomValue
+        canvas.drawRect(b, selectionPaint)
+        transformFrame.strokeWidth = 1.5f * d
+        // Rotation knob with a turning arrow.
+        val knobY = b.top - ROTATE_HANDLE_DP * d; val knobR = 12f * d
+        canvas.drawLine(b.centerX(), b.top, b.centerX(), knobY + knobR, transformFrame)
+        canvas.drawCircle(b.centerX(), knobY, knobR, transformFill); canvas.drawCircle(b.centerX(), knobY, knobR, transformFrame)
+        canvas.save(); canvas.translate(b.centerX() - 8f * d, knobY - 8f * d); canvas.scale(16f * d / 24f, 16f * d / 24f)
+        actionIconPaint.color = Color.rgb(55, 108, 177); canvas.drawPath(rotateGlyph, actionIconPaint); canvas.restore()
+        // Side bars: drag to change only the width or only the height.
+        val barLong = 18f * d; val barShort = 6f * d
+        listOf(Offset(b.centerX(), b.top), Offset(b.centerX(), b.bottom)).forEach {
+            val r = RectF(it.x - barLong / 2, it.y - barShort / 2, it.x + barLong / 2, it.y + barShort / 2)
+            canvas.drawRoundRect(r, barShort / 2, barShort / 2, transformFill); canvas.drawRoundRect(r, barShort / 2, barShort / 2, transformFrame)
+        }
+        listOf(Offset(b.left, b.centerY()), Offset(b.right, b.centerY())).forEach {
+            val r = RectF(it.x - barShort / 2, it.y - barLong / 2, it.x + barShort / 2, it.y + barLong / 2)
+            canvas.drawRoundRect(r, barShort / 2, barShort / 2, transformFill); canvas.drawRoundRect(r, barShort / 2, barShort / 2, transformFrame)
+        }
+        // Corner squares: scale keeping the proportions.
+        val c = 6f * d
+        listOf(Offset(b.left, b.top), Offset(b.right, b.top), Offset(b.right, b.bottom), Offset(b.left, b.bottom)).forEach {
+            canvas.drawRect(it.x - c, it.y - c, it.x + c, it.y + c, transformFill); canvas.drawRect(it.x - c, it.y - c, it.x + c, it.y + c, transformFrame)
+        }
+        // Action bar.
+        val buttons = selectionActionRects(b)
+        val bar = RectF(buttons.first().left - 4f * d, buttons.first().top - 4f * d, buttons.last().right + 4f * d, buttons.last().bottom + 4f * d)
+        actionBarBorder.strokeWidth = 1f * d
+        canvas.drawRoundRect(bar, 12f * d, 12f * d, transformFill); canvas.drawRoundRect(bar, 12f * d, 12f * d, actionBarBorder)
+        actionIconPaint.color = Color.rgb(30, 43, 40)
+        buttons.forEachIndexed { i, r ->
+            val icon = 22f * d
+            canvas.save(); canvas.translate(r.centerX() - icon / 2, r.centerY() - icon / 2); canvas.scale(icon / 24f, icon / 24f)
+            canvas.drawPath(selectionActionIcons[i], actionIconPaint); canvas.restore()
+        }
+    }
+    private fun selectionActionRects(b: RectF): List<RectF> {
+        val d = resources.displayMetrics.density / zoomValue
+        val size = 40f * d; val gap = 2f * d
+        val total = 4 * size + 3 * gap
+        var top = b.bottom + 16f * d
+        // Near the bottom of a page, show the bar above the rotation knob instead.
+        if (!infiniteCanvas && top + size > documentHeight) top = (b.top - ROTATE_HANDLE_DP * d - 24f * d - size).coerceAtLeast(0f)
+        val left = b.centerX() - total / 2
+        return (0 until 4).map { RectF(left + it * (size + gap), top, left + it * (size + gap) + size, top + size) }
+    }
+    private fun applySelectionAction(index: Int) {
+        val ids = strokes.filter { it.id in selectedStrokeIds && editable(it.layerId) }.map { it.id }.toSet()
+        if (ids.isEmpty()) return
+        strokes = when (index) {
+            0 -> InkSelection.transform(strokes, ids, flipX = true, unbounded = infiniteCanvas)
+            1 -> InkSelection.transform(strokes, ids, flipY = true, unbounded = infiniteCanvas)
+            2 -> InkSelection.transform(strokes, ids, rotation = -90f, unbounded = infiniteCanvas)
+            else -> InkSelection.transform(strokes, ids, rotation = 90f, unbounded = infiniteCanvas)
+        }
+        onStrokesChanged(strokes); postInvalidateOnAnimation()
     }
     private fun selectionBounds(): RectF? {
         val points = strokes.filter { it.id in selectedStrokeIds && layers.any { l -> l.id == it.layerId && l.visible } }.flatMap { it.points }
