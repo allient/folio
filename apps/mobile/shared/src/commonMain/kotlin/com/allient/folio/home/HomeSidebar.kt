@@ -28,8 +28,11 @@ import androidx.compose.ui.unit.sp
 @Composable
 internal fun HomeSidebar(folders: List<NoteFolder>, current: String, trashCount: Int, modifier: Modifier, onSelect: (String) -> Unit, onCreateFolder: () -> Unit) {
     var expanded by rememberSaveable { mutableStateOf(true) }
-    Column(modifier.background(Color(0xFFFAFAFA)).padding(horizontal = 12.dp).testTag("home-sidebar")) {
-        Text("Folio", Modifier.padding(start = 12.dp, top = 22.dp, bottom = 18.dp), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = HomeInk)
+    Column(modifier.background(HomeSidebarBackground).padding(horizontal = 12.dp).testTag("home-sidebar")) {
+        Row(Modifier.padding(start = 12.dp, top = 20.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            com.allient.folio.FolioSymbol(Modifier.size(width = 25.dp, height = 28.dp))
+            Text("Folio", Modifier.padding(start = 10.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, letterSpacing = (-.3).sp)
+        }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SidebarItem(Symbol.Notes, "Notes", current == "home", { onSelect("home") })
             SidebarItem(Symbol.Folder, "Folders", false, { expanded = !expanded }) {

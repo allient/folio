@@ -1,0 +1,7 @@
+FOLIO BRAND KIT V1.0
+
+Abrir docs/Folio_Guia_de_Marca.pdf para ver la guia.
+Utilizar svg/folio-icon-primary.svg para la identidad principal.
+Utilizar android/res para reemplazar recursos del launcher Android.
+preview/Folio_Brand_Preview.png permite ver las variantes.
+Nota: los vectores reconstruyen e interpretan el diseno visual aprobado.

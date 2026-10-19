@@ -209,7 +209,7 @@ fun NotebookHome(
     fun toggle(key: String) { selected = if (key in selected) selected - key else selected + key }
 
     CompositionLocalProvider(LocalHomeStyle provides style) {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Color.White).onGloballyPositioned { rootOrigin = it.boundsInRoot().topLeft }) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(HomeBackground).onGloballyPositioned { rootOrigin = it.boundsInRoot().topLeft }) {
         val wide = maxWidth >= 720.dp
         val sidebarShown = wide && sidebarPinned && screen in setOf("home", "trash", "preferences", "about")
         val compactBar = (if (sidebarShown) maxWidth - 265.dp else maxWidth) < 560.dp
@@ -450,7 +450,7 @@ fun NotebookHome(
         }
         if (!wide && drawerOpen && screen in setOf("home", "trash", "preferences", "about")) {
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .28f)).clickable(onClickLabel = "Close sidebar") { drawerOpen = false })
-            Surface(Modifier.fillMaxHeight().widthIn(max = 300.dp).fillMaxWidth(.84f), shadowElevation = 8.dp, color = Color(0xFFFAFAFA)) { sidebar(Modifier.fillMaxSize()) }
+            Surface(Modifier.fillMaxHeight().widthIn(max = 300.dp).fillMaxWidth(.84f), shadowElevation = 8.dp, color = HomeSidebarBackground) { sidebar(Modifier.fillMaxSize()) }
         }
         if (dragId != null) Surface(Modifier.offset { IntOffset((dragPoint.x - rootOrigin.x).roundToInt(), (dragPoint.y - rootOrigin.y).roundToInt()) }.widthIn(max = 180.dp), shadowElevation = 6.dp, color = style.soft, shape = RoundedCornerShape(style.card)) {
             Text(notebooks.firstOrNull { it.id == dragId }?.title.orEmpty(), Modifier.padding(12.dp), fontSize = 12.sp, lineHeight = 16.sp)

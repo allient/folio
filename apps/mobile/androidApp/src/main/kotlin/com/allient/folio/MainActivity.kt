@@ -189,14 +189,18 @@ private fun KnotesApp(repository: NotebookViewModel, backup: LocalBackupViewMode
     MaterialTheme(shapes = Shapes(
         extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(12.dp), medium = RoundedCornerShape(16.dp),
         large = RoundedCornerShape(24.dp), extraLarge = RoundedCornerShape(28.dp),
-    ), colorScheme = lightColorScheme(
-        primary = ChromeInk, onPrimary = Color.White, secondary = ChromeInk,
-        background = Color.White, surface = Color.White, surfaceContainer = Color(0xFFF6F6F6),
+    ), typography = folioTypography(), colorScheme = lightColorScheme(
+        primary = FolioBrand.Sage, onPrimary = Color.White, primaryContainer = FolioBrand.SageSoft, onPrimaryContainer = FolioBrand.Ink,
+        secondary = FolioBrand.Ink, onSecondary = Color.White, secondaryContainer = FolioBrand.SageSoft, onSecondaryContainer = FolioBrand.Ink,
+        background = FolioBrand.Paper, onBackground = FolioBrand.Ink, surface = Color.White, onSurface = FolioBrand.Ink,
+        onSurfaceVariant = FolioBrand.Muted, outline = Color(0xFFCBC5B8), outlineVariant = FolioBrand.Hairline,
+        surfaceContainerLowest = Color.White, surfaceContainerLow = FolioBrand.Paper, surfaceContainer = Color(0xFFF7F3EA),
+        surfaceContainerHigh = Color(0xFFF3EEE3), surfaceContainerHighest = FolioBrand.Cream,
     )) {
         Surface(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout).semantics { testTagsAsResourceId = true }, color = Color.White) {
             when {
                 repository.loading -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    CircularProgressIndicator(color = ChromeInk)
+                    CircularProgressIndicator(color = FolioBrand.Sage)
                     Text("Opening notebooks…", Modifier.padding(top = 18.dp))
                 }
                 repository.loadError != null -> Column(Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -372,7 +376,7 @@ private fun KnotesApp(repository: NotebookViewModel, backup: LocalBackupViewMode
                 Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
                     Surface(shape = RoundedCornerShape(8.dp), color = Color.White) {
                         Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = ChromeInk)
+                            CircularProgressIndicator(color = FolioBrand.Sage)
                             Text("Importing document…", Modifier.padding(top = 20.dp))
                             Text("Large PDFs can take a moment.", Modifier.padding(top = 8.dp), fontSize = 12.sp, color = ChromeMuted)
                         }

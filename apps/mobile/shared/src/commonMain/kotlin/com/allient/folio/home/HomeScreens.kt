@@ -49,7 +49,7 @@ internal fun TrashScreen(
     val style = LocalHomeStyle.current
     var confirmDelete by remember { mutableStateOf<TrashItem?>(null) }
     var confirmEmpty by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().background(Color.White).testTag("trash-screen")) {
+    Column(Modifier.fillMaxSize().background(HomeBackground).testTag("trash-screen")) {
         ScreenHeader("Trash bin", onBack) {
             TextButton(onClick = { confirmEmpty = true }, enabled = items.isNotEmpty(), modifier = Modifier.testTag("trash-empty")) { Text("Empty trash", color = if (items.isNotEmpty()) HomeDanger else HomeMuted) }
         }
@@ -129,7 +129,7 @@ private fun OptionCard(label: String, selected: Boolean, tag: String, modifier: 
 internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreferences) -> Unit, onBack: () -> Unit, onOpenBackup: () -> Unit) {
     val style = LocalHomeStyle.current
     var confirmReset by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize().background(Color.White).testTag("preferences-screen")) {
+    Column(Modifier.fillMaxSize().background(HomeBackground).testTag("preferences-screen")) {
         ScreenHeader("Preferences", onBack)
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             val columns = if (maxWidth >= 600.dp) 4 else 2
@@ -211,12 +211,13 @@ internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreference
 @Composable
 internal fun AboutScreen(version: String, onBack: () -> Unit) {
     val style = LocalHomeStyle.current
-    Column(Modifier.fillMaxSize().background(Color.White).testTag("about-screen")) {
+    Column(Modifier.fillMaxSize().background(HomeBackground).testTag("about-screen")) {
         ScreenHeader("About", onBack)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 680.dp).fillMaxWidth()) {
-                Box(Modifier.size(64.dp).clip(RoundedCornerShape(style.card)).background(style.soft), contentAlignment = Alignment.Center) { HomeSymbol(Symbol.Notes, Modifier.size(30.dp), tint = style.accent) }
-                Text("Folio", Modifier.padding(top = 18.dp), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = HomeInk)
+                com.allient.folio.FolioIcon(Modifier.size(96.dp))
+                Text("Folio", Modifier.padding(top = 18.dp), fontSize = 30.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, letterSpacing = (-.5).sp)
+                Text("Handwritten Notes & eReader", Modifier.padding(top = 2.dp), fontSize = 15.sp, color = com.allient.folio.FolioBrand.Sage)
                 Text("Version $version", Modifier.padding(top = 4.dp).testTag("about-version"), fontSize = 14.sp, color = HomeMuted)
                 Text("Folio keeps everything on this device. There are no accounts and no cloud sync, and the app has no internet permission. " +
                     "Notebooks, folders and reading notes are stored in the app's private storage (SQLite databases and the media folder). " +
@@ -224,7 +225,7 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
                     Modifier.padding(top = 20.dp), fontSize = 15.sp, lineHeight = 23.sp, color = HomeInk)
                 Text("Open-source libraries", Modifier.padding(top = 28.dp, bottom = 8.dp), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
                 listOf("Jetpack Ink" to "Handwriting strokes and rendering", "PDFium" to "PDF rendering", "PdfBox-Android" to "Annotated PDF export",
-                    "Readium" to "EPUB reading", "ML Kit Text Recognition" to "On-device OCR", "Zstandard (zstd-jni)" to "Backup compression").forEach { (name, use) ->
+                    "Readium" to "EPUB reading", "ML Kit Text Recognition" to "On-device OCR", "Zstandard (zstd-jni)" to "Backup compression", "Geist" to "Interface typeface (SIL OFL)").forEach { (name, use) ->
                     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                         Text(name, Modifier.weight(1f), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = HomeInk)
                         Text(use, fontSize = 13.sp, color = HomeMuted)

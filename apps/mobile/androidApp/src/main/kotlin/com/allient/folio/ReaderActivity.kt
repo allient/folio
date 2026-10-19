@@ -100,7 +100,7 @@ class ReaderActivity : AppCompatActivity() {
             catch (error: Exception) { engineError = error.message ?: "Could not open document" }
             finally { engineLoading = false }
         }
-        setContent { MaterialTheme(colorScheme = if (themeName == "Dark") darkColorScheme(primary = Color.White, onPrimary = Color.Black, secondary = Color.LightGray, secondaryContainer = Color.DarkGray) else lightColorScheme(primary = Color(0xFF252525), secondary = Color(0xFF555555), secondaryContainer = Color(0xFFE5E5E5), surface = Color.White, onSurface = Color(0xFF252525), surfaceContainerLow = Color.White)) { ReaderContent() } }
+        setContent { MaterialTheme(colorScheme = if (themeName == "Dark") darkColorScheme(primary = Color.White, onPrimary = Color.Black, secondary = Color.LightGray, secondaryContainer = Color.DarkGray) else lightColorScheme(primary = FolioBrand.Ink, secondary = FolioBrand.Muted, secondaryContainer = FolioBrand.SageSoft, onSecondaryContainer = FolioBrand.Ink, tertiary = FolioBrand.Sage, surface = Color.White, onSurface = FolioBrand.Ink, surfaceContainerLow = Color.White), typography = folioTypography()) { ReaderContent() } }
     }
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)

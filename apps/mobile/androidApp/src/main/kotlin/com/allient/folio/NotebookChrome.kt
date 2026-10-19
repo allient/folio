@@ -37,8 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.util.Locale
 
-internal val ChromeInk = Color(0xFF252525)
-internal val ChromeMuted = Color(0xFF858585)
+internal val ChromeInk = FolioBrand.Ink
+internal val ChromeMuted = Color(0xFF7D8582)
 internal val ChromeLine = Color(0xFFE2E2E2)
 
 internal enum class InkIcon(val path: String) {

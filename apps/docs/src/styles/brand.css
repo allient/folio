@@ -1,0 +1,37 @@
+/* Folio brand kit v1.0: sage, ink, cream; Geist type. */
+@font-face {
+	font-family: 'Geist';
+	src: url('/fonts/GeistVF.ttf') format('truetype');
+	font-weight: 100 900;
+	font-display: swap;
+}
+
+:root {
+	--sl-font: 'Geist', ui-sans-serif, system-ui, sans-serif;
+	--sl-color-accent-low: #12332b;
+	--sl-color-accent: #3f9a83;
+	--sl-color-accent-high: #c7e3d8;
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: #eef0ec;
+	--sl-color-gray-2: #c9cfcb;
+	--sl-color-gray-3: #8f9a96;
+	--sl-color-gray-4: #5b6662;
+	--sl-color-gray-5: #3a4542;
+	--sl-color-gray-6: #26322f;
+	--sl-color-black: #18211f;
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #e3efea;
+	--sl-color-accent: #2f7a68;
+	--sl-color-accent-high: #1e4a3f;
+	--sl-color-white: #1e2b28;
+	--sl-color-gray-1: #26322f;
+	--sl-color-gray-2: #3a4542;
+	--sl-color-gray-3: #5b6662;
+	--sl-color-gray-4: #8f9a96;
+	--sl-color-gray-5: #cbc5b8;
+	--sl-color-gray-6: #f6f1e6;
+	--sl-color-gray-7: #fbf8f2;
+	--sl-color-black: #fffdf9;
+}

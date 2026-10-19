@@ -1,6 +1,6 @@
 <resources>
     <style name="ReaderTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:colorAccent">#315A4D</item>
+        <item name="android:colorAccent">#2F7A68</item>
     </style>
 </resources>

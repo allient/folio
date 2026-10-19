@@ -1,73 +1,65 @@
 ---
-title: "Folio brand: logo and app icon"
+title: Brand
+description: Folio logo, colours, type and how the app uses them.
 ---
 
-Source files live in [`packages/brand`](https://github.com/allient/folio/tree/main/packages/brand).
+Brand kit v1.0 (October 2026). Source files and the full Spanish guide are in [`packages/brand`](https://github.com/allient/folio/tree/main/packages/brand).
 
-The Folio mark is the letter **F** written with three brush strokes: a vertical stem that tapers to a point, a long top stroke and a shorter middle stroke, both lifting off to the right. Every stroke is a filled outline (round entry, slight thinning along the body, tapered tail), not a stroked line, so it renders the same in SVG, Android VectorDrawable and the Android 13 themed icon.
+![Primary, dark and simplified icons](../../assets/brand/folio-brand-preview.png)
 
-![Concepts](../../assets/brand/folio-icon-concepts.png)
+## Concept
 
-## Concepts
+**Writing meets reading.** The «F.» keeps Folio's calligraphic gesture: the flowing F is spontaneous handwriting, the dot is the pen touching the page, and the folded corner is a book becoming a personal notebook.
 
-| | Concept | Colours | File |
-|---|---|---|---|
-| A | Ink F on warm paper, brush-pen style | ink `#1E2B28` on cream `#F6F1E6` | `concepts/folio-concept-a.svg` |
-| **B (applied)** | White brush F on the sage accent, with a round ink dot after the middle stroke | white `#FFFFFF` on sage `#2F7A68` | `concepts/folio-concept-b.svg` |
-| C | F whose top stroke curls under at the end, like a page corner turning | sage `#2F7A68` on soft sage `#E3EFEA` | `concepts/folio-concept-c.svg` |
+Personality: calm, human, focused, warm, smart, tactile and contemporary. Avoid a childish look, excess detail and visual technicality.
 
-**Why B:** it is the only concept that holds strong contrast on both light and dark wallpapers (A and C are pale tiles that fade into a light home screen), it uses the app's own Sage accent (`AccentPresets` in `HomeModels.kt`, `#2F7A68` / soft `#E3EFEA`), and the dot gives the F a distinct identity ("F." like a signed initial, or a nib touching the page) without adding small detail. At 48 px the F and dot both stay readable; the themed icon keeps the same silhouette.
+## Logo system
 
-To switch concepts, set `CHOSEN` in `tools/export.py` to `"A"` or `"C"` and regenerate (each concept brings its own background and foreground colours).
+| Variant | File | Use |
+|---|---|---|
+| Primary | `svg/folio-icon-primary.svg` | Sage F on cream paper with the fold. Web, covers, press, store |
+| Dark | `svg/folio-icon-dark.svg` | Dark backgrounds and high contrast |
+| Flat | `svg/folio-icon-flat.svg` | White F on sage. Launcher, small sizes, where the fold does not read |
+| Symbol | `svg/folio-symbol-*.svg` | One colour. Engraving, print, favicons, watermarks |
+| Lockups | `svg/folio-lockup-*.svg` | Icon, name and subtitle, vertical and horizontal |
 
 ## Colours
 
-| Name | Hex | Use |
+| Colour | Hex | Use |
 |---|---|---|
-| Sage | `#2F7A68` | Icon background, accent (same as the Sage accent preset) |
-| Sage soft | `#E3EFEA` | Concept C background |
-| White | `#FFFFFF` | Brush F on the icon |
-| Ink | `#1E2B28` | Wordmark text, concept A ink |
-| Cream | `#F6F1E6` | Concept A paper |
+| Sage (primary) | `#2F7A68` | The F, buttons, brand elements |
+| Ink (text) | `#1E2B28` | Headings and text |
+| Cream (paper) | `#F6F1E6` | Warm surfaces, main background |
+| Sage soft | `#E3EFEA` | Light backgrounds, selection |
+| White | `#FFFFFF` | Neutral backgrounds, inverted symbol |
+| Fold mint | `#C7E3D8` | Fold detail in the illustrated icon |
 
-## Geometry and safe zone
+Brand colours do not replace a WCAG contrast check for small text.
 
-- All marks are drawn in the 108 x 108 dp adaptive-icon grid. The launcher shows the centre 72 dp, and any mask (circle, squircle, rounded square) keeps the centre 66 dp circle (radius 33 around 54,54).
-- The F spans about x 41.7–75.3 and y 26.8–80.8. Every point of the strokes lies inside the 66 dp safe circle (farthest point 32.0 dp from the centre); the ink dot sits at (74.8, 52.6), r 3.
-- The stem sits slightly left of centre on purpose: the F's mass is in the stem and the top stroke, so the optical centre lands near the grid centre.
-- No gradients and one colour per layer, so the monochrome (themed) layer is the same paths.
+## Type
 
-## Files
+**Geist** (Medium or SemiBold) for the word «Folio» and the app interface; **Inter** is the alternative. Semibold titles, regular text, generous spacing.
 
-| File | What |
+## Size and clear space
+
+- Keep at least **12 %** of the icon width clear around the symbol when it has no container.
+- Minimum size: **32 px** flat, **64 px** for the illustrated fold.
+- Nothing may touch the F's curves or the dot.
+- Android: 108 dp adaptive icon with the mark centred and a monochrome layer.
+
+## Do not
+
+Stretch or rotate the F, separate the dot, add strong shadows, change the sage, add arbitrary gradients, or put a second book or pencil icon on top. Do not place the cream version on light backgrounds without a border or enough separation.
+
+## In the app
+
+| Where | What |
 |---|---|
-| `folio-logo.svg` | Mark only: the icon as a rounded tile (visible 72 dp) |
-| `folio-logo-wordmark.svg` | Tile + "Folio" wordmark. Text is outlined from **Geist Medium** (SIL Open Font License), so no font is needed to display it |
-| `folio-play-store-512.png` | Play Store icon, 512 x 512, opaque, full bleed (Play applies its own mask) |
-| `folio-icon-concepts.png` | Comparison sheet: each concept at 512 px, circle and squircle masks, themed icon and 48 px, on light and dark wallpaper |
-| `concepts/folio-concept-{a,b,c}.svg` | Concept masters in the 108 dp grid (background + mark) |
-| `tools/brush.py` | Brush-stroke outline generator (centreline + width profile to filled Bezier path) |
-| `tools/concepts.py` | Stroke geometry and colours for the three concepts |
-| `tools/export.py` | Writes the SVGs, the Play Store PNG and the Android resources |
-| `tools/sheet.py` | Builds the comparison sheet |
+| Launcher | Flat icon (white F on sage) with Android 13 themed (monochrome) layer |
+| Launch screen (Android 12+) | Flat icon on cream |
+| Library | Cream paper background, white cards, sage accent (default), Geist type |
+| Sidebar | Sage «F.» symbol and the «Folio» wordmark in Geist SemiBold |
+| About | Primary icon, name and «Handwritten Notes & eReader» |
+| Editor and reader | Ink `#1E2B28` chrome on white paper |
 
-Android resources written by `export.py` (in `apps/mobile/androidApp/src/main/res`):
-
-- `mipmap-anydpi-v26/ic_launcher.xml`, `ic_launcher_round.xml`: adaptive icon with background, foreground and `<monochrome>` layers.
-- `drawable/ic_launcher_background.xml` (solid sage), `drawable/ic_launcher_foreground.xml` (white F + dot), `drawable/ic_launcher_monochrome.xml` (same paths, used for Android 13+ themed icons).
-- `mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png` and `ic_launcher_round.png` (48/72/96/144/192 px) for API 25: a rounded square and a circle, each with a 2 dp margin.
-
-`AndroidManifest.xml` uses `android:icon="@mipmap/ic_launcher"` and `android:roundIcon="@mipmap/ic_launcher_round"`.
-
-## Regenerating
-
-Requirements: `rsvg-convert` (`brew install librsvg`) and Python 3 with Pillow and fontTools (fontTools only for the wordmark).
-
-```sh
-python3 -m venv /tmp/folio-venv && /tmp/folio-venv/bin/pip install pillow fonttools
-cd packages/brand/tools
-/tmp/folio-venv/bin/python export.py ../../..          # SVGs, Play Store PNG, Android res
-/tmp/folio-venv/bin/python sheet.py /tmp/folio-out ../folio-icon-concepts.png
-```
-
-`export.py` looks for the wordmark font at `~/Library/Fonts/Geist-Medium.otf`; set `FOLIO_WORDMARK_FONT` to use another file. If the font or fontTools is missing it keeps the existing wordmark SVG. Edit stroke shapes in `tools/concepts.py` (centreline Bezier points and width profile per stroke).
+Code: `FolioBrand` (colours), `folioTypography()` (Geist), `FolioSymbol` and `FolioIcon` in `apps/mobile/shared/src/commonMain/kotlin/com/allient/folio/FolioBrand.kt`.

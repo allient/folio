@@ -1,0 +1,6 @@
+<resources>
+    <style name="FolioTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">#2F7A68</item>
+        <item name="android:windowBackground">#FBF8F2</item>
+    </style>
+</resources>

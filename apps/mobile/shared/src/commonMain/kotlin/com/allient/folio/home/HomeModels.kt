@@ -69,8 +69,11 @@ object TrashRules {
         if (retentionDays <= 0) null else ((deletedAt + retentionDays * DAY - now + DAY - 1) / DAY).toInt().coerceAtLeast(0)
 }
 
-internal val HomeInk = Color(0xFF292929)
-internal val HomeMuted = Color(0xFF747474)
-internal val HomeLine = Color(0xFFBDBDBD)
-internal val HomeHairline = Color(0xFFE6E6E6)
+internal val HomeInk = com.allient.folio.FolioBrand.Ink
+internal val HomeMuted = com.allient.folio.FolioBrand.Muted
+internal val HomeLine = Color(0xFFCBC5B8)
+internal val HomeHairline = com.allient.folio.FolioBrand.Hairline
+/** Screen and sidebar backgrounds: warm paper tones from the brand kit; cards and pages stay white. */
+internal val HomeBackground = com.allient.folio.FolioBrand.Paper
+internal val HomeSidebarBackground = com.allient.folio.FolioBrand.Cream
 internal val HomeDanger = Color(0xFFB3261E)

@@ -103,7 +103,7 @@ folio/
 │   └── docs/                       Documentation site (Astro Starlight, runs on Bun)
 │       └── src/content/docs/       Architecture, features, investigations, roadmap, testing
 ├── packages/
-│   └── brand/                      Logo, app icon and the Python scripts that generate them
+│   └── brand/                      Brand kit v1.0: logo, icons, Android launcher resources, guide
 ├── .argent/flows/                  Recorded UI automation flows
 ├── package.json, turbo.json        Workspace and task pipeline
 └── bun.lock
@@ -213,7 +213,7 @@ Folio is an independent project and is not affiliated with these companies or ap
 
 Folio's code, icons and artwork are its own. No screenshots, assets or code from these apps are included in this repository.
 
-Built with open-source libraries, among them [Jetpack Ink](https://developer.android.com/jetpack/androidx/releases/ink), [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/), [Readium](https://readium.org), [PdfiumAndroid](https://github.com/barteksc/PdfiumAndroid), [PdfBox-Android](https://github.com/TomRoush/PdfBox-Android), [ML Kit](https://developers.google.com/ml-kit) and [zstd-jni](https://github.com/luben/zstd-jni). The docs site uses [Astro Starlight](https://starlight.astro.build); the monorepo uses [Bun](https://bun.sh) and [Turborepo](https://turborepo.com). The wordmark is outlined from [Geist](https://vercel.com/font) (SIL Open Font License).
+Built with open-source libraries, among them [Jetpack Ink](https://developer.android.com/jetpack/androidx/releases/ink), [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/), [Readium](https://readium.org), [PdfiumAndroid](https://github.com/barteksc/PdfiumAndroid), [PdfBox-Android](https://github.com/TomRoush/PdfBox-Android), [ML Kit](https://developers.google.com/ml-kit) and [zstd-jni](https://github.com/luben/zstd-jni). The docs site uses [Astro Starlight](https://starlight.astro.build); the monorepo uses [Bun](https://bun.sh) and [Turborepo](https://turborepo.com). The interface typeface is [Geist](https://vercel.com/font) (SIL Open Font License).
 
 ## Known issues and limits
 
@@ -289,4 +289,4 @@ The documentation lives in the Starlight site (`apps/docs`); run `bun run dev:do
 | [reader.md](apps/docs/src/content/docs/architecture/reader.md) | PDF and EPUB reader |
 | [validation.md](apps/docs/src/content/docs/testing/validation.md) | Test results and UI flow replays |
 | [planned-preferences.md](apps/docs/src/content/docs/roadmap/planned-preferences.md) | Pending: dark/light theme, colour options, multi-language |
-| [brand.md](apps/docs/src/content/docs/brand.md) | Logo, app icon and how to regenerate them |
+| [brand.md](apps/docs/src/content/docs/brand.md) | Brand kit: logo system, colours, type and where the app uses them |

@@ -8,7 +8,8 @@ export default defineConfig({
 		starlight({
 			title: 'Folio',
 			description: 'Handwritten notes and eReader for Android tablets.',
-			logo: { src: './src/assets/brand/folio-logo.svg' },
+			logo: { src: './src/assets/brand/folio-icon-primary.svg' },
+			customCss: ['./src/styles/brand.css'],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/allient/folio' }],
 			editLink: { baseUrl: 'https://github.com/allient/folio/edit/main/apps/docs/' },
 			sidebar: [

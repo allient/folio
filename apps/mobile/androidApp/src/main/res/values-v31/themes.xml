@@ -1,0 +1,9 @@
+<resources>
+    <!-- Android 12+ launch screen: the flat brand icon on cream paper. -->
+    <style name="FolioTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">#2F7A68</item>
+        <item name="android:windowBackground">#FBF8F2</item>
+        <item name="android:windowSplashScreenBackground">#F6F1E6</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#2F7A68</item>
+    </style>
+</resources>
