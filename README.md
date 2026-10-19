@@ -2,12 +2,12 @@
 
 **Folio: Handwritten Notes & eReader**
 
-Folio (project and code name: Knotes) is a local-only Android app for handwritten notes, with a built-in PDF and EPUB reader. Its layout and tools follow BOOX Handwritten Notes. There are no accounts, no cloud sync and no internet permission; the only runtime permission is `RECORD_AUDIO`, for voice notes.
+Folio is a **Kotlin Multiplatform** app for handwritten notes, infinite canvases and reading PDF and EPUB books with a pen tablet. It is local first: no account, no cloud sync and no internet permission. Your notebooks stay on the device, with automatic backups to a folder you choose. The only runtime permission is `RECORD_AUDIO`, for voice notes.
 
-- App name: **Folio**. Store title: **Folio: Handwritten Notes & eReader**.
-- Application ID and Kotlin packages: `com.allient.folio`.
-- Platforms: **Android only**. The iOS app is still the Kotlin Multiplatform starter shell (see [Platforms](#platforms)).
-- Tested on: the `Knotes_Tablet` emulator (API 36, 1200×1920) and an XPPen MagicNotePad MNP1095 (Android 14).
+- **Store title:** Folio: Handwritten Notes & eReader.
+- **Application ID and Kotlin packages:** `com.allient.folio`.
+- **Kotlin Multiplatform:** the Gradle project in `apps/mobile` has an Android app, a `shared` module with Compose Multiplatform UI and models, and an iOS app. Android is the complete app today; iOS still shows the starter screen (see [Platforms](#platforms)).
+- **Tested on:** an Android tablet emulator (API 36, 1200×1920) and an XPPen MagicNotePad MNP1095 (Android 14).
 
 ![Library](apps/docs/src/assets/screenshots/library.png)
 
@@ -203,6 +203,18 @@ With more than one device connected, pass the serial to adb: `adb -s <serial> in
 
 Only Android is implemented. `iosApp` builds the `Shared` framework but shows the Kotlin Multiplatform starter screen (`App.kt`). The library screen, storage, ink and reader are not wired up on iOS.
 
+## Inspiration and credits
+
+Folio is an independent project and is not affiliated with these companies or apps. They inspired parts of its design, and we thank their teams:
+
+- **[BOOX](https://www.boox.com) Notes and NeoReader** (Onyx International): the compact top toolbar, the vertical tool rail, the white writing surface and the split view for reading next to a notebook.
+- **[XPPen Notes](https://www.xp-pen.com)** (XPPen): the library home with All / Notes / Canvas / Books, the sidebar and the preferences layout.
+- **[Infinite Painter](https://www.infinitestudio.art)** (Infinite Studio): the pressure, velocity and tilt response curves and their presets.
+
+Folio's code, icons and artwork are its own. No screenshots, assets or code from these apps are included in this repository.
+
+Built with open-source libraries, among them [Jetpack Ink](https://developer.android.com/jetpack/androidx/releases/ink), [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/), [Readium](https://readium.org), [PdfiumAndroid](https://github.com/barteksc/PdfiumAndroid), [PdfBox-Android](https://github.com/TomRoush/PdfBox-Android), [ML Kit](https://developers.google.com/ml-kit) and [zstd-jni](https://github.com/luben/zstd-jni). The docs site uses [Astro Starlight](https://starlight.astro.build); the monorepo uses [Bun](https://bun.sh) and [Turborepo](https://turborepo.com). The wordmark is outlined from [Geist](https://vercel.com/font) (SIL Open Font License).
+
 ## Known issues and limits
 
 - **Jetpack Ink mesh crash on Android 14:** Ink's default mesh rendering crashed on the MNP1095 tablet. Finished strokes are now forced to path rendering; keep `forcePathRendering = true` when upgrading Ink. Wet ink still uses mesh on API 34+. See [mnp1095-mesh-crash.md](apps/docs/src/content/docs/investigations/mnp1095-mesh-crash.md).
@@ -213,8 +225,33 @@ Only Android is implemented. `iosApp` builds the `Shared` framework but shows th
 - PDF pages imported into a notebook become images.
 - Audio is not synced with ink, and recording stops in the background.
 - Backups are not encrypted.
-- Not implemented: handwriting recognition, shape recognition, nested folders, cloud sync, and BOOX `.note` files.
+- Not implemented: handwriting recognition, shape recognition, nested folders, cloud sync, and importing BOOX `.note` files. See [To do](#to-do).
 - Reader limits (password-protected PDFs, OCR scripts, PDF outline and more): see [reader.md](apps/docs/src/content/docs/architecture/reader.md).
+
+## To do
+
+**App**
+- [ ] Dark, light and OLED themes, plus colour mode, contrast and style options ([plan](apps/docs/src/content/docs/roadmap/planned-preferences.md))
+- [ ] Multi-language UI, starting with Spanish ([plan](apps/docs/src/content/docs/roadmap/planned-preferences.md#multi-language-pending))
+- [ ] iOS app: wire the shared library screen, storage, ink and reader
+- [ ] Handwriting recognition (search inside handwritten notes) and shape recognition
+- [ ] Nested folders
+- [ ] Encrypted backups and optional cloud sync
+- [ ] Keep undo history after the app restarts
+- [ ] Clean up unused media files
+- [ ] Export at other resolutions than 1200×1920; keep imported PDF pages as vectors
+- [ ] Sync audio recordings with ink; keep recording in the background
+- [ ] Filter accidental micro-taps from worn styluses
+
+**Release**
+- [ ] Create the release signing key (kept outside the repository)
+- [ ] Play Store listing: screenshots, description, privacy policy
+- [ ] Set the final iOS bundle ID
+- [ ] Publish the docs site (GitHub Pages or Vercel)
+- [ ] Refresh the screenshots in the README and docs with the new home design
+
+**Upstream**
+- [ ] Report the Jetpack Ink mesh crash on Android 14 to Google ([analysis](apps/docs/src/content/docs/investigations/mnp1095-mesh-crash.md))
 
 ## Publishing
 
@@ -226,7 +263,7 @@ Planned store listing:
 | App name (launcher) | Folio |
 | Application ID | `com.allient.folio` |
 
-The application ID is `com.allient.folio` since 2026-10-19. Builds installed earlier as `com.example.knotes` are a separate app on the device; uninstall them once nothing in them is needed (or export a `.knotes` backup first and import it into Folio).
+Test builds from before 2026-10-19 used the starter ID `com.example.knotes` and install as a separate app; export a `.knotes` backup from them if needed, import it into Folio, then uninstall them.
 
 Before the first store release:
 
