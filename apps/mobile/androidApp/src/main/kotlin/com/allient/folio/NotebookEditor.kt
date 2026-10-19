@@ -1248,11 +1248,15 @@ internal fun NotebookEditor(
     Box(Modifier.fillMaxSize().background(Color.White)) {
         Column(Modifier.fillMaxSize()) {
             if (!focusMode) {
+                // Phones and narrow windows: the title gives way and fewer brushes show, so page controls always fit.
+                val screenWidthDp = LocalConfiguration.current.screenWidthDp
+                val compactBar = screenWidthDp < 600
+                val maxBrushes = if (compactBar) ((screenWidthDp - 290) / 36).coerceIn(1, 5) else 5
                 Row(Modifier.fillMaxWidth().height(54.dp).background(Color(0xFFFAFAFA)), verticalAlignment = Alignment.CenterVertically) {
                     InkToolButton(InkIcon.Expand, "Focus mode", { focusMode = true }, Modifier.width(48.dp), buttonSize = 44.dp)
                     Box(Modifier.width(1.dp).fillMaxHeight().background(ChromeLine))
                     InkToolButton(InkIcon.Back, backLabel, { save(); onBack() }, buttonSize = 32.dp)
-                    Box(Modifier.weight(1f).padding(horizontal = 5.dp).clickable { draft = notebook.title; sheet = "rename" }.semantics { contentDescription = "Rename notebook" }) {
+                    if (compactBar) Spacer(Modifier.weight(1f)) else Box(Modifier.weight(1f).padding(horizontal = 5.dp).clickable { draft = notebook.title; sheet = "rename" }.semantics { contentDescription = "Rename notebook" }) {
                         Text(notebook.title, fontSize = 13.sp, color = ChromeInk, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(bottom = 5.dp))
                         Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(1.dp).background(Color(0xFFB8B8B8)))
                     }
@@ -1260,14 +1264,14 @@ internal fun NotebookEditor(
                         // At most five brushes are visible; extra presets scroll inside this strip only.
                         val brushSlotPx = with(androidx.compose.ui.platform.LocalDensity.current) { 36.dp.toPx() }
                         val brushListState = androidx.compose.foundation.lazy.rememberLazyListState()
-                        val brushScrollable = presets.size > 5
+                        val brushScrollable = presets.size > maxBrushes
                         LaunchedEffect(selectedBrush.presetId) {
                             val index = presets.indexOfFirst { it.presetId == selectedBrush.presetId }
                             val visible = brushListState.layoutInfo.visibleItemsInfo
                             if (index >= 0 && visible.isNotEmpty() && (index <= visible.first().index || index >= visible.last().index))
                                 brushListState.animateScrollToItem((index - 2).coerceAtLeast(0))
                         }
-                        LazyRow(Modifier.width((36 * presets.size.coerceIn(1, 5) - 4).dp).height(36.dp)
+                        LazyRow(Modifier.width((36 * presets.size.coerceIn(1, maxBrushes) - 4).dp).height(36.dp)
                             .then(if (brushScrollable) Modifier.graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
                                 .drawWithContent {
                                     drawContent()
