@@ -1,0 +1,139 @@
+/* Folio design tokens for the landing page (brand kit v1.0). */
+@font-face {
+	font-family: 'Geist';
+	src: url('/fonts/GeistVF.ttf') format('truetype');
+	font-weight: 100 900;
+	font-display: swap;
+}
+
+/* Responsive values from the layout primitives must not leak into nested primitives. */
+@property --ui-dir-base { syntax: '*'; inherits: false; }
+@property --ui-dir-sm { syntax: '*'; inherits: false; }
+@property --ui-dir-md { syntax: '*'; inherits: false; }
+@property --ui-dir-lg { syntax: '*'; inherits: false; }
+@property --ui-gap-base { syntax: '*'; inherits: false; }
+@property --ui-gap-sm { syntax: '*'; inherits: false; }
+@property --ui-gap-md { syntax: '*'; inherits: false; }
+@property --ui-gap-lg { syntax: '*'; inherits: false; }
+@property --ui-align-base { syntax: '*'; inherits: false; }
+@property --ui-align-sm { syntax: '*'; inherits: false; }
+@property --ui-align-md { syntax: '*'; inherits: false; }
+@property --ui-align-lg { syntax: '*'; inherits: false; }
+@property --ui-justify-base { syntax: '*'; inherits: false; }
+@property --ui-justify-sm { syntax: '*'; inherits: false; }
+@property --ui-justify-md { syntax: '*'; inherits: false; }
+@property --ui-justify-lg { syntax: '*'; inherits: false; }
+@property --ui-wrap { syntax: '*'; inherits: false; }
+@property --ui-cols-base { syntax: '*'; inherits: false; }
+@property --ui-cols-sm { syntax: '*'; inherits: false; }
+@property --ui-cols-md { syntax: '*'; inherits: false; }
+@property --ui-cols-lg { syntax: '*'; inherits: false; }
+@property --ui-grid-align { syntax: '*'; inherits: false; }
+@property --ui-px-base { syntax: '*'; inherits: false; }
+@property --ui-px-sm { syntax: '*'; inherits: false; }
+@property --ui-px-md { syntax: '*'; inherits: false; }
+@property --ui-px-lg { syntax: '*'; inherits: false; }
+@property --ui-py-base { syntax: '*'; inherits: false; }
+@property --ui-py-sm { syntax: '*'; inherits: false; }
+@property --ui-py-md { syntax: '*'; inherits: false; }
+@property --ui-py-lg { syntax: '*'; inherits: false; }
+@property --ui-box-bg { syntax: '*'; inherits: false; }
+@property --ui-box-fg { syntax: '*'; inherits: false; }
+@property --ui-box-radius { syntax: '*'; inherits: false; }
+
+:root {
+	--folio-sage: #2f7a68;
+	--folio-sage-deep: #1f5a4c;
+	--folio-ink: #1e2b28;
+	--folio-cream: #f6f1e6;
+	--folio-paper: #fbf8f2;
+	--folio-soft: #e3efea;
+	--folio-mint: #c7e3d8;
+	--folio-white: #ffffff;
+	--folio-muted: #5b6662;
+	--folio-hairline: #e3ddcf;
+
+	--radius-sm: 6px;
+	--radius-md: 12px;
+	--radius-lg: 20px;
+	--radius-xl: 32px;
+	--radius-full: 999px;
+
+	/* Classic typographic scale (16 base): 14, 16, 18, 21, 24, 36, 48, 60, 72. */
+	--text-sm: 0.875rem;
+	--text-base: 1rem;
+	--text-lg: 1.125rem;
+	--text-xl: 1.3125rem;
+	--text-2xl: 1.5rem;
+	--text-3xl: clamp(1.75rem, 1.2rem + 2vw, 2.25rem);
+	--text-4xl: clamp(2.25rem, 1.4rem + 3.4vw, 3.75rem);
+	--text-5xl: clamp(2.6rem, 1.4rem + 4.6vw, 4.5rem);
+
+	--font: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+	color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	scroll-behavior: smooth;
+}
+
+body {
+	margin: 0;
+	background: var(--folio-paper);
+	color: var(--folio-ink);
+	font-family: var(--font);
+	font-size: var(--text-lg);
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+	overflow-x: hidden;
+}
+
+h1,
+h2,
+h3 {
+	margin: 0;
+	font-weight: 600;
+	letter-spacing: -0.02em;
+	line-height: 1.08;
+	text-wrap: balance;
+}
+
+p {
+	margin: 0;
+	text-wrap: pretty;
+}
+
+a {
+	color: var(--folio-sage);
+	text-underline-offset: 0.2em;
+}
+
+:focus-visible {
+	outline: 3px solid var(--folio-sage);
+	outline-offset: 3px;
+	border-radius: 4px;
+}
+
+img {
+	max-width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}

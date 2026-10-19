@@ -1,0 +1,66 @@
+---
+/**
+ * One-dimensional flex layout (MUI Stack).
+ * <Stack direction={{ base: 'column', md: 'row' }} gap={{ base: 3, md: 6 }} align="center">
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { responsiveVars, space, styleString, type Responsive } from './responsive';
+
+type Direction = 'row' | 'column' | 'row-reverse' | 'column-reverse';
+interface Props extends HTMLAttributes<'div'> {
+	as?: string;
+	direction?: Responsive<Direction>;
+	gap?: Responsive<number | string>;
+	align?: Responsive<'start' | 'center' | 'end' | 'stretch' | 'baseline'>;
+	justify?: Responsive<'start' | 'center' | 'end' | 'between' | 'around'>;
+	wrap?: boolean;
+}
+
+const { as: Tag = 'div', direction = 'column', gap, align, justify, wrap = false, class: className, style, ...rest } = Astro.props;
+const flex = (v: string) => (v === 'start' || v === 'end' ? `flex-${v}` : v === 'between' || v === 'around' ? `space-${v}` : v);
+const vars = styleString({
+	...responsiveVars('dir', direction),
+	...responsiveVars('gap', gap, space),
+	...responsiveVars('align', align, flex),
+	...responsiveVars('justify', justify, flex),
+	'--ui-wrap': wrap ? 'wrap' : undefined,
+});
+---
+
+<Tag class:list={['ui-stack', className]} style={[vars, style].filter(Boolean).join(';')} {...rest}><slot /></Tag>
+
+<style is:global>
+	.ui-stack {
+		display: flex;
+		min-width: 0;
+		flex-wrap: var(--ui-wrap, nowrap);
+		flex-direction: var(--ui-dir-base, column);
+		gap: var(--ui-gap-base, 0);
+		align-items: var(--ui-align-base, stretch);
+		justify-content: var(--ui-justify-base, flex-start);
+	}
+	@media (min-width: 600px) {
+		.ui-stack {
+			flex-direction: var(--ui-dir-sm, var(--ui-dir-base, column));
+			gap: var(--ui-gap-sm, var(--ui-gap-base, 0));
+			align-items: var(--ui-align-sm, var(--ui-align-base, stretch));
+			justify-content: var(--ui-justify-sm, var(--ui-justify-base, flex-start));
+		}
+	}
+	@media (min-width: 900px) {
+		.ui-stack {
+			flex-direction: var(--ui-dir-md, var(--ui-dir-sm, var(--ui-dir-base, column)));
+			gap: var(--ui-gap-md, var(--ui-gap-sm, var(--ui-gap-base, 0)));
+			align-items: var(--ui-align-md, var(--ui-align-sm, var(--ui-align-base, stretch)));
+			justify-content: var(--ui-justify-md, var(--ui-justify-sm, var(--ui-justify-base, flex-start)));
+		}
+	}
+	@media (min-width: 1200px) {
+		.ui-stack {
+			flex-direction: var(--ui-dir-lg, var(--ui-dir-md, var(--ui-dir-sm, var(--ui-dir-base, column))));
+			gap: var(--ui-gap-lg, var(--ui-gap-md, var(--ui-gap-sm, var(--ui-gap-base, 0))));
+			align-items: var(--ui-align-lg, var(--ui-align-md, var(--ui-align-sm, var(--ui-align-base, stretch))));
+			justify-content: var(--ui-justify-lg, var(--ui-justify-md, var(--ui-justify-sm, var(--ui-justify-base, flex-start))));
+		}
+	}
+</style>

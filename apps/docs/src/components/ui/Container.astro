@@ -1,0 +1,30 @@
+---
+/** Centred page column with responsive side gutters (MUI Container). */
+import type { HTMLAttributes } from 'astro/types';
+
+interface Props extends HTMLAttributes<'div'> {
+	as?: string;
+	size?: 'sm' | 'md' | 'lg';
+}
+
+const { as: Tag = 'div', size = 'lg', class: className, ...rest } = Astro.props;
+---
+
+<Tag class:list={['ui-container', `ui-container--${size}`, className]} {...rest}><slot /></Tag>
+
+<style is:global>
+	.ui-container {
+		width: 100%;
+		margin-inline: auto;
+		padding-inline: 1rem;
+	}
+	.ui-container--sm { max-width: 46rem; }
+	.ui-container--md { max-width: 64rem; }
+	.ui-container--lg { max-width: 76rem; }
+	@media (min-width: 600px) {
+		.ui-container { padding-inline: 1.5rem; }
+	}
+	@media (min-width: 900px) {
+		.ui-container { padding-inline: 2.5rem; }
+	}
+</style>

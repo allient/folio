@@ -1,0 +1,180 @@
+---
+import '../styles/tokens.css';
+import { Container, Stack } from '../components/ui';
+
+interface Props {
+	title: string;
+	description: string;
+}
+const { title, description } = Astro.props;
+const github = 'https://github.com/allient/folio';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+		<meta name="description" content={description} />
+		<meta name="theme-color" content="#2F7A68" />
+		<meta property="og:title" content={title} />
+		<meta property="og:description" content={description} />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="preload" href="/fonts/GeistVF.ttf" as="font" type="font/ttf" crossorigin />
+	</head>
+	<body>
+		<a class="skip" href="#main">Skip to content</a>
+		<header class="site-header">
+			<Container>
+				<Stack direction="row" align="center" justify="between" gap={2} class="site-header__bar">
+					<a class="brand" href="/" aria-label="Folio home">
+						<svg viewBox="112 80 325 364" aria-hidden="true"><path d="M122 182 C145 125 211 116 272 120 C327 124 373 126 408 90 C427 130 400 162 364 170 C315 182 263 160 210 156 C167 151 141 161 122 182 Z" /><path d="M167 185 C173 174 195 173 212 178 C208 202 203 226 200 257 C230 246 257 240 288 247 C306 251 315 260 310 264 C290 277 239 287 195 305 C187 360 179 399 163 425 C158 434 152 429 151 418 C148 335 156 234 167 185 Z" /><circle cx="347" cy="266" r="19" /></svg>
+						<span>Folio</span>
+					</a>
+					<nav aria-label="Page sections">
+						<Stack as="ul" direction="row" align="center" gap={{ base: 1, md: 3 }} class="site-nav">
+							<li class="site-nav__anchor"><a href="#features">Features</a></li>
+							<li class="site-nav__anchor"><a href="#screens">Screens</a></li>
+							<li class="site-nav__anchor"><a href="#privacy">Privacy</a></li>
+							<li><a class="button button--small" href={github}>GitHub</a></li>
+						</Stack>
+					</nav>
+				</Stack>
+			</Container>
+		</header>
+		<main id="main"><slot /></main>
+		<footer class="site-footer">
+			<Container>
+				<Stack direction={{ base: 'column', md: 'row' }} justify="between" gap={{ base: 3, md: 6 }}>
+					<Stack gap={1} class="site-footer__about">
+						<strong>Folio</strong>
+						<p>Handwritten notes and eReader for Android tablets. Free and open source under the Apache 2.0 license.</p>
+						<p class="site-footer__credit">Inspired by BOOX Notes, XPPen Notes and Infinite Painter. Not affiliated with them.</p>
+					</Stack>
+					<Stack as="ul" gap={1} class="site-footer__links">
+						<li><a href={github}>Source code</a></li>
+						<li><a href={`${github}/issues`}>Report a problem</a></li>
+						<li><a href="/architecture/jetpack-ink-implementation/">Developer notes</a></li>
+					</Stack>
+				</Stack>
+			</Container>
+		</footer>
+
+		<style is:global>
+			.skip {
+				position: absolute;
+				left: -999px;
+				top: 0.5rem;
+				padding: 0.5rem 1rem;
+				background: var(--folio-ink);
+				color: #fff;
+				border-radius: var(--radius-sm);
+				z-index: 10;
+			}
+			.skip:focus {
+				left: 0.5rem;
+			}
+			.site-header {
+				position: sticky;
+				top: 0;
+				z-index: 5;
+				background: color-mix(in srgb, var(--folio-paper) 88%, transparent);
+				backdrop-filter: blur(10px);
+				border-bottom: 1px solid var(--folio-hairline);
+			}
+			.site-header__bar {
+				min-height: 4rem;
+			}
+			.brand {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.55rem;
+				color: var(--folio-ink);
+				font-size: var(--text-xl);
+				font-weight: 600;
+				letter-spacing: -0.02em;
+				text-decoration: none;
+			}
+			.brand svg {
+				width: 1.35rem;
+				fill: var(--folio-sage);
+			}
+			.site-nav {
+				margin: 0;
+				padding: 0;
+				list-style: none;
+				font-size: var(--text-base);
+			}
+			.site-nav__anchor a {
+				color: var(--folio-ink);
+				text-decoration: none;
+				padding: 0.5rem;
+			}
+			.site-nav__anchor a:hover {
+				color: var(--folio-sage);
+			}
+			@media (max-width: 599px) {
+				.site-nav__anchor {
+					display: none;
+				}
+			}
+			.button {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				gap: 0.5rem;
+				min-height: 3rem;
+				padding: 0 1.4rem;
+				border-radius: var(--radius-full);
+				background: var(--folio-sage);
+				color: #fff;
+				font-size: var(--text-base);
+				font-weight: 500;
+				text-decoration: none;
+				transition: background-color 0.15s;
+			}
+			.button:hover {
+				background: var(--folio-sage-deep);
+			}
+			.button--quiet {
+				background: transparent;
+				color: var(--folio-ink);
+				box-shadow: inset 0 0 0 1.5px var(--folio-ink);
+			}
+			.button--quiet:hover {
+				background: var(--folio-ink);
+				color: #fff;
+			}
+			.button--small {
+				min-height: 2.5rem;
+				padding: 0 1.1rem;
+			}
+			.site-footer {
+				padding: 3.5rem 0 3rem;
+				border-top: 1px solid var(--folio-hairline);
+				background: var(--folio-cream);
+				font-size: var(--text-base);
+				color: var(--folio-muted);
+			}
+			.site-footer strong {
+				color: var(--folio-ink);
+				font-size: var(--text-xl);
+			}
+			.site-footer__about {
+				max-width: 34rem;
+			}
+			.site-footer__credit {
+				font-size: var(--text-sm);
+			}
+			.site-footer__links {
+				margin: 0;
+				padding: 0;
+				list-style: none;
+			}
+			.site-footer a {
+				color: var(--folio-ink);
+			}
+		</style>
+	</body>
+</html>

@@ -1,15 +1,40 @@
-# Folio
+<p align="center">
+  <img src="packages/brand/png/folio-icon-primary-192.png" width="96" height="96" alt="Folio icon">
+</p>
 
-**Folio: Handwritten Notes & eReader**
+<h1 align="center">Folio</h1>
 
-Folio is a **Kotlin Multiplatform** app for handwritten notes, infinite canvases and reading PDF and EPUB books with a pen tablet. It is local first: no account, no cloud sync and no internet permission. Your notebooks stay on the device, with automatic backups to a folder you choose. The only runtime permission is `RECORD_AUDIO`, for voice notes.
+<p align="center"><strong>Handwritten Notes &amp; eReader for Android tablets</strong></p>
 
-- **Store title:** Folio: Handwritten Notes & eReader.
-- **Application ID and Kotlin packages:** `com.allient.folio`.
-- **Kotlin Multiplatform:** the Gradle project in `apps/mobile` has an Android app, a `shared` module with Compose Multiplatform UI and models, and an iOS app. Android is the complete app today; iOS still shows the starter screen (see [Platforms](#platforms)).
-- **Tested on:** an Android tablet emulator (API 36, 1200×1920) and an XPPen MagicNotePad MNP1095 (Android 14).
+<p align="center">
+  Write with pressure-sensitive brushes, sketch on an infinite canvas and annotate PDFs and EPUBs.<br>
+  No account, no cloud, no internet permission: your notes stay on your tablet.
+</p>
 
-![Library](apps/docs/src/assets/screenshots/library.png)
+<table>
+  <tr>
+    <td width="33%"><img src="apps/docs/src/assets/screenshots/library.png" alt="Library"></td>
+    <td width="33%"><img src="apps/docs/src/assets/screenshots/editor.png" alt="Notebook page"></td>
+    <td width="33%"><img src="apps/docs/src/assets/screenshots/reader.png" alt="PDF reader"></td>
+  </tr>
+  <tr>
+    <td align="center">Library</td>
+    <td align="center">Notebook</td>
+    <td align="center">Reader</td>
+  </tr>
+</table>
+
+## At a glance
+
+| | |
+|---|---|
+| **App** | Kotlin Multiplatform: Android app, `shared` module with Compose Multiplatform UI and models, iOS shell (see [Platforms](#platforms)) |
+| **Application ID** | `com.allient.folio` (Kotlin packages use the same name) |
+| **Store title** | Folio: Handwritten Notes & eReader |
+| **Privacy** | Local first. The only runtime permission is `RECORD_AUDIO`, for voice notes |
+| **Website** | Landing page in `apps/docs` (Astro, Bun); see [Website](#website) |
+| **Brand** | Brand kit v1.0 in [`packages/brand`](packages/brand) |
+| **Tested on** | Android tablet emulator (API 36, 1200×1920) and an XPPen MagicNotePad MNP1095 (Android 14) |
 
 ## Features
 
@@ -100,14 +125,37 @@ folio/
 │   │   │                           folder editor, backup settings, templates, reader models
 │   │   ├── iosApp/                 Xcode project (starter shell)
 │   │   └── artifacts/              Demo PDF/EPUB files, reader captures, local builds
-│   └── docs/                       Documentation site (Astro Starlight, runs on Bun)
-│       └── src/content/docs/       Architecture, features, investigations, roadmap, testing
+│   └── docs/                       Website: landing page + developer notes (Astro, Starlight, Bun)
+│       ├── src/pages/index.astro   Landing page
+│       ├── src/components/ui/      Box, Stack, Grid, Container, Tablet primitives
+│       └── src/content/docs/       Developer notes: architecture, features, investigations, roadmap, testing
 ├── packages/
 │   └── brand/                      Brand kit v1.0: logo, icons, Android launcher resources, guide
 ├── .argent/flows/                  Recorded UI automation flows
 ├── package.json, turbo.json        Workspace and task pipeline
 └── bun.lock
 ```
+
+## Website
+
+`apps/docs` is an Astro site that runs on Bun. For now it is a single landing page that presents the app; the engineering notes are still built by Starlight under `/architecture/`, `/features/` and so on, linked from the footer.
+
+```bash
+bun run dev:docs      # http://localhost:4321
+bun run build:docs    # static site in apps/docs/dist
+```
+
+The page is built from small layout primitives in `apps/docs/src/components/ui`, modelled on MUI:
+
+| Primitive | What it does |
+|---|---|
+| `Box` | Spacing (`p`, `px`, `py`), surface colour, radius and border |
+| `Stack` | Flexbox row or column with `direction`, `gap`, `align`, `justify`, `wrap` |
+| `Grid` | CSS grid with fixed `columns` or fluid columns of a `min` width |
+| `Container` | Centred column with responsive side gutters |
+| `Tablet` | A screenshot in a pen-tablet frame, portrait or landscape, with an optional stylus |
+
+Every spacing and layout prop takes a single value or a responsive object, for example `direction={{ base: 'column', md: 'row' }}` or `gap={{ base: 2, md: 4 }}` (1 unit = 8 px). Breakpoints: `sm` 600 px, `md` 900 px, `lg` 1200 px. Colours, type scale and radii are CSS variables in `src/styles/tokens.css`, taken from the brand kit (sage `#2F7A68`, ink `#1E2B28`, cream `#F6F1E6`, Geist).
 
 ## Tech stack
 

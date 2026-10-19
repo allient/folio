@@ -1,0 +1,80 @@
+---
+/**
+ * The «F.» written in on page load: masks that follow the pen's path reveal the
+ * filled brand shapes stroke by stroke (top stroke, stem, crossbar), then the dot lands.
+ */
+interface Props {
+	class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<svg class:list={['ink-mark', className]} viewBox="100 70 345 380" role="img" aria-label="Folio">
+	<defs>
+		<mask id="ink-top" maskUnits="userSpaceOnUse">
+			<path class="ink-mark__pen ink-mark__pen--top" d="M118,180 C150,138 215,128 272,134 C330,141 375,140 410,92" pathLength="1" />
+		</mask>
+		<mask id="ink-stem" maskUnits="userSpaceOnUse">
+			<path class="ink-mark__pen ink-mark__pen--stem" d="M196,176 C190,250 182,345 156,432" pathLength="1" />
+			<path class="ink-mark__pen ink-mark__pen--bar" d="M196,282 C230,258 275,248 312,262" pathLength="1" />
+		</mask>
+	</defs>
+	<path mask="url(#ink-top)" d="M122 182 C145 125 211 116 272 120 C327 124 373 126 408 90 C427 130 400 162 364 170 C315 182 263 160 210 156 C167 151 141 161 122 182 Z" />
+	<path mask="url(#ink-stem)" d="M167 185 C173 174 195 173 212 178 C208 202 203 226 200 257 C230 246 257 240 288 247 C306 251 315 260 310 264 C290 277 239 287 195 305 C187 360 179 399 163 425 C158 434 152 429 151 418 C148 335 156 234 167 185 Z" />
+	<circle class="ink-mark__dot" cx="347" cy="266" r="19" />
+</svg>
+
+<style>
+	.ink-mark {
+		display: block;
+		fill: var(--folio-sage);
+		overflow: visible;
+	}
+	.ink-mark__pen {
+		fill: none;
+		stroke: #fff;
+		stroke-linecap: round;
+		stroke-dasharray: 1;
+		stroke-dashoffset: 1;
+		animation: ink-write 0.55s cubic-bezier(0.6, 0.1, 0.3, 1) forwards;
+	}
+	.ink-mark__pen--top {
+		stroke-width: 74;
+		animation-delay: 0.15s;
+	}
+	.ink-mark__pen--stem {
+		stroke-width: 62;
+		animation-delay: 0.7s;
+	}
+	.ink-mark__pen--bar {
+		stroke-width: 48;
+		animation-delay: 1.2s;
+		animation-duration: 0.35s;
+	}
+	.ink-mark__dot {
+		transform-box: fill-box;
+		transform-origin: center;
+		transform: scale(0);
+		animation: ink-dot 0.32s cubic-bezier(0.3, 1.6, 0.5, 1) 1.6s forwards;
+	}
+	@keyframes ink-write {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+	@keyframes ink-dot {
+		to {
+			transform: scale(1);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.ink-mark__pen {
+			stroke-dashoffset: 0;
+			animation: none;
+		}
+		.ink-mark__dot {
+			transform: none;
+			animation: none;
+		}
+	}
+</style>

@@ -1,0 +1,325 @@
+---
+import type { ImageMetadata } from 'astro';
+import Landing from '../layouts/Landing.astro';
+import InkMark from '../components/landing/InkMark.astro';
+import { Box, Container, Grid, Stack, Tablet } from '../components/ui';
+
+const github = 'https://github.com/allient/folio';
+const shots = import.meta.glob<{ default: ImageMetadata }>('../assets/screenshots/*.png', { eager: true });
+const shot = (name: string) => (shots[`../assets/screenshots/${name}.png`] ?? shots['../assets/screenshots/editor.png']).default;
+
+const features = [
+	{
+		id: 'ink',
+		title: 'Ink that behaves like ink',
+		body: 'Twelve brushes, from ballpoint and fountain pen to 2H–6B pencils, chalk, spray and a bristle paint brush. Shape how pressure, speed and tilt change each stroke with curves you edit by hand.',
+		points: ['Low-latency drawing with Jetpack Ink', 'Pencil grain that stays on the paper as you zoom', 'Pressure threshold that ignores a worn pen tip'],
+		image: 'brushes',
+		alt: 'Folio brush panel with pens, pencils and paint brushes',
+	},
+	{
+		id: 'canvas',
+		title: 'Pages, or no edges at all',
+		body: 'Start a notebook with one of 35 page templates, from lined and Cornell to Kanban and music staff, or open an infinite canvas with pins and a minimap to find your way back.',
+		points: ['Layers, lasso, shapes and fill', 'Text, tables, stickers, sticky notes and images', 'A ruler and a zoom window for detail work'],
+		image: 'canvas',
+		alt: 'An infinite canvas with a sketch and a minimap',
+	},
+	{
+		id: 'reader',
+		title: 'Read with a pen in hand',
+		body: 'Open PDFs and EPUBs next to your notes. Highlight, underline, write in the margins and keep a notebook beside the book in study view.',
+		points: ['Search, bookmarks and on-device text recognition', 'Export the annotated PDF or your notes as Markdown', 'Open books straight from other apps'],
+		image: 'reader',
+		alt: 'A PDF open in the Folio reader with a highlighted passage',
+	},
+];
+
+const details = [
+	{ title: 'Smart backups', body: 'A few minutes after you close a note, Folio saves a verified copy to a folder you choose and keeps daily, weekly and monthly versions.' },
+	{ title: 'Trash you can undo', body: 'Deleted notebooks, folders and books wait in Trash for 7 or 30 days before they go.' },
+	{ title: 'Folders with character', body: 'Six colours and four folder styles, with drag and drop between them.' },
+	{ title: 'Find anything', body: 'Search notebook names, typed text, tags, outlines, book titles and authors.' },
+	{ title: 'Share what you made', body: 'Export pages as PDF or PNG, or a whole notebook as an editable .knotes file.' },
+	{ title: 'Your layout', body: 'Pick an accent colour, corner style, grid or list, and the toolbox set you use most.' },
+];
+
+const gallery = [
+	{ image: 'library', alt: 'The Folio library with notebooks, a canvas and books', caption: 'Notebooks, canvases and books in one library.' },
+	{ image: 'editor', alt: 'A notebook page with handwritten notes and a diagram', caption: 'A page of notes, written with the pen.' },
+	{ image: 'pressure', alt: 'Pressure, velocity and tilt curve editor', caption: 'Pressure, velocity and tilt curves.' },
+	{ image: 'sidebar', alt: 'The library sidebar with folders, recent, favorites and trash', caption: 'Folders, recent, favorites and trash.' },
+];
+---
+
+<Landing
+	title="Folio: Handwritten Notes & eReader for Android tablets"
+	description="Write with pressure-sensitive brushes, sketch on an infinite canvas and annotate PDFs and EPUBs. Free, open source, and your notes never leave your tablet."
+>
+	<Box as="section" class="hero" py={{ base: 6, md: 10 }}>
+		<Container>
+			<Stack direction={{ base: 'column', md: 'row' }} align={{ base: 'stretch', md: 'center' }} gap={{ base: 6, md: 8 }}>
+				<Stack gap={3} class="hero__copy">
+					<InkMark class="hero__mark" />
+					<h1>Handwritten notes and books, on one tablet.</h1>
+					<p class="hero__lede">
+						Folio is a notebook and eReader for pen tablets. Write with brushes that answer to pressure, sketch on an infinite canvas, and mark up your PDFs and EPUBs. Everything stays on your device.
+					</p>
+					<Stack direction={{ base: 'column', sm: 'row' }} gap={1.5} align={{ base: 'stretch', sm: 'center' }} class="hero__actions">
+						<a class="button" href={github}>Get the source on GitHub</a>
+						<a class="button button--quiet" href="#features">See what it does</a>
+					</Stack>
+					<p class="hero__note">Free and open source for Android tablets. A Google Play release is on the way.</p>
+				</Stack>
+				<div class="hero__device">
+					<Tablet src={shot('editor')} alt="A Folio notebook page with handwritten notes" pen loading="eager" sizes="(min-width: 900px) 30rem, 85vw" />
+				</div>
+			</Stack>
+		</Container>
+	</Box>
+
+	<Box as="section" id="features" py={{ base: 8, md: 14 }} aria-label="Features">
+		<Container>
+			<Stack gap={{ base: 10, md: 16 }}>
+				{features.map((feature, index) => (
+					<Stack
+						as="article"
+						id={feature.id}
+						direction={{ base: 'column', md: index % 2 ? 'row-reverse' : 'row' }}
+						align={{ base: 'stretch', md: 'center' }}
+						gap={{ base: 4, md: 10 }}
+						class="feature"
+					>
+						<Stack gap={2.5} class="feature__copy">
+							<h2>{feature.title}</h2>
+							<p>{feature.body}</p>
+							<ul class="feature__points">
+								{feature.points.map((point) => <li>{point}</li>)}
+							</ul>
+						</Stack>
+						<div class="feature__device">
+							<Tablet src={shot(feature.image)} alt={feature.alt} />
+						</div>
+					</Stack>
+				))}
+			</Stack>
+		</Container>
+	</Box>
+
+	<Box as="section" surface="cream" py={{ base: 8, md: 12 }} aria-labelledby="details-title">
+		<Container>
+			<Stack gap={{ base: 4, md: 6 }}>
+				<h2 id="details-title" class="section-title">The small things, done properly</h2>
+				<Grid min="17rem" gap={{ base: 3, md: 5 }} as="ul" class="details">
+					{details.map((item) => (
+						<li>
+							<h3>{item.title}</h3>
+							<p>{item.body}</p>
+						</li>
+					))}
+				</Grid>
+			</Stack>
+		</Container>
+	</Box>
+
+	<Box as="section" id="screens" py={{ base: 8, md: 14 }} aria-labelledby="screens-title">
+		<Container>
+			<Stack gap={{ base: 4, md: 6 }}>
+				<h2 id="screens-title" class="section-title">A closer look</h2>
+				<Grid columns={{ base: 1, sm: 2, lg: 4 }} gap={{ base: 5, md: 4 }} class="gallery">
+					{gallery.map((item) => (
+						<Stack as="figure" gap={1.5} class="gallery__item">
+							<Tablet src={shot(item.image)} alt={item.alt} sizes="(min-width: 1200px) 17rem, (min-width: 600px) 45vw, 85vw" />
+							<figcaption>{item.caption}</figcaption>
+						</Stack>
+					))}
+				</Grid>
+			</Stack>
+		</Container>
+	</Box>
+
+	<Box as="section" id="privacy" surface="sage" py={{ base: 8, md: 12 }} class="privacy" aria-labelledby="privacy-title">
+		<Container>
+			<Stack direction={{ base: 'column', md: 'row' }} gap={{ base: 4, md: 10 }} align={{ base: 'stretch', md: 'start' }}>
+				<Stack gap={2} class="privacy__copy">
+					<h2 id="privacy-title">Your notes never leave your tablet.</h2>
+					<p>Folio has no account, no cloud and no internet permission. Backups go to a folder you pick, and you can open them anywhere.</p>
+				</Stack>
+				<Grid as="dl" columns={{ base: 1, sm: 2 }} gap={{ base: 3, md: 4 }} class="privacy__facts">
+					<div><dt>No sign-in</dt><dd>Open the app and write.</dd></div>
+					<div><dt>No tracking</dt><dd>No analytics, ads or network access.</dd></div>
+					<div><dt>Open format</dt><dd>.knotes files are ZIP archives with documented JSON.</dd></div>
+					<div><dt>Open source</dt><dd>Read every line on GitHub, Apache 2.0.</dd></div>
+				</Grid>
+			</Stack>
+		</Container>
+	</Box>
+
+	<Box as="section" py={{ base: 8, md: 12 }} class="closing">
+		<Container size="sm">
+			<Stack gap={3} align="center">
+				<h2>Pick up the pen.</h2>
+				<p>Folio is in active development. Build it from source today, or watch the repository for the first release.</p>
+				<a class="button" href={github}>Open the repository</a>
+			</Stack>
+		</Container>
+	</Box>
+</Landing>
+
+<style>
+	.hero__copy {
+		flex: 1 1 0;
+		max-width: 36rem;
+	}
+	.hero__mark {
+		width: clamp(3.5rem, 8vw, 5rem);
+		margin-bottom: 0.5rem;
+	}
+	.hero h1 {
+		font-size: var(--text-5xl);
+		letter-spacing: -0.035em;
+		line-height: 1.02;
+	}
+	.hero__lede {
+		max-width: 33rem;
+		font-size: var(--text-xl);
+		line-height: 1.55;
+		color: var(--folio-muted);
+	}
+	.hero__note {
+		font-size: var(--text-sm);
+		color: var(--folio-muted);
+	}
+	.hero__device {
+		flex: 0 1 30rem;
+		width: min(100%, 30rem);
+		margin-inline: auto;
+	}
+	@media (min-width: 900px) {
+		.hero__device {
+			margin-inline: 0;
+		}
+	}
+
+	.feature__copy {
+		flex: 1 1 0;
+		max-width: 32rem;
+	}
+	.feature h2 {
+		font-size: var(--text-4xl);
+	}
+	.feature__copy > p {
+		color: var(--folio-muted);
+	}
+	.feature__points {
+		margin: 0.5rem 0 0;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid var(--folio-hairline);
+	}
+	.feature__points li {
+		padding: 0.7rem 0 0.7rem 1.6rem;
+		border-bottom: 1px solid var(--folio-hairline);
+		font-size: var(--text-base);
+		background: radial-gradient(circle at 0.35rem 50%, var(--folio-sage) 0.22rem, transparent 0.24rem) no-repeat;
+	}
+	.feature__device {
+		flex: 0 1 26rem;
+		width: min(100%, 26rem);
+		margin-inline: auto;
+	}
+
+	.section-title {
+		font-size: var(--text-3xl);
+		max-width: 30rem;
+	}
+	.details {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.details li {
+		padding-top: 1rem;
+		border-top: 2px solid var(--folio-sage);
+	}
+	.details h3 {
+		font-size: var(--text-xl);
+		margin-bottom: 0.4rem;
+	}
+	.details p {
+		font-size: var(--text-base);
+		color: var(--folio-muted);
+	}
+
+	.gallery__item {
+		margin: 0;
+	}
+	/* Phones: swipe through the screens instead of scrolling past four full-height tablets. */
+	@media (max-width: 599px) {
+		.gallery {
+			display: flex;
+			overflow-x: auto;
+			scroll-snap-type: x mandatory;
+			margin-inline: -1rem;
+			padding: 0.5rem 1rem 1.5rem;
+			scrollbar-width: none;
+		}
+		.gallery__item {
+			flex: 0 0 72%;
+			scroll-snap-align: center;
+		}
+	}
+	.gallery figcaption {
+		font-size: var(--text-base);
+		color: var(--folio-muted);
+		text-align: center;
+	}
+	.gallery__item:nth-child(even) {
+		margin-top: 0;
+	}
+	@media (min-width: 1200px) {
+		.gallery__item:nth-child(even) {
+			margin-top: 3rem;
+		}
+	}
+
+	.privacy__copy {
+		flex: 1 1 0;
+		max-width: 28rem;
+	}
+	.privacy h2 {
+		font-size: var(--text-4xl);
+		color: #fff;
+	}
+	.privacy__copy p {
+		color: var(--folio-soft);
+	}
+	.privacy__facts {
+		flex: 1 1 0;
+		margin: 0;
+	}
+	.privacy__facts div {
+		padding: 1rem 0 0;
+		border-top: 1px solid rgba(255, 255, 255, 0.35);
+	}
+	.privacy__facts dt {
+		font-weight: 600;
+		color: #fff;
+	}
+	.privacy__facts dd {
+		margin: 0.2rem 0 0;
+		font-size: var(--text-base);
+		color: var(--folio-mint);
+	}
+
+	.closing {
+		text-align: center;
+	}
+	.closing h2 {
+		font-size: var(--text-4xl);
+	}
+	.closing p {
+		max-width: 32rem;
+		color: var(--folio-muted);
+	}
+</style>

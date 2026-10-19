@@ -1,0 +1,54 @@
+---
+/**
+ * Two-dimensional grid (MUI Grid).
+ * Fixed columns: <Grid columns={{ base: 1, sm: 2, lg: 3 }} gap={4}>
+ * Fluid columns: <Grid min="18rem" gap={4}> fits as many columns of at least 18rem as the row allows.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { responsiveVars, space, styleString, type Responsive } from './responsive';
+
+interface Props extends HTMLAttributes<'div'> {
+	as?: string;
+	columns?: Responsive<number>;
+	min?: string;
+	gap?: Responsive<number | string>;
+	align?: 'start' | 'center' | 'end' | 'stretch';
+}
+
+const { as: Tag = 'div', columns, min, gap, align, class: className, style, ...rest } = Astro.props;
+const vars = styleString({
+	...(min ? { '--ui-cols-base': `repeat(auto-fit, minmax(min(${min}, 100%), 1fr))` } : responsiveVars('cols', columns ?? 1, (n) => `repeat(${n}, minmax(0, 1fr))`)),
+	...responsiveVars('gap', gap, space),
+	'--ui-grid-align': align,
+});
+---
+
+<Tag class:list={['ui-grid', className]} style={[vars, style].filter(Boolean).join(';')} {...rest}><slot /></Tag>
+
+<style is:global>
+	.ui-grid {
+		display: grid;
+		min-width: 0;
+		align-items: var(--ui-grid-align, stretch);
+		grid-template-columns: var(--ui-cols-base, minmax(0, 1fr));
+		gap: var(--ui-gap-base, 0);
+	}
+	@media (min-width: 600px) {
+		.ui-grid {
+			grid-template-columns: var(--ui-cols-sm, var(--ui-cols-base, minmax(0, 1fr)));
+			gap: var(--ui-gap-sm, var(--ui-gap-base, 0));
+		}
+	}
+	@media (min-width: 900px) {
+		.ui-grid {
+			grid-template-columns: var(--ui-cols-md, var(--ui-cols-sm, var(--ui-cols-base, minmax(0, 1fr))));
+			gap: var(--ui-gap-md, var(--ui-gap-sm, var(--ui-gap-base, 0)));
+		}
+	}
+	@media (min-width: 1200px) {
+		.ui-grid {
+			grid-template-columns: var(--ui-cols-lg, var(--ui-cols-md, var(--ui-cols-sm, var(--ui-cols-base, minmax(0, 1fr)))));
+			gap: var(--ui-gap-lg, var(--ui-gap-md, var(--ui-gap-sm, var(--ui-gap-base, 0))));
+		}
+	}
+</style>

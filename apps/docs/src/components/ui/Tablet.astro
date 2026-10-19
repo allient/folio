@@ -1,0 +1,97 @@
+---
+/**
+ * A screenshot inside a pen-tablet frame: dark bezel, front camera, stylus resting on the right edge.
+ * Screens are 1200x1920 (portrait) or 1920x1200 (landscape).
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+	src: ImageMetadata;
+	alt: string;
+	landscape?: boolean;
+	pen?: boolean;
+	class?: string;
+	loading?: 'eager' | 'lazy';
+	widths?: number[];
+	sizes?: string;
+}
+
+const { src, alt, landscape = false, pen = false, class: className, loading = 'lazy', widths = [360, 540, 720, 960], sizes = '(min-width: 900px) 34rem, 90vw' } = Astro.props;
+---
+
+<figure class:list={['ui-tablet', landscape && 'ui-tablet--landscape', pen && 'ui-tablet--pen', className]}>
+	<div class="ui-tablet__bezel">
+		<span class="ui-tablet__camera" aria-hidden="true"></span>
+		<Image class="ui-tablet__screen" src={src} alt={alt} widths={widths} sizes={sizes} loading={loading} />
+	</div>
+	{pen && <span class="ui-tablet__pen" aria-hidden="true"></span>}
+</figure>
+
+<style is:global>
+	.ui-tablet {
+		position: relative;
+		margin: 0;
+		width: 100%;
+	}
+	.ui-tablet__bezel {
+		position: relative;
+		padding: clamp(10px, 3.2%, 22px);
+		background: linear-gradient(160deg, #2b3734, #1a2321);
+		border-radius: clamp(18px, 6%, 42px);
+		box-shadow:
+			0 1px 0 rgba(255, 255, 255, 0.08) inset,
+			0 30px 60px -30px rgba(30, 43, 40, 0.45),
+			0 12px 24px -12px rgba(30, 43, 40, 0.25);
+	}
+	.ui-tablet__camera {
+		position: absolute;
+		top: clamp(4px, 1.4%, 9px);
+		left: 50%;
+		width: 6px;
+		height: 6px;
+		margin-left: -3px;
+		border-radius: 50%;
+		background: #46524f;
+	}
+	.ui-tablet--landscape .ui-tablet__camera {
+		top: 50%;
+		left: clamp(4px, 1%, 9px);
+		margin: -3px 0 0;
+	}
+	.ui-tablet__screen {
+		display: block;
+		width: 100%;
+		height: auto;
+		aspect-ratio: 5 / 8;
+		object-fit: cover;
+		border-radius: clamp(6px, 2%, 14px);
+		background: #fff;
+	}
+	.ui-tablet--landscape .ui-tablet__screen {
+		aspect-ratio: 8 / 5;
+	}
+	/* A stylus leaning on the right edge of the device. */
+	.ui-tablet--pen {
+		padding-right: 18px;
+	}
+	.ui-tablet__pen {
+		position: absolute;
+		top: 18%;
+		right: 0;
+		width: 12px;
+		height: 46%;
+		border-radius: 6px 6px 2px 2px;
+		background: linear-gradient(90deg, #e9e4d8, #fbf8f2 45%, #d8d2c4);
+		box-shadow: 0 10px 18px -10px rgba(30, 43, 40, 0.5);
+	}
+	.ui-tablet__pen::after {
+		content: '';
+		position: absolute;
+		bottom: -14px;
+		left: 1px;
+		border-left: 5px solid transparent;
+		border-right: 5px solid transparent;
+		border-top: 14px solid #2f7a68;
+	}
+</style>

@@ -1,0 +1,62 @@
+---
+/**
+ * Generic container with spacing and surface props (MUI Box).
+ * <Box as="section" py={{ base: 8, md: 14 }} px={2} surface="cream" radius="lg">
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { responsiveVars, space, styleString, type Responsive } from './responsive';
+
+type Space = Responsive<number | string>;
+interface Props extends HTMLAttributes<'div'> {
+	as?: string;
+	p?: Space;
+	px?: Space;
+	py?: Space;
+	surface?: 'paper' | 'cream' | 'sage' | 'soft' | 'ink' | 'white';
+	radius?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+	border?: boolean;
+}
+
+const { as: Tag = 'div', p, px, py, surface, radius, border = false, class: className, style, ...rest } = Astro.props;
+const vars = styleString({
+	...responsiveVars('px', px ?? p, space),
+	...responsiveVars('py', py ?? p, space),
+	'--ui-box-bg': surface ? `var(--folio-${surface})` : undefined,
+	'--ui-box-fg': surface === 'sage' || surface === 'ink' ? 'var(--folio-white)' : undefined,
+	'--ui-box-radius': radius ? `var(--radius-${radius})` : undefined,
+});
+---
+
+<Tag class:list={['ui-box', border && 'ui-box--border', className]} style={[vars, style].filter(Boolean).join(';')} {...rest}><slot /></Tag>
+
+<style is:global>
+	.ui-box {
+		min-width: 0;
+		padding-inline: var(--ui-px-base, 0);
+		padding-block: var(--ui-py-base, 0);
+		background: var(--ui-box-bg, transparent);
+		color: var(--ui-box-fg, inherit);
+		border-radius: var(--ui-box-radius, 0);
+	}
+	.ui-box--border {
+		border: 1px solid var(--folio-hairline);
+	}
+	@media (min-width: 600px) {
+		.ui-box {
+			padding-inline: var(--ui-px-sm, var(--ui-px-base, 0));
+			padding-block: var(--ui-py-sm, var(--ui-py-base, 0));
+		}
+	}
+	@media (min-width: 900px) {
+		.ui-box {
+			padding-inline: var(--ui-px-md, var(--ui-px-sm, var(--ui-px-base, 0)));
+			padding-block: var(--ui-py-md, var(--ui-py-sm, var(--ui-py-base, 0)));
+		}
+	}
+	@media (min-width: 1200px) {
+		.ui-box {
+			padding-inline: var(--ui-px-lg, var(--ui-px-md, var(--ui-px-sm, var(--ui-px-base, 0))));
+			padding-block: var(--ui-py-lg, var(--ui-py-md, var(--ui-py-sm, var(--ui-py-base, 0))));
+		}
+	}
+</style>
