@@ -632,9 +632,10 @@ internal fun NotebookEditor(
             CanvasAction.Copy -> { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) } }
             CanvasAction.Cut -> { canvas?.flushInput(); clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection() }
             CanvasAction.Paste -> paste()
-            CanvasAction.Fill -> sheet = "selection style"
+            CanvasAction.Fill -> sheet = if (page.blocks.any { it.id == selectedBlockId && it.kind == InkBlock.Sticky }) "note style" else "selection style"
             CanvasAction.More -> sheet = "selection"
-            CanvasAction.Edit -> page.texts.firstOrNull { it.id == selectedObjectId && it.kind == "plain" }?.let { editingTextId = it.id; draft = it.text; sheet = "edit text" }
+            CanvasAction.Edit -> page.blocks.firstOrNull { it.id == selectedBlockId && it.kind == InkBlock.Sticky }?.let { editingStickyId = it.id }
+                ?: page.texts.firstOrNull { it.id == selectedObjectId && it.kind == "plain" }?.let { editingTextId = it.id; draft = it.text; sheet = "edit text" }
             else -> Unit
         }
     }
@@ -814,6 +815,7 @@ internal fun NotebookEditor(
                     ToolAction(InkIcon.Tag, "Tag selection") { draft = ""; sheet = "tags" }
                     ToolAction(InkIcon.Close, "Deselect") { selectedIds = emptySet(); if (mode == CanvasMode.MoveSelection) mode = CanvasMode.Lasso; sheet = null }
                 }
+                "note style" -> page.blocks.firstOrNull { it.id == selectedBlockId }?.let { block -> StickyStyleControls(block) { changed -> updateBlock { changed } } }
                 "selection layer" -> LayerControls(page, activeLayer, { activeLayer = it }, ::applyPage,
                     onChooseDestination = { updated, destination ->
                         canvas?.flushInput()
@@ -1489,7 +1491,7 @@ internal fun NotebookEditor(
                                 })
                         }
                     }
-                    page.blocks.firstOrNull { it.id == selectedBlockId }?.let { block ->
+                    page.blocks.firstOrNull { it.id == selectedBlockId && it.kind == InkBlock.Table }?.let { block ->
                         BlockToolbar(block, cellSelection, { changed -> updateBlock { changed } }, { cellSelection = it; if (it == null) cellAnchor = null }, { editingStickyId = block.id },
                             { applyPage(page.copy(blocks = page.blocks.filterNot { it.id == block.id })); selectedBlockId = null; canvas?.deselectObject() },
                             Modifier.align(Alignment.TopCenter).padding(top = 8.dp).testTag("block-toolbar"))

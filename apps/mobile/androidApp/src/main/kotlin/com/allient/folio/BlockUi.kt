@@ -284,6 +284,21 @@ internal fun BlockToolbar(block: InkBlock, cells: List<Int>?, onChange: (InkBloc
     }
 }
 
+/** Note colour and text size, opened from the note's selection bar. */
+@Composable
+internal fun StickyStyleControls(block: InkBlock, onChange: (InkBlock) -> Unit) {
+    Text("Color", fontSize = 13.sp)
+    Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        StickyColors.forEach { color -> ColorDot(color, block.fill == color, "Note color ${color.toUInt().toString(16)}", diameter = 36) { onChange(block.copy(fill = color)) } }
+    }
+    Text("Text size", fontSize = 13.sp)
+    Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        ToolChip("A−") { onChange(block.copy(textSize = (block.textSize - 2f).coerceAtLeast(8f))) }
+        Text("${block.textSize.toInt()}", fontSize = 14.sp)
+        ToolChip("A+") { onChange(block.copy(textSize = (block.textSize + 2f).coerceAtMost(48f))) }
+    }
+}
+
 @Composable
 internal fun StickyTextDialog(initial: String, onSave: (String) -> Unit, onDismiss: () -> Unit) {
     var value by remember { mutableStateOf(initial) }

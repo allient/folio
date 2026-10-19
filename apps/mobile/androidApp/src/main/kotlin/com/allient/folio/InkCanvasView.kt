@@ -141,6 +141,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         set(value) { if (field != value) { field = value; invalidate() } }
     private val strokeActions get() = listOfNotNull(CanvasAction.Copy, CanvasAction.Paste.takeIf { canPaste },
         CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Fill, CanvasAction.Delete, CanvasAction.More)
+    private fun blockActions(block: InkBlock) = if (block.kind == InkBlock.Sticky) listOf(CanvasAction.Edit, CanvasAction.Fill, CanvasAction.Delete) else listOf(CanvasAction.Delete)
     private fun objectActions() = listOfNotNull(CanvasAction.Edit.takeIf { selectedObjectIsText },
         CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Delete)
     private val rotateGlyph by lazy { androidx.core.graphics.PathParser.createPathFromPathData(InkIcon.RotateRight.path) }
@@ -232,6 +233,8 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private var blockStrokeIds: Set<String> = emptySet()
     /** Text boxes and images resting on the dragged block (a sticky note's content) move with it. */
     private var blockObjectIds: Set<String> = emptySet()
+    /** Block handle being dragged: 0–3 corners (TL, TR, BR, BL), 4–7 sides (L, R, T, B). */
+    private var blockHandle = 2
     private fun blockBounds(block: InkBlock) = RectF(block.x * width, block.y * documentHeight, (block.x + block.width) * width, (block.y + block.height) * documentHeight)
     private fun startBlockDrag(block: InkBlock, resize: Boolean) {
         draggingBlock = true; resizingBlock = resize; blocksBaseline = blockContent to strokes
@@ -252,10 +255,15 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         blockContent = blockContent.map { b ->
             if (b.id != id || !editable(b.layerId)) b
             else if (resizingBlock) {
-                val w = (b.width + dx).coerceIn(.04f, if (infiniteCanvas) 4f else (1f - b.x).coerceAtLeast(.04f))
-                val h = (b.height + dy).coerceIn(.03f, if (infiniteCanvas) 4f else (1f - b.y).coerceAtLeast(.03f))
-                scaleX = w / b.width; scaleY = h / b.height; originX = b.x; originY = b.y
-                b.copy(width = w, height = h)
+                var left = b.x; var top = b.y; var right = b.x + b.width; var bottom = b.y + b.height
+                if (blockHandle in setOf(0, 3, 4)) left = (left + dx).coerceAtMost(right - .04f)
+                if (blockHandle in setOf(1, 2, 5)) right = (right + dx).coerceAtLeast(left + .04f)
+                if (blockHandle in setOf(0, 1, 6)) top = (top + dy).coerceAtMost(bottom - .03f)
+                if (blockHandle in setOf(2, 3, 7)) bottom = (bottom + dy).coerceAtLeast(top + .03f)
+                if (!infiniteCanvas) { left = left.coerceAtLeast(0f); top = top.coerceAtLeast(0f); right = right.coerceAtMost(1f); bottom = bottom.coerceAtMost(1f) }
+                scaleX = (right - left) / b.width; scaleY = (bottom - top) / b.height; originX = b.x; originY = b.y
+                shiftX = left - b.x; shiftY = top - b.y
+                b.copy(x = left, y = top, width = right - left, height = bottom - top)
             } else {
                 val nx = if (infiniteCanvas) b.x + dx else (b.x + dx).coerceIn(0f, (1f - b.width).coerceAtLeast(0f))
                 val ny = if (infiniteCanvas) b.y + dy else (b.y + dy).coerceIn(0f, (1f - b.height).coerceAtLeast(0f))
@@ -266,13 +274,13 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         if (blockStrokeIds.isNotEmpty() && (shiftX != 0f || shiftY != 0f || scaleX != 1f || scaleY != 1f)) {
             strokes = strokes.map { s ->
                 if (s.id !in blockStrokeIds) s else s.copy(points = s.points.map { p ->
-                    if (resizingBlock) p.copy(x = originX + (p.x - originX) * scaleX, y = originY + (p.y - originY) * scaleY) else p.copy(x = p.x + shiftX, y = p.y + shiftY)
+                    if (resizingBlock) p.copy(x = originX + shiftX + (p.x - originX) * scaleX, y = originY + shiftY + (p.y - originY) * scaleY) else p.copy(x = p.x + shiftX, y = p.y + shiftY)
                 })
             }
         }
         if (blockObjectIds.isNotEmpty() && (shiftX != 0f || shiftY != 0f || scaleX != 1f || scaleY != 1f)) {
-            fun mx(x: Float) = if (resizingBlock) originX + (x - originX) * scaleX else x + shiftX
-            fun my(y: Float) = if (resizingBlock) originY + (y - originY) * scaleY else y + shiftY
+            fun mx(x: Float) = if (resizingBlock) originX + shiftX + (x - originX) * scaleX else x + shiftX
+            fun my(y: Float) = if (resizingBlock) originY + shiftY + (y - originY) * scaleY else y + shiftY
             textContent = texts.map { if (it.id in blockObjectIds) it.copy(x = mx(it.x), y = my(it.y)) else it }
             imageContent = images.map { if (it.id in blockObjectIds) it.copy(x = mx(it.x), y = my(it.y)) else it }
         }
@@ -451,6 +459,12 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     }
     var onObjectsChanged: (List<InkText>, List<InkImage>) -> Unit = { _, _ -> }
     var onObjectSelectionChanged: (String?, Boolean) -> Unit = { _, _ -> }
+    private fun applyBlockAction(block: InkBlock, action: CanvasAction) {
+        if (action != CanvasAction.Delete) { onCanvasAction(action); return }
+        if (!editable(block.layerId)) return
+        blockContent = blockContent.filterNot { it.id == block.id }
+        contentChanged(); onBlocksChanged(blockContent, strokes, texts, images); deselectObject()
+    }
     /** Selects an object from outside, e.g. a sticker just placed, without changing the tool. */
     fun selectObject(id: String, isText: Boolean) {
         selectedStrokeIds = emptySet(); onSelectionChanged(emptySet())
@@ -465,7 +479,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     /** Whether a touch lands on the selected object, its frame, handles or bar, so it is grabbed instead of drawn over. */
     private fun hitsSelectedObject(x: Float, y: Float): Boolean {
         val d = resources.displayMetrics.density / zoomValue
-        blockContent.firstOrNull { it.id == selectedBlockId }?.let { return RectF(blockBounds(it)).apply { inset(-24f * d, -24f * d) }.contains(x, y) }
+        blockContent.firstOrNull { it.id == selectedBlockId }?.let { block ->
+            val b = blockBounds(block)
+            return RectF(b).apply { inset(-24f * d, -24f * d) }.contains(x, y) || selectionActionRects(b, blockActions(block).size).any { it.contains(x, y) }
+        }
         val box = selectedObjectBounds() ?: return false
         val xf = selectedObjectTransform() ?: return RectF(box).apply { inset(-24f * d, -24f * d) }.contains(x, y)
         if (selectionActionRects(objectPageBounds(box, xf), objectActions().size).any { it.contains(x, y) }) return true
@@ -697,8 +714,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         selectionBounds()?.let { drawTransformBox(canvas, it) }
         blockContent.firstOrNull { it.id == selectedBlockId }?.let { block ->
             val bounds = blockBounds(block)
-            canvas.drawRect(bounds, selectionPaint)
-            canvas.drawCircle(bounds.right, bounds.bottom, 8f * resources.displayMetrics.density / zoomValue, handlePaint)
+            // Notes and tables use the same frame and bar as other objects (no rotation).
+            drawTransformFrame(canvas, bounds, sides = true, rotate = false)
+            val actions = blockActions(block)
+            drawActionBar(canvas, selectionActionRects(bounds, actions.size), actions)
             val cells = selectedCells
             if (block.kind == InkBlock.Table && cells != null && cells.size == 4) {
                 val rows = block.rows.ifEmpty { listOf(1f) }; val columns = block.columns.ifEmpty { listOf(1f) }
@@ -1305,7 +1324,15 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         draggingObject = false; resizingImage = false; rotatingObject = false; objectHandle = -1; draggingBlock = false; resizingBlock = false
         blockContent.firstOrNull { it.id == selectedBlockId && editable(it.layerId) }?.let { block ->
             val bounds = blockBounds(block)
-            if (hypot(x - bounds.right, y - bounds.bottom) < 24f * resources.displayMetrics.density / zoomValue) { startBlockDrag(block, resize = true); return }
+            val actions = blockActions(block)
+            val action = selectionActionRects(bounds, actions.size).indexOfFirst { it.contains(x, y) }
+            if (action >= 0) { applyBlockAction(block, actions[action]); return }
+            val handles = listOf(Offset(bounds.left, bounds.top), Offset(bounds.right, bounds.top), Offset(bounds.right, bounds.bottom), Offset(bounds.left, bounds.bottom),
+                Offset(bounds.left, bounds.centerY()), Offset(bounds.right, bounds.centerY()), Offset(bounds.centerX(), bounds.top), Offset(bounds.centerX(), bounds.bottom))
+            val reach = minOf(24f * resources.displayMetrics.density / zoomValue, minOf(bounds.width(), bounds.height()) * .35f)
+            handles.indices.filter { hypot(x - handles[it].x, y - handles[it].y) <= reach }.minByOrNull { hypot(x - handles[it].x, y - handles[it].y) }?.let {
+                blockHandle = it; startBlockDrag(block, resize = true); return
+            }
         }
         // The rotation handle floats above a selected image or plain text box.
         selectedObjectTransform()?.takeIf { xf ->
@@ -1490,16 +1517,18 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         val actions = strokeActions
         drawActionBar(canvas, selectionActionRects(b, actions.size), actions)
     }
-    private fun drawTransformFrame(canvas: Canvas, b: RectF, sides: Boolean) {
+    private fun drawTransformFrame(canvas: Canvas, b: RectF, sides: Boolean, rotate: Boolean = true) {
         val d = resources.displayMetrics.density / zoomValue
         canvas.drawRect(b, selectionPaint)
         transformFrame.strokeWidth = 1.5f * d
         // Rotation knob with a turning arrow.
+        if (rotate) {
         val knobY = b.top - ROTATE_HANDLE_DP * d; val knobR = 12f * d
         canvas.drawLine(b.centerX(), b.top, b.centerX(), knobY + knobR, transformFrame)
         canvas.drawCircle(b.centerX(), knobY, knobR, transformFill); canvas.drawCircle(b.centerX(), knobY, knobR, transformFrame)
         canvas.save(); canvas.translate(b.centerX() - 8f * d, knobY - 8f * d); canvas.scale(16f * d / 24f, 16f * d / 24f)
         actionIconPaint.color = Color.rgb(55, 108, 177); canvas.drawPath(rotateGlyph, actionIconPaint); canvas.restore()
+        }
         // Side bars: drag to change only the width or only the height.
         if (sides) drawSideBars(canvas, b, d)
         // Corner squares: scale keeping the proportions.
