@@ -640,10 +640,12 @@ internal fun NotebookEditor(
             CanvasAction.Copy -> { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) } }
             CanvasAction.Cut -> { canvas?.flushInput(); clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection() }
             CanvasAction.Paste -> paste()
-            CanvasAction.Fill -> sheet = if (page.blocks.any { it.id == selectedBlockId && it.kind == InkBlock.Sticky }) "note style" else "selection style"
+            CanvasAction.Fill -> sheet = when (page.blocks.firstOrNull { it.id == selectedBlockId }?.kind) {
+                InkBlock.Sticky -> "note style"; InkBlock.Table -> "table style"; else -> "selection style" }
             CanvasAction.Arrange -> sheet = "arrange"
             CanvasAction.More -> sheet = "selection"
-            CanvasAction.Edit -> page.blocks.firstOrNull { it.id == selectedBlockId && it.kind == InkBlock.Sticky }?.let { editingStickyId = it.id }
+            CanvasAction.Edit -> if (page.blocks.any { it.id == selectedBlockId && it.kind == InkBlock.Table }) sheet = "table"
+                else page.blocks.firstOrNull { it.id == selectedBlockId && it.kind == InkBlock.Sticky }?.let { editingStickyId = it.id }
                 ?: page.texts.firstOrNull { it.id == selectedObjectId && it.kind == "plain" }?.let { editingTextId = it.id; draft = it.text; sheet = "edit text" }
             else -> Unit
         }
@@ -845,6 +847,10 @@ internal fun NotebookEditor(
                     ToolAction(InkIcon.SendBack, "Send to back") { move(PageOrder.Move.Back); sheet = null }
                 }
                 "note style" -> page.blocks.firstOrNull { it.id == selectedBlockId }?.let { block -> StickyStyleControls(block) { changed -> updateBlock { changed } } }
+                "table" -> page.blocks.firstOrNull { it.id == selectedBlockId }?.let { block ->
+                    TableStructureControls(block, cellSelection, { changed -> updateBlock { changed } }, { cellSelection = it; if (it == null) cellAnchor = null })
+                }
+                "table style" -> page.blocks.firstOrNull { it.id == selectedBlockId }?.let { block -> TableStyleControls(block) { changed -> updateBlock { changed } } }
                 "selection layer" -> LayerControls(page, activeLayer, { activeLayer = it }, ::applyPage,
                     onChooseDestination = { updated, destination ->
                         canvas?.flushInput()
@@ -1524,11 +1530,6 @@ internal fun NotebookEditor(
                                     if (zoomPanelSize.width > 0) view.showRegion(box)
                                 })
                         }
-                    }
-                    page.blocks.firstOrNull { it.id == selectedBlockId && it.kind == InkBlock.Table }?.let { block ->
-                        BlockToolbar(block, cellSelection, { changed -> updateBlock { changed } }, { cellSelection = it; if (it == null) cellAnchor = null }, { editingStickyId = block.id },
-                            { applyPage(page.copy(blocks = page.blocks.filterNot { it.id == block.id })); selectedBlockId = null; canvas?.deselectObject() },
-                            Modifier.align(Alignment.TopCenter).padding(top = 8.dp).testTag("block-toolbar"))
                     }
                     page.blocks.firstOrNull { it.id == editingStickyId }?.let { note ->
                         StickyTextDialog(note.text, { text -> applyPage(page.copy(blocks = page.blocks.map { if (it.id == note.id) it.copy(text = text) else it })); editingStickyId = null }, { editingStickyId = null })

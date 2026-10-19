@@ -16,12 +16,20 @@ internal class CompletedInkPageCache {
     private var width = 0
     private var height = 0
     private var zoom = -1f
+    private var extent = android.graphics.Rect()
 
     fun draw(canvas: Canvas, page: NotebookPage, contentRevision: Long, w: Int, h: Int, scale: Float,
              images: Map<String, Bitmap>, filesDir: File, ink: JetpackInkEngine, activeLayerId: String,
-             live: (Canvas) -> Unit) {
+             live: (Canvas) -> Unit, unbounded: Boolean = false) {
         if (revision != contentRevision || width != w || height != h || zoom != scale || blocks.values.any { !it.node.hasDisplayList() }) {
-            val dimensionsChanged = width != w || height != h || zoom != scale
+            // A render node clips to its bounds, so on the infinite canvas they cover all content, not just the first sheet.
+            val nextExtent = if (!unbounded) android.graphics.Rect(0, 0, w, h) else worldContentBounds(page).let { b ->
+                val pad = w * .05f
+                android.graphics.Rect(minOf(0f, b.left * w - pad).toInt(), minOf(0f, b.top * h - pad).toInt(),
+                    maxOf(w.toFloat(), b.right * w + pad).toInt() + 1, maxOf(h.toFloat(), b.bottom * h + pad).toInt() + 1)
+            }
+            val dimensionsChanged = width != w || height != h || zoom != scale || nextExtent != extent
+            extent = nextExtent
             val next = mutableListOf<RenderNode?>()
             val used = mutableSetOf<String>()
             fun record(key: String, source: Any, draw: (Canvas) -> Unit) {
@@ -29,9 +37,9 @@ internal class CompletedInkPageCache {
                 val previous = blocks[key]
                 val node = previous?.node ?: RenderNode("Folio $key")
                 if (dimensionsChanged || previous?.source != source || !node.hasDisplayList()) {
-                    node.setPosition(0, 0, w, h)
-                    val recording = node.beginRecording(w, h)
-                    try { draw(recording) } finally { node.endRecording() }
+                    node.setPosition(extent)
+                    val recording = node.beginRecording(extent.width(), extent.height())
+                    try { recording.translate(-extent.left.toFloat(), -extent.top.toFloat()); draw(recording) } finally { node.endRecording() }
                     blocks[key] = Block(source, node)
                 }
                 next += node

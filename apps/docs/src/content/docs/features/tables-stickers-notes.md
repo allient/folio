@@ -25,8 +25,9 @@ Strokes are not otherwise linked to the table: a stroke written outside it and l
 
 ## Interaction
 
-- Inserting a block switches to **Objects** mode with the block selected. A floating toolbar appears (table: header row/column, rows and columns +/-, equalize, border width, border and fill
-  colour, delete; sticky note: colour, edit text, font size, delete). Drag the block to move it, drag the bottom-right dot to resize.
+- Inserting a table switches to **Objects** mode with the table selected; a sticky note is selected in the current tool. The selection bar sits right under the block
+  (table: **Edit** for rows, columns, headers and merges, **Fill** for border width, border and fill colour, **Arrange**, **Delete**; sticky note: **Edit** text, **Fill** for colour and
+  text size, **Arrange**, **Delete**). Drag the block to move it, drag a handle to resize.
 - In Objects mode a finger only selects/moves objects when **Write with finger** is on (Gestures panel), the same rule that already applied to images and text boxes.
 - Tap empty page in Objects mode to deselect.
 
@@ -34,8 +35,8 @@ Strokes are not otherwise linked to the table: a stroke written outside it and l
 
 - Entering Objects mode (Text rail → **Arrange objects**, or long-press when "Long press to select" is on) and tapping a table selects it; **tapping a cell selects the cell**
   (blue highlight). Tapping a second cell extends the selection to the rectangle between them, grown to include any merged range it cuts through. Tapping the same single cell again clears it.
-- With a cell or range selected the toolbar shows: **Row above / Row below / Column left / Column right**, **Delete row / Delete column** (every selected row or column),
-  **Merge**, **Unmerge** and **Done**. With nothing selected it shows header toggles and append-only Rows/Columns +/- counters.
+- **Edit** on the table bar opens the table sheet. With a cell or range selected it starts with **Row above / Row below / Column left / Column right**,
+  **Delete row / Delete column** (every selected row or column), **Merge** and **Unmerge**; below that come the Rows/Columns +/- counters, **Equal sizes** and the header toggles.
 - Merges are stored as `merges: [[firstRow, firstColumn, lastRow, lastColumn], ...]` on the block. Inserting or deleting rows and columns shifts, grows or drops merges
   (`InkBlock.insertRow/insertColumn/deleteRow/deleteColumn` in `BlockUi.kt`). Merging draws no grid lines inside the merged range; header shading is by position, so a merged header stays shaded.
 - Verified on the emulator: select one cell, extend to two, merge (interior line disappears, Unmerge becomes enabled), then Row below (a fourth row appears and the merge is kept).

@@ -141,7 +141,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         set(value) { if (field != value) { field = value; invalidate() } }
     private val strokeActions get() = listOfNotNull(CanvasAction.Copy, CanvasAction.Paste.takeIf { canPaste },
         CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Fill, CanvasAction.Delete, CanvasAction.More)
-    private fun blockActions(block: InkBlock) = if (block.kind == InkBlock.Sticky) listOf(CanvasAction.Edit, CanvasAction.Fill, CanvasAction.Arrange, CanvasAction.Delete) else listOf(CanvasAction.Arrange, CanvasAction.Delete)
+    private fun blockActions(block: InkBlock) = if (block.kind == InkBlock.Sticky) listOf(CanvasAction.Edit, CanvasAction.Fill, CanvasAction.Arrange, CanvasAction.Delete) else listOf(CanvasAction.Edit, CanvasAction.Fill, CanvasAction.Arrange, CanvasAction.Delete)
     private fun objectActions() = listOfNotNull(CanvasAction.Edit.takeIf { selectedObjectIsText },
         CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Arrange, CanvasAction.Delete)
     private val rotateGlyph by lazy { androidx.core.graphics.PathParser.createPathFromPathData(InkIcon.RotateRight.path) }
@@ -708,7 +708,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         }
         if (Build.VERSION.SDK_INT >= 29 && canvas.isHardwareAccelerated) {
             val commands = pageCommands ?: CompletedInkPageCache().also { pageCommands = it }
-            commands.draw(canvas, page, contentRevision, width, documentHeight, zoomValue, imageBitmaps, context.filesDir, ink, activeLayerId, ::drawLive)
+            commands.draw(canvas, page, contentRevision, width, documentHeight, zoomValue, imageBitmaps, context.filesDir, ink, activeLayerId, ::drawLive, infiniteCanvas)
         } else {
             // Software/API 25–28 fallback preserves the same layer order and vector data.
             val index = layers.indexOfFirst { it.id == activeLayerId }.coerceAtLeast(0)

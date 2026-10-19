@@ -239,49 +239,53 @@ private fun ToolChip(label: String, selected: Boolean = false, enabled: Boolean 
     }
 }
 
-/** Floating toolbar for the selected table or sticky note. */
+/** Rows, columns, headers and merges, opened from the table's selection bar. Selected cells come first. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun BlockToolbar(block: InkBlock, cells: List<Int>?, onChange: (InkBlock) -> Unit, onCells: (List<Int>?) -> Unit, onEditText: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(modifier, shape = RoundedCornerShape(26.dp), shadowElevation = 4.dp, color = Color.White) {
-        Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (block.kind == InkBlock.Sticky) {
-                StickyColors.forEach { color -> ColorDot(color, block.fill == color, "Note color ${color.toUInt().toString(16)}") { onChange(block.copy(fill = color)) } }
-                ToolChip("Edit text", onClick = onEditText)
-                ToolChip("A−") { onChange(block.copy(textSize = (block.textSize - 2f).coerceAtLeast(8f))) }
-                Text("${block.textSize.toInt()}", fontSize = 12.sp)
-                ToolChip("A+") { onChange(block.copy(textSize = (block.textSize + 2f).coerceAtMost(48f))) }
-            } else if (cells != null && cells.size == 4) {
-                val first = cells[0]; val last = cells[2]; val left = cells[1]; val right = cells[3]
-                val single = first == last && left == right
-                ToolChip("Row above") { onChange(block.insertRow(first)); onCells(listOf(first + 1, left, first + 1, right)) }
-                ToolChip("Row below") { onChange(block.insertRow(last + 1)); onCells(null) }
-                ToolChip("Column left") { onChange(block.insertColumn(left)); onCells(listOf(first, left + 1, last, left + 1)) }
-                ToolChip("Column right") { onChange(block.insertColumn(right + 1)); onCells(null) }
-                ToolChip("Delete row", enabled = block.rows.size > 1) { var next = block; for (r in last downTo first) next = next.deleteRow(r); onChange(next); onCells(null) }
-                ToolChip("Delete column", enabled = block.columns.size > 1) { var next = block; for (c in right downTo left) next = next.deleteColumn(c); onChange(next); onCells(null) }
-                ToolChip("Merge", enabled = !single) { onChange(block.mergeRange(cells)); onCells(block.expandToMerges(cells)) }
-                ToolChip("Unmerge", enabled = block.mergeContaining(first, left) != null) { onChange(block.unmerge(first, left)) }
-                ToolChip("Done") { onCells(null) }
-            } else {
-                Text("Tap a cell to edit rows, columns and merges", fontSize = 11.sp, color = Color(0xFF666670))
-                ToolChip("Header row", block.headerRow) { onChange(block.copy(headerRow = !block.headerRow)) }
-                ToolChip("Header column", block.headerColumn) { onChange(block.copy(headerColumn = !block.headerColumn)) }
-                ToolChip("Rows −", enabled = block.rows.size > 1) { onChange(block.copy(rows = resizeFractions(block.rows, block.rows.size - 1))) }
-                Text("${block.rows.size.coerceAtLeast(1)}", fontSize = 12.sp)
-                ToolChip("Rows +") { onChange(block.copy(rows = resizeFractions(block.rows, block.rows.size + 1))) }
-                ToolChip("Columns −", enabled = block.columns.size > 1) { onChange(block.copy(columns = resizeFractions(block.columns, block.columns.size - 1))) }
-                Text("${block.columns.size.coerceAtLeast(1)}", fontSize = 12.sp)
-                ToolChip("Columns +") { onChange(block.copy(columns = resizeFractions(block.columns, block.columns.size + 1))) }
-                ToolChip("Equalize") { onChange(block.copy(rows = equalFractions(block.rows.size), columns = equalFractions(block.columns.size))) }
-                ToolChip("Border −") { onChange(block.copy(borderWidth = (block.borderWidth - 1f).coerceAtLeast(0f))) }
-                Text("${block.borderWidth.toInt()}", fontSize = 12.sp)
-                ToolChip("Border +") { onChange(block.copy(borderWidth = (block.borderWidth + 1f).coerceAtMost(8f))) }
-                ColorMenuDot(block.borderColor, "Border color", TableBorderColors) { onChange(block.copy(borderColor = it)) }
-                ColorMenuDot(block.fill, "Fill color", TableFillColors) { onChange(block.copy(fill = it)) }
-            }
-            ToolChip("Delete", onClick = onDelete)
-        }
+internal fun TableStructureControls(block: InkBlock, cells: List<Int>?, onChange: (InkBlock) -> Unit, onCells: (List<Int>?) -> Unit) {
+    @Composable fun Section(title: String, content: @Composable () -> Unit) {
+        Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        FlowRow(Modifier.padding(top = 6.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
     }
+    if (cells != null && cells.size == 4) {
+        val first = cells[0]; val last = cells[2]; val left = cells[1]; val right = cells[3]
+        Section("Selected cells") {
+            ToolChip("Row above") { onChange(block.insertRow(first)); onCells(listOf(first + 1, left, first + 1, right)) }
+            ToolChip("Row below") { onChange(block.insertRow(last + 1)); onCells(null) }
+            ToolChip("Column left") { onChange(block.insertColumn(left)); onCells(listOf(first, left + 1, last, left + 1)) }
+            ToolChip("Column right") { onChange(block.insertColumn(right + 1)); onCells(null) }
+            ToolChip("Delete row", enabled = block.rows.size > 1) { var next = block; for (r in last downTo first) next = next.deleteRow(r); onChange(next); onCells(null) }
+            ToolChip("Delete column", enabled = block.columns.size > 1) { var next = block; for (c in right downTo left) next = next.deleteColumn(c); onChange(next); onCells(null) }
+            ToolChip("Merge", enabled = !(first == last && left == right)) { onChange(block.mergeRange(cells)); onCells(block.expandToMerges(cells)) }
+            ToolChip("Unmerge", enabled = block.mergeContaining(first, left) != null) { onChange(block.unmerge(first, left)) }
+        }
+    } else Text("Tap a cell to add or delete rows and columns there, or drag across cells to merge them.", fontSize = 12.sp, color = Color(0xFF666670), modifier = Modifier.padding(bottom = 12.dp))
+    Section("Size") {
+        ToolChip("Rows −", enabled = block.rows.size > 1) { onChange(block.copy(rows = resizeFractions(block.rows, block.rows.size - 1))) }
+        Text("${block.rows.size.coerceAtLeast(1)} rows", fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+        ToolChip("Rows +") { onChange(block.copy(rows = resizeFractions(block.rows, block.rows.size + 1))) }
+        ToolChip("Columns −", enabled = block.columns.size > 1) { onChange(block.copy(columns = resizeFractions(block.columns, block.columns.size - 1))) }
+        Text("${block.columns.size.coerceAtLeast(1)} columns", fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+        ToolChip("Columns +") { onChange(block.copy(columns = resizeFractions(block.columns, block.columns.size + 1))) }
+        ToolChip("Equal sizes") { onChange(block.copy(rows = equalFractions(block.rows.size), columns = equalFractions(block.columns.size))) }
+    }
+    Section("Headers") {
+        ToolChip("Header row", block.headerRow) { onChange(block.copy(headerRow = !block.headerRow)) }
+        ToolChip("Header column", block.headerColumn) { onChange(block.copy(headerColumn = !block.headerColumn)) }
+    }
+}
+
+/** Border and fill, opened from the table's selection bar. */
+@Composable
+internal fun TableStyleControls(block: InkBlock, onChange: (InkBlock) -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Border width", Modifier.weight(1f), fontSize = 14.sp)
+        ToolChip("−", enabled = block.borderWidth > 0f) { onChange(block.copy(borderWidth = (block.borderWidth - 1f).coerceAtLeast(0f))) }
+        Text("${block.borderWidth.toInt()}", fontSize = 14.sp)
+        ToolChip("+", enabled = block.borderWidth < 8f) { onChange(block.copy(borderWidth = (block.borderWidth + 1f).coerceAtMost(8f))) }
+    }
+    Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("Border color", Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(block.borderColor, "Border color", TableBorderColors) { onChange(block.copy(borderColor = it)) } }
+    Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("Fill color", Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(block.fill, "Fill color", TableFillColors) { onChange(block.copy(fill = it)) } }
 }
 
 /** Note colour and text size, opened from the note's selection bar. */
