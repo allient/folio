@@ -1194,7 +1194,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             val now = Math.toDegrees(kotlin.math.atan2((point.y * documentHeight - xf.py).toDouble(), (point.x * width - xf.px).toDouble())).toFloat()
             var angle = ((objectRotationBase + now - objectRotationStart) % 360f + 360f) % 360f
             // Settle on the straight angles so a quick turn lines up without effort.
-            val straight = (angle / 90f).roundToInt() * 90f
+            val straight = kotlin.math.round(angle / 90f) * 90f
             if (kotlin.math.abs(angle - straight) < 4f) angle = straight % 360f
             if (selectedObjectIsText) textContent = texts.map { if (it.id == selectedObjectId && editable(it.layerId)) it.copy(rotation = angle) else it }
             else imageContent = images.map { if (it.id == selectedObjectId && editable(it.layerId)) it.copy(rotation = angle) else it }
