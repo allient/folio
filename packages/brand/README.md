@@ -15,7 +15,7 @@ Version 1.0, October 2026. The full guide is in Spanish: [`docs/GUIA_DE_MARCA.md
 
 ## Where the app uses it
 
-- **Launcher icon:** `android/res/` is copied into `apps/mobile/androidApp/src/main/res/`. The foreground and monochrome layers are scaled to 0.7 (the kit ships 0.8) so the top stroke stays inside the 66 dp safe circle under circular masks.
+- **Launcher icon:** the primary icon (sage F on cream paper with the folded corner). The adaptive background is cream; the foreground draws the fold and the F, mapped to the 72 dp visible area with the fold running past the edge. The monochrome layer (Android 13 themed icons) is the white F from the kit, scaled to 0.7 so it stays inside the 66 dp safe circle. The legacy mipmaps are rendered from `png/folio-icon-primary-512.png`. The flat icon (white F on sage) is kept for the iOS icon and the Play Store image.
 - **In-app marks:** `apps/mobile/shared/src/commonMain/composeResources/drawable/folio_symbol.xml` (sidebar) and `folio_icon_primary.xml` (About), drawn from `svg/folio-symbol-sage.svg` and `svg/folio-icon-primary.svg`.
 - **Colours and type:** `FolioBrand` and `folioTypography()` in `apps/mobile/shared/src/commonMain/kotlin/com/allient/folio/FolioBrand.kt`. Geist is bundled under the SIL Open Font License.
 - **Docs site:** `apps/docs/src/styles/brand.css`, logo `folio-icon-primary.svg`, favicon `folio-symbol-sage.svg`.

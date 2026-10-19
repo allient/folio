@@ -4,6 +4,6 @@
         <item name="android:colorAccent">#2F7A68</item>
         <item name="android:windowBackground">#FBF8F2</item>
         <item name="android:windowSplashScreenBackground">#F6F1E6</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">#2F7A68</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#F6F1E6</item>
     </style>
 </resources>

@@ -55,8 +55,8 @@ Stretch or rotate the F, separate the dot, add strong shadows, change the sage, 
 
 | Where | What |
 |---|---|
-| Launcher | Flat icon (white F on sage) with Android 13 themed (monochrome) layer |
-| Launch screen (Android 12+) | Flat icon on cream |
+| Launcher | Primary icon (sage F on cream with the fold) and an Android 13 themed (monochrome) layer |
+| Launch screen (Android 12+) | Primary icon on cream |
 | Library | Cream paper background, white cards, sage accent (default), Geist type |
 | Sidebar | Sage «F.» symbol and the «Folio» wordmark in Geist SemiBold |
 | About | Primary icon, name and «Handwritten Notes & eReader» |
