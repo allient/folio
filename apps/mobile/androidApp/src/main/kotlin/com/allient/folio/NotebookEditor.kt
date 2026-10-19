@@ -802,6 +802,7 @@ internal fun NotebookEditor(
                 }
                 "selection" -> {
                     // Only what the bar beside the selection does not already show.
+                    ToolAction(InkIcon.Cut, "Cut", "Remove the selection and keep it to paste") { canvas?.flushInput(); clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection(); sheet = null }
                     ToolAction(InkIcon.Hand, "Move selection", "Drag anywhere on the canvas to move the selected ink") { canvas?.flushInput(); mode = CanvasMode.MoveSelection; sheet = null }
                     ToolAction(InkIcon.Add, "Larger 10%") { transformSelection(scale = 1.1f); sheet = null }
                     ToolAction(InkIcon.Zoom, "Smaller 10%") { transformSelection(scale = 1f / 1.1f); sheet = null }

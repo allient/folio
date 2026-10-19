@@ -139,7 +139,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     /** Whether the editor's clipboard holds ink, so the bar offers Paste. */
     var canPaste = false
         set(value) { if (field != value) { field = value; invalidate() } }
-    private val strokeActions get() = listOfNotNull(CanvasAction.Cut, CanvasAction.Copy, CanvasAction.Paste.takeIf { canPaste },
+    private val strokeActions get() = listOfNotNull(CanvasAction.Copy, CanvasAction.Paste.takeIf { canPaste },
         CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Fill, CanvasAction.Delete, CanvasAction.More)
     private fun objectActions() = listOfNotNull(CanvasAction.Edit.takeIf { selectedObjectIsText },
         CanvasAction.MirrorX, CanvasAction.MirrorY, CanvasAction.RotateLeft, CanvasAction.Rotate, CanvasAction.Delete)
