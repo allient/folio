@@ -217,9 +217,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         set(value) { if (blockContent != value) { finishGesture(); resetFrontInk(); blockContent = value; contentChanged() } }
     var selectedBlockId: String? = null
         set(value) { if (field != value) { field = value; postInvalidateOnAnimation() } }
-    var onBlocksChanged: (List<InkBlock>, List<InkStroke>) -> Unit = { _, _ -> }
+    var onBlocksChanged: (List<InkBlock>, List<InkStroke>, List<InkText>, List<InkImage>) -> Unit = { _, _, _, _ -> }
     var onBlockSelectionChanged: (String?) -> Unit = {}
     private var blocksBaseline: Pair<List<InkBlock>, List<InkStroke>>? = null
+    private var blockObjectsBaseline: Pair<List<InkText>, List<InkImage>>? = null
     /** Selected table cells as [firstRow, firstColumn, lastRow, lastColumn]; drawn over the selected table. */
     var selectedCells: List<Int>? = null
         set(value) { if (field != value) { field = value; postInvalidateOnAnimation() } }
@@ -229,6 +230,8 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private var draggingBlock = false
     private var resizingBlock = false
     private var blockStrokeIds: Set<String> = emptySet()
+    /** Text boxes and images resting on the dragged block (a sticky note's content) move with it. */
+    private var blockObjectIds: Set<String> = emptySet()
     private fun blockBounds(block: InkBlock) = RectF(block.x * width, block.y * documentHeight, (block.x + block.width) * width, (block.y + block.height) * documentHeight)
     private fun startBlockDrag(block: InkBlock, resize: Boolean) {
         draggingBlock = true; resizingBlock = resize; blocksBaseline = blockContent to strokes
@@ -237,6 +240,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 (s.points.minOf { it.x } + s.points.maxOf { it.x }) / 2f in block.x..(block.x + block.width) &&
                 (s.points.minOf { it.y } + s.points.maxOf { it.y }) / 2f in block.y..(block.y + block.height)
         }.map { it.id }.toSet()
+        blockObjectsBaseline = texts to images
+        val area = blockBounds(block)
+        blockObjectIds = (texts.filter { editable(it.layerId) && it.kind == "plain" && textBounds(it).let { b -> area.contains(b.centerX(), b.centerY()) } }.map { it.id } +
+            images.filter { editable(it.layerId) && imageBounds(it).let { b -> area.contains(b.centerX(), b.centerY()) } }.map { it.id }).toSet()
     }
     private fun moveBlock(point: Offset) {
         val id = selectedBlockId ?: return
@@ -263,13 +270,21 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 })
             }
         }
+        if (blockObjectIds.isNotEmpty() && (shiftX != 0f || shiftY != 0f || scaleX != 1f || scaleY != 1f)) {
+            fun mx(x: Float) = if (resizingBlock) originX + (x - originX) * scaleX else x + shiftX
+            fun my(y: Float) = if (resizingBlock) originY + (y - originY) * scaleY else y + shiftY
+            textContent = texts.map { if (it.id in blockObjectIds) it.copy(x = mx(it.x), y = my(it.y)) else it }
+            imageContent = images.map { if (it.id in blockObjectIds) it.copy(x = mx(it.x), y = my(it.y)) else it }
+        }
         contentChanged()
     }
     private fun publishBlocks() {
         val previous = blocksBaseline
         val wasResizing = resizingBlock
-        blocksBaseline = null; draggingBlock = false; resizingBlock = false; blockStrokeIds = emptySet()
-        if (previous != null && (previous.first != blockContent || previous.second != strokes)) onBlocksChanged(blockContent, strokes)
+        val previousObjects = blockObjectsBaseline
+        blocksBaseline = null; blockObjectsBaseline = null; draggingBlock = false; resizingBlock = false; blockStrokeIds = emptySet(); blockObjectIds = emptySet()
+        if (previous != null && (previous.first != blockContent || previous.second != strokes || previousObjects?.first != texts || previousObjects.second != images))
+            onBlocksChanged(blockContent, strokes, texts, images)
         else if (previous != null && !wasResizing) selectedBlockId?.let { onBlockTap(it, blockTouch.x, blockTouch.y) }
     }
 
@@ -436,6 +451,39 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     }
     var onObjectsChanged: (List<InkText>, List<InkImage>) -> Unit = { _, _ -> }
     var onObjectSelectionChanged: (String?, Boolean) -> Unit = { _, _ -> }
+    /** Selects an object from outside, e.g. a sticker just placed, without changing the tool. */
+    fun selectObject(id: String, isText: Boolean) {
+        selectedStrokeIds = emptySet(); onSelectionChanged(emptySet())
+        selectedBlockId = null; onBlockSelectionChanged(null)
+        selectedObjectId = id; selectedObjectIsText = isText; onObjectSelectionChanged(id, isText); invalidate()
+    }
+    fun selectBlock(id: String) {
+        selectedStrokeIds = emptySet(); onSelectionChanged(emptySet())
+        selectedObjectId = null; onObjectSelectionChanged(null, false)
+        selectedBlockId = id; onBlockSelectionChanged(id); invalidate()
+    }
+    /** Whether a touch lands on the selected object, its frame, handles or bar, so it is grabbed instead of drawn over. */
+    private fun hitsSelectedObject(x: Float, y: Float): Boolean {
+        val d = resources.displayMetrics.density / zoomValue
+        blockContent.firstOrNull { it.id == selectedBlockId }?.let { return RectF(blockBounds(it)).apply { inset(-24f * d, -24f * d) }.contains(x, y) }
+        val box = selectedObjectBounds() ?: return false
+        val xf = selectedObjectTransform() ?: return RectF(box).apply { inset(-24f * d, -24f * d) }.contains(x, y)
+        if (selectionActionRects(objectPageBounds(box, xf), objectActions().size).any { it.contains(x, y) }) return true
+        val local = toObjectFrame(x, y, xf.px, xf.py, xf.rotation, selectedObjectIsText && xf.flipX, selectedObjectIsText && xf.flipY)
+        val reach = RectF(box).apply { inset(-24f * d, -24f * d); top -= ROTATE_HANDLE_DP * d }
+        return reach.contains(local.x, local.y)
+    }
+    /** Lasso over objects: the topmost text, image or note whose centre is inside, or under a tap. */
+    private fun selectObjectIn(polygon: List<Offset>, tap: Offset?): Boolean {
+        fun inside(b: RectF): Boolean = if (tap != null) b.contains(tap.x * width, tap.y * documentHeight)
+            else InkGeometry.contains(Offset(b.centerX() / width, b.centerY() / documentHeight), polygon)
+        for (layer in layers.asReversed().filter { it.visible && !it.locked }) {
+            texts.asReversed().firstOrNull { it.layerId == layer.id && inside(textBounds(it)) }?.let { selectObject(it.id, true); return true }
+            images.asReversed().firstOrNull { it.layerId == layer.id && inside(imageBounds(it)) }?.let { selectObject(it.id, false); return true }
+            blockContent.asReversed().firstOrNull { it.layerId == layer.id && inside(blockBounds(it)) }?.let { selectBlock(it.id); return true }
+        }
+        return false
+    }
     fun deselectObject() { selectedObjectId = null; selectedBlockId = null; onBlockSelectionChanged(null); onObjectSelectionChanged(null, false); invalidate() }
     val zoom: Float get() = zoomValue
     val viewportCenterX: Float get() = if (width > 0) ((width / 2f - panX) / width / zoomValue).let { if (infiniteCanvas) it else it.coerceIn(0f, 1f) } else .5f
@@ -647,7 +695,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 width, documentHeight, context.filesDir, allowImageDecode = false, ink = ink, viewportZoom = zoomValue, imageBitmaps = imageBitmaps, drawBackground = false)
         }
         selectionBounds()?.let { drawTransformBox(canvas, it) }
-        if (mode == CanvasMode.Objects) blockContent.firstOrNull { it.id == selectedBlockId }?.let { block ->
+        blockContent.firstOrNull { it.id == selectedBlockId }?.let { block ->
             val bounds = blockBounds(block)
             canvas.drawRect(bounds, selectionPaint)
             canvas.drawCircle(bounds.right, bounds.bottom, 8f * resources.displayMetrics.density / zoomValue, handlePaint)
@@ -663,7 +711,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 canvas.drawRect(left, top, right, bottom, fill); canvas.drawRect(left, top, right, bottom, selectionPaint)
             }
         }
-        if (mode == CanvasMode.Objects) selectedObjectBounds()?.let {
+        selectedObjectBounds()?.let {
             val xform = selectedObjectTransform()
             if (xform != null) {
                 // Same frame as ink selections, turned with the object; the action bar stays upright.
@@ -908,14 +956,20 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                         hypot(px - bounds.centerX(), py - bounds.bottom) <= reach -> { stretchAxis = 2; stretchPivot = bounds.top + 8f; stretchStart = py }
                     }
                 }
-                val selectionDrag = selectedStrokeIds.isNotEmpty() && selectionTool &&
+                // Like a selected shape: a selected sticker, note, image or text is grabbed in any tool;
+                // touching elsewhere lets it go and the tool works as usual.
+                val objectSelected = selectedObjectId != null || selectedBlockId != null
+                val objectGrab = objectSelected && mode != CanvasMode.Objects && selectionTool && hitsSelectedObject(px, py)
+                if (objectSelected && mode != CanvasMode.Objects && !objectGrab) deselectObject()
+                if (objectGrab) { resizingSelection = false; rotatingSelection = false; stretchAxis = 0 }
+                val selectionDrag = !objectGrab && selectedStrokeIds.isNotEmpty() && selectionTool &&
                     (resizingSelection || rotatingSelection || stretchAxis != 0 || mode == CanvasMode.MoveSelection || bounds?.contains(point.x * width, point.y * documentHeight) == true)
                 val pageSwipeGesture = singlePageFingerSwipeEnabled && !fingerDrawing && mode == CanvasMode.Write && !brush.eraser
-                val panByFinger = !stylus && !mouse && !fingerDrawing && !selectionDrag && (infiniteCanvas || zoomValue > 1.01f)
-                if (!stylus && !mouse && !fingerDrawing && !selectionDrag && !pageSwipeGesture && mode != CanvasMode.Pan && !panByFinger) return true
+                val panByFinger = !stylus && !mouse && !fingerDrawing && !selectionDrag && !objectGrab && (infiniteCanvas || zoomValue > 1.01f)
+                if (!stylus && !mouse && !fingerDrawing && !selectionDrag && !objectGrab && !pageSwipeGesture && mode != CanvasMode.Pan && !panByFinger) return true
                 if (stylus || fingerDrawing) requestUnbufferedDispatch(event)
                 activePointerId = event.getPointerId(index); activeBrush = brush
-                gestureMode = if (selectionDrag) CanvasMode.MoveSelection else if (panByFinger) CanvasMode.Pan else mode
+                gestureMode = if (objectGrab) CanvasMode.Objects else if (selectionDrag) CanvasMode.MoveSelection else if (panByFinger) CanvasMode.Pan else mode
                 horizontalSwipeTracking = pageSwipeGesture && !stylus && !mouse &&
                     mode == CanvasMode.Write && !activeBrush.eraser
                 horizontalSwipeConsumed = false
@@ -1409,12 +1463,17 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun finishLasso() {
         val polygon = lassoPolygon()
         val erase = gestureMode == CanvasMode.Write && activeBrush.eraser && eraserMode == EraserMode.Lasso
+        // A tap or a tiny loop with the lasso picks the object under it.
+        val tiny = lasso.isNotEmpty() && (lasso.maxOf { it.x } - lasso.minOf { it.x }) * width < 12f * resources.displayMetrics.density &&
+            (lasso.maxOf { it.y } - lasso.minOf { it.y }) * documentHeight < 12f * resources.displayMetrics.density
+        if (!erase && gestureMode == CanvasMode.Lasso && tiny) { selectObjectIn(emptyList(), lasso.first()); lasso.clear(); return }
         if (polygon.size >= 3) {
             val ids = strokes.filter { (if (erase) canErase(it) else editable(it.layerId)) && InkGeometry.intersects(it, polygon) }.map { it.id }.toSet()
             if (erase && ids.isNotEmpty()) {
                 if (editBaseline == null) editBaseline = strokes
                 strokes = strokes.filterNot { it.id in ids }
-            } else if (!erase) { selectedStrokeIds = ids; onSelectionChanged(ids) }
+            } else if (!erase && ids.isEmpty() && gestureMode == CanvasMode.Lasso) selectObjectIn(polygon, null)
+            else if (!erase) { selectedStrokeIds = ids; onSelectionChanged(ids) }
         }
         lasso.clear()
     }

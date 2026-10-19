@@ -566,7 +566,9 @@ internal fun NotebookEditor(
     }
     fun addBlock(block: InkBlock) {
         canvas?.flushInput()
-        applyPage(page.copy(blocks = page.blocks + block)); selectedBlockId = block.id; selectedIds = emptySet(); mode = CanvasMode.Objects; sheet = null
+        applyPage(page.copy(blocks = page.blocks + block)); selectedBlockId = block.id; selectedIds = emptySet(); sheet = null
+        // Tables open in Arrange mode for cell editing; sticky notes stay selected in the current tool, like a new shape.
+        if (block.kind == InkBlock.Table) mode = CanvasMode.Objects else canvas?.selectBlock(block.id)
     }
     fun updateBlock(change: (InkBlock) -> InkBlock) { applyPage(page.copy(blocks = page.blocks.map { if (it.id == selectedBlockId) change(it) else it })) }
     fun addTable() {
@@ -585,8 +587,10 @@ internal fun NotebookEditor(
         val box = placeBlock(.2f, 1f)
         val file = runCatching { renderStickerFile(context, emoji) }.getOrElse { message = "Could not create this sticker."; return }
         canvas?.flushInput()
-        applyPage(page.copy(images = page.images + InkImage(path = file.absolutePath, x = box.left, y = box.top, width = box.width(), height = box.height(), layerId = activeLayer)))
-        selectedBlockId = null; mode = CanvasMode.Objects; sheet = null
+        val sticker = InkImage(path = file.absolutePath, x = box.left, y = box.top, width = box.width(), height = box.height(), layerId = activeLayer)
+        applyPage(page.copy(images = page.images + sticker))
+        // Selected right away in the current tool, like a new shape: drag to move, handles to resize.
+        selectedBlockId = null; sheet = null; canvas?.selectObject(sticker.id, isText = false)
     }
     fun selectEraser() {
         canvas?.flushInput(); showBrush = false; selectedIds = emptySet()
@@ -1187,6 +1191,8 @@ internal fun NotebookEditor(
                 "more" -> {
                     ToolAction(InkIcon.Rename, "Rename notebook") { draft = notebook.title; sheet = "rename" }
                     ToolAction(InkIcon.Search, "Search") { draft = ""; sheet = "search" }
+                    ToolAction(InkIcon.Sticker, "Stickers", "Place an emoji sticker on the page") { sheet = "stickers" }
+                    ToolAction(InkIcon.Sticky, "Sticky note", "Place a coloured note you can write on") { addStickyNote() }
                     ToolAction(InkIcon.Tag, "Notebook tags") { selectedIds = emptySet(); draft = ""; sheet = "tags" }
                     ToolAction(InkIcon.More, "Customize Toolbar") { sheet = "customize toolbar" }
                     if (clipboard.isNotEmpty()) ToolAction(InkIcon.Copy, "Paste strokes") { paste(); sheet = null }
@@ -1413,7 +1419,7 @@ internal fun NotebookEditor(
                                         }
                                     }
                                     view.onBlockSelectionChanged = { id -> if (id != selectedBlockId) { cellSelection = null; cellAnchor = null }; selectedBlockId = id }
-                                    view.onBlocksChanged = { updatedBlocks, updatedStrokes -> applyPage(page.copy(blocks = updatedBlocks, strokes = updatedStrokes)) }
+                                    view.onBlocksChanged = { updatedBlocks, updatedStrokes, updatedTexts, updatedImages -> applyPage(page.copy(blocks = updatedBlocks, strokes = updatedStrokes, texts = updatedTexts, images = updatedImages)) }
                                     view.zoomWindow = zoomBox; view.zoomWindowRatio = zoomRatio; view.onZoomWindowChanged = { zoomBox = it }
                                     view.eraserWidth = eraserWidth; view.eraseActiveLayerOnly = eraseActiveLayerOnly; view.lassoKind = lassoKind
                                     view.onEraseFinished = { if (autoReturnToPen) { selectedBrush = previousPen; mode = CanvasMode.Write } }
@@ -1483,7 +1489,7 @@ internal fun NotebookEditor(
                                 })
                         }
                     }
-                    page.blocks.firstOrNull { it.id == selectedBlockId }?.takeIf { mode == CanvasMode.Objects }?.let { block ->
+                    page.blocks.firstOrNull { it.id == selectedBlockId }?.let { block ->
                         BlockToolbar(block, cellSelection, { changed -> updateBlock { changed } }, { cellSelection = it; if (it == null) cellAnchor = null }, { editingStickyId = block.id },
                             { applyPage(page.copy(blocks = page.blocks.filterNot { it.id == block.id })); selectedBlockId = null; canvas?.deselectObject() },
                             Modifier.align(Alignment.TopCenter).padding(top = 8.dp).testTag("block-toolbar"))
@@ -1594,7 +1600,7 @@ internal fun NotebookEditor(
                     }
                     // Images and plain text use the bar next to the selection; cards (dates, recordings, links) keep this one.
                     val selectedCard = page.texts.firstOrNull { it.id == selectedObjectId && it.kind != "plain" }
-                    if (mode == CanvasMode.Objects && selectedObjectId != null && selectedCard != null) {
+                    if (selectedObjectId != null && selectedCard != null) {
                         val selectedText: InkText? = selectedCard
                         Surface(Modifier.align(Alignment.TopCenter).padding(10.dp), shape = RoundedCornerShape(16.dp), shadowElevation = 3.dp) {
                             Row(Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
