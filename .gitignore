@@ -65,3 +65,4 @@ dist/
 
 # Screenshots of other apps stay local
 apps/mobile/artifacts/reader-design/boox-*.png
+__pycache__/

@@ -1,6 +1,8 @@
 # Folio brand: logo and app icon
 
-The Folio mark is the letter **F** written with three brush strokes: a vertical stem that tapers to a point, a long top stroke and a shorter middle stroke, both lifting off to the right. Every stroke is a filled outline (round entry, slight thinning along the body, tapered tail), not a stroked line, so it renders the same in SVG, Android VectorDrawable and the Android 13 themed icon.
+The selected Folio mark is a handwritten **F.** in white on sage. The refined B uses one continuous filled silhouette with a gently rising top stroke, an open middle stroke and a soft tapered stem. A round signature dot balances the right side. The same geometry can be exported to SVG, Android VectorDrawable and the Android 13 themed icon.
+
+The refinement smooths the stroke joins, softens the pointed stem and aligns the slightly larger dot with the middle stroke. A and C remain the original exploratory concepts.
 
 ![Concepts](folio-icon-concepts.png)
 
@@ -9,7 +11,7 @@ The Folio mark is the letter **F** written with three brush strokes: a vertical 
 | | Concept | Colours | File |
 |---|---|---|---|
 | A | Ink F on warm paper, brush-pen style | ink `#1E2B28` on cream `#F6F1E6` | `concepts/folio-concept-a.svg` |
-| **B (applied)** | White brush F on the sage accent, with a round ink dot after the middle stroke | white `#FFFFFF` on sage `#2F7A68` | `concepts/folio-concept-b.svg` |
+| **B (selected, refined)** | White signature F on the sage accent, with a round white dot after the middle stroke | white `#FFFFFF` on sage `#2F7A68` | `concepts/folio-concept-b.svg` |
 | C | F whose top stroke curls under at the end, like a page corner turning | sage `#2F7A68` on soft sage `#E3EFEA` | `concepts/folio-concept-c.svg` |
 
 **Why B:** it is the only concept that holds strong contrast on both light and dark wallpapers (A and C are pale tiles that fade into a light home screen), it uses the app's own Sage accent (`AccentPresets` in `HomeModels.kt`, `#2F7A68` / soft `#E3EFEA`), and the dot gives the F a distinct identity ("F." like a signed initial, or a nib touching the page) without adding small detail. At 48 px the F and dot both stay readable; the themed icon keeps the same silhouette.
@@ -29,7 +31,7 @@ To switch concepts, set `CHOSEN` in `tools/export.py` to `"A"` or `"C"` and rege
 ## Geometry and safe zone
 
 - All marks are drawn in the 108 x 108 dp adaptive-icon grid. The launcher shows the centre 72 dp, and any mask (circle, squircle, rounded square) keeps the centre 66 dp circle (radius 33 around 54,54).
-- The F spans about x 41.7–75.3 and y 26.8–80.8. Every point of the strokes lies inside the 66 dp safe circle (farthest point 32.0 dp from the centre); the ink dot sits at (74.8, 52.6), r 3.
+- The refined B silhouette fits inside the 66 dp safe circle. Its stem sits at x 40.5 and its soft tip ends near y 79; the signature dot is centred at (74, 54), radius 3.2 dp.
 - The stem sits slightly left of centre on purpose: the F's mass is in the stem and the top stroke, so the optical centre lands near the grid centre.
 - No gradients and one colour per layer, so the monochrome (themed) layer is the same paths.
 
@@ -38,6 +40,7 @@ To switch concepts, set `CHOSEN` in `tools/export.py` to `"A"` or `"C"` and rege
 | File | What |
 |---|---|
 | `folio-logo.svg` | Mark only: the icon as a rounded tile (visible 72 dp) |
+| `folio-logo.png` | Transparent 512 px PNG preview of the rounded tile |
 | `folio-logo-wordmark.svg` | Tile + "Folio" wordmark. Text is outlined from **Geist Medium** (SIL Open Font License), so no font is needed to display it |
 | `folio-play-store-512.png` | Play Store icon, 512 x 512, opaque, full bleed (Play applies its own mask) |
 | `folio-icon-concepts.png` | Comparison sheet: each concept at 512 px, circle and squircle masks, themed icon and 48 px, on light and dark wallpaper |
@@ -66,4 +69,12 @@ cd packages/brand/tools
 /tmp/folio-venv/bin/python sheet.py /tmp/folio-out ../folio-icon-concepts.png
 ```
 
-`export.py` looks for the wordmark font at `~/Library/Fonts/Geist-Medium.otf`; set `FOLIO_WORDMARK_FONT` to use another file. If the font or fontTools is missing it keeps the existing wordmark SVG. Edit stroke shapes in `tools/concepts.py` (centreline Bezier points and width profile per stroke).
+`export.py` looks for the wordmark font at `~/Library/Fonts/Geist-Medium.otf`; set `FOLIO_WORDMARK_FONT` to use another file. If the font or fontTools is missing it keeps the existing wordmark SVG. Edit shapes in `tools/concepts.py`: B uses a continuous Bezier outline; A and C use centreline Bezier points and width profiles.
+
+To export only the brand files, leaving Android launcher resources untouched:
+
+```sh
+python tools/export.py ../.. --brand-only  # from packages/brand
+```
+
+The current refinement is exported in this package. Run the full export command above when ready to apply it to the Android launcher resources.

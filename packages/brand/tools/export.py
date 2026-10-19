@@ -1,6 +1,6 @@
 """Write the Folio brand files and Android launcher resources.
 
-Usage: python export.py <repo root>
+Usage: python export.py <repo root> [--brand-only]
 Needs rsvg-convert on PATH, Pillow, and fontTools (only for the wordmark).
 The chosen concept is B: white brush F with an ink dot on the sage accent.
 """
@@ -51,6 +51,7 @@ mark = paths_svg(CHOSEN, c["fg"])
 logo = (f'<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="18 18 72 72">'
         f'<rect x="18" y="18" width="72" height="72" rx="16" fill="{c["bg"]}"/>{mark}</svg>\n')
 write(os.path.join(BRAND, "folio-logo.svg"), logo)
+rasterise(logo, 512, os.path.join(BRAND, "folio-logo.png"))
 
 
 # 3. Wordmark: tile + "Folio" outlined from the font
@@ -88,6 +89,11 @@ except Exception as exc:  # fontTools or the font missing: keep the old file
 play = (f'<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="14 14 80 80">'
         f'<rect x="0" y="0" width="108" height="108" fill="{c["bg"]}"/>{mark}</svg>')
 rasterise(play, 512, os.path.join(BRAND, "folio-play-store-512.png"), flatten=c["bg"])
+
+# Use this when iterating on brand assets without updating the installed app.
+if "--brand-only" in sys.argv:
+    print("brand assets exported")
+    sys.exit(0)
 
 # 5. Android adaptive icon layers (VectorDrawable, 108 dp)
 def vector(body):

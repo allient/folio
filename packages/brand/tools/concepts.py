@@ -29,8 +29,24 @@ def mark_paths(name):
     if name == "A":
         return [stroke_path(*STEM), stroke_path(*TOP), stroke_path(*MID)]
     if name == "B":
-        return [stroke_path(*STEM), stroke_path(*TOP), stroke_path(*MID),
-                circle_path(74.8, 52.6, 3)]
+        # One continuous silhouette avoids seams where brush strokes overlap.
+        # Broad, gently rising shoulders and a rounded taper keep the initial
+        # handwritten without making the stem look like a sharp nib.
+        return [
+            "M40.5,36.5"
+            "C40.5,32.6 42.2,30.7 46,29.7"
+            "C56,27.1 65.8,26.6 73.3,30.5"
+            "C74,30.9 74,31.4 73.2,31.7"
+            "C66.4,34.4 58.4,35.5 50.1,37.4"
+            "L49.7,50.8"
+            "C55.8,49.3 61.8,49.6 66.7,52.7"
+            "C67.4,53.1 67.4,53.6 66.6,53.9"
+            "C61.6,56 55.4,57.5 49.3,58.9"
+            "C48.8,66.5 47.5,73.1 45.1,78.8"
+            "C44.7,79.8 44,79.7 43.7,78.6"
+            "C41.4,68.3 40.5,55.1 40.5,36.5Z",
+            circle_path(74, 54, 3.2),
+        ]
     if name == "C":
         return [stroke_path(*STEM), stroke_path(*TOP_CURL), stroke_path(*MID)]
     raise KeyError(name)
@@ -38,7 +54,7 @@ def mark_paths(name):
 
 CONCEPTS = {
     "A": dict(title="A  Ink on paper", bg=CREAM, fg=INK),
-    "B": dict(title="B  White brush on sage, ink dot", bg=SAGE, fg=WHITE),
+    "B": dict(title="B  Refined signature F on sage", bg=SAGE, fg=WHITE),
     "C": dict(title="C  Page-curl flourish", bg=SAGE_SOFT, fg=SAGE),
 }
 
