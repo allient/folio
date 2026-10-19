@@ -30,7 +30,7 @@ fun PaperTemplatePreview(template: String, modifier: Modifier = Modifier) {
         }
     }
     Canvas(modifier.background(Color.White)) {
-        val ink = Color(0xFFB6BDBA)
+        val ink = Color(0xFF9EA6A3)
         val left = size.width * .07f; val right = size.width * .93f
         val top = size.height * .14f; val bottom = size.height * .94f
         fun line(x1: Float, y1: Float, x2: Float, y2: Float) = drawLine(ink, Offset(x1, y1), Offset(x2, y2), 1f)

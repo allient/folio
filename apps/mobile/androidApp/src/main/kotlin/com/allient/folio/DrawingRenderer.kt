@@ -244,8 +244,8 @@ internal object NotebookRenderer {
         if (paper.pattern == "blank") return
         var gap = width * paper.gapFraction
         while (gap * zoom < 8f) gap *= 2f
-        val ink = if (paper.dark) Color.rgb(128, 128, 128) else Color.rgb(190, 195, 199)
-        val rule = if (paper.dark) Color.rgb(98, 98, 98) else Color.rgb(214, 218, 222)
+        val ink = if (paper.dark) Color.rgb(146, 146, 146) else Color.rgb(166, 172, 177)
+        val rule = if (paper.dark) Color.rgb(112, 112, 112) else Color.rgb(196, 201, 206)
         val paint = local.get()!!.paint.apply { reset(); isAntiAlias = true; color = rule; strokeCap = Paint.Cap.ROUND; strokeWidth = 1f / z }
         val x0 = kotlin.math.floor(left / gap) * gap; val y0 = kotlin.math.floor(top / gap) * gap
         when (paper.pattern) {
@@ -304,12 +304,14 @@ internal object NotebookRenderer {
 
     private fun drawTemplate(canvas: Canvas, template: String, w: Float, h: Float) {
         if (template == "blank") return
-        val paint = local.get()!!.paint.apply { reset(); isAntiAlias = true; val small = w < 700f; color = if (small) Color.rgb(200, 205, 210) else Color.rgb(222, 225, 228); strokeWidth = if (small) 1f else (w / 1200f).coerceAtLeast(.5f) }
+        // Rules read clearly without competing with the ink; thumbnails (small) get a touch more contrast.
+        val ruleColor = if (w < 700f) Color.rgb(178, 184, 189) else Color.rgb(199, 204, 209)
+        val paint = local.get()!!.paint.apply { reset(); isAntiAlias = true; val small = w < 700f; color = ruleColor; strokeWidth = if (small) 1f else (w / 1200f).coerceAtLeast(.5f) }
         val left = w * .07f; val right = w * .93f
-        fun heading(label: String) { paint.color = Color.rgb(72, 76, 78); paint.textSize = w * .032f; paint.style = Paint.Style.FILL; canvas.drawText(label, left, h * .075f, paint); paint.color = Color.rgb(210, 216, 214) }
+        fun heading(label: String) { paint.color = Color.rgb(72, 76, 78); paint.textSize = w * .032f; paint.style = Paint.Style.FILL; canvas.drawText(label, left, h * .075f, paint); paint.color = ruleColor }
         fun ruled(start: Float = h * .09f, end: Float = h * .95f, gap: Float = w / if (template == "wide-ruled" || template == "english" || template == "custom-ruled") 15f else 24f) {
             var y = start; while (y < end) { canvas.drawLine(left, y, right, y, paint); y += gap }
-            if (template == "english") { y = start + gap * .5f; paint.color = Color.rgb(231, 191, 191); while (y < end) { canvas.drawLine(left, y, right, y, paint); y += gap }; paint.color = Color.rgb(210, 216, 214) }
+            if (template == "english") { y = start + gap * .5f; paint.color = Color.rgb(226, 176, 176); while (y < end) { canvas.drawLine(left, y, right, y, paint); y += gap }; paint.color = ruleColor }
         }
         fun panel(x: Float, y: Float, r: Float, b: Float) { paint.style = Paint.Style.STROKE; canvas.drawRect(x, y, r, b, paint); paint.style = Paint.Style.FILL }
         fun checklist(x: Float, y: Float, r: Float, count: Int, spacing: Float) {
@@ -351,7 +353,7 @@ internal object NotebookRenderer {
             "revision" -> { heading("REVISION NOTES"); panel(left, h*.13f, right, h*.27f); panel(left, h*.30f, w*.5f, h*.59f); panel(w*.5f, h*.30f, right, h*.59f); panel(left, h*.62f, right, h*.94f); ruled(h*.33f,h*.57f,h*.045f); ruled(h*.65f,h*.92f,h*.045f) }
             "vocabulary" -> { heading("VOCABULARY"); val top=h*.14f; canvas.drawLine(w*.34f,top,w*.34f,h*.94f,paint); canvas.drawLine(w*.68f,top,w*.68f,h*.94f,paint); for(i in 0..12) canvas.drawLine(left,top+(h*.8f)*i/12,right,top+(h*.8f)*i/12,paint) }
             "lab" -> { heading("LAB REPORT"); val labels = listOf("QUESTION", "HYPOTHESIS", "MATERIALS", "METHOD", "OBSERVATIONS", "CONCLUSION"); val heights = listOf(.10f,.13f,.12f,.18f,.22f,.11f); var y=h*.12f; labels.indices.forEach { i -> paint.textSize=w*.018f; canvas.drawText(labels[i],left,y+h*.025f,paint); y += h*heights[i]; canvas.drawLine(left,y,right,y,paint) } }
-            "cornell" -> { heading("CORNELL NOTES"); val gap = w / 24f; var y = h * .12f; while (y < h * .78f) { canvas.drawLine(w * .3f, y, right, y, paint); y += gap }; y = h * .78f + gap; while (y < h * .95f) { canvas.drawLine(left, y, right, y, paint); y += gap }; paint.color = Color.rgb(180, 186, 190); canvas.drawLine(w * .3f, h * .12f, w * .3f, h * .78f, paint); canvas.drawLine(left, h * .78f, right, h * .78f, paint); paint.color = Color.rgb(210, 216, 214) }
+            "cornell" -> { heading("CORNELL NOTES"); val gap = w / 24f; var y = h * .12f; while (y < h * .78f) { canvas.drawLine(w * .3f, y, right, y, paint); y += gap }; y = h * .78f + gap; while (y < h * .95f) { canvas.drawLine(left, y, right, y, paint); y += gap }; paint.color = Color.rgb(160, 167, 172); canvas.drawLine(w * .3f, h * .12f, w * .3f, h * .78f, paint); canvas.drawLine(left, h * .78f, right, h * .78f, paint); paint.color = ruleColor }
             "lecture", "reading" -> { heading(if (template == "lecture") "LECTURE NOTES" else "READING NOTES"); canvas.drawLine(left, h * .12f, right, h * .12f, paint); ruled(h * .18f); if (template == "reading") canvas.drawLine(w * .68f, h * .18f, w * .68f, h * .95f, paint) }
             "graph" -> { val step=w/22f; var y=0f; while(y<h) { canvas.drawLine(0f,y,w,y,paint); y+=step }; var x=0f; while(x<w) { canvas.drawLine(x,0f,x,h,paint); x+=step } }
             "hex-grid" -> {
