@@ -290,6 +290,7 @@ Built with open-source libraries, among them [Jetpack Ink](https://developer.and
 - [ ] Export at other resolutions than 1200×1920; keep imported PDF pages as vectors
 - [ ] Sync audio recordings with ink; keep recording in the background
 - [ ] Filter accidental micro-taps from worn styluses
+- [ ] Polish the layout in landscape and on phones: library grid and folder cards, editor tool rail ([details](apps/docs/src/content/docs/roadmap/responsive-improvements.md))
 
 **Release**
 - [ ] Create the release signing key (kept outside the repository)
