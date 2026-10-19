@@ -19,6 +19,9 @@ import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.math.max
 
+/** Distance of the rotation handle above the selection box. */
+private const val ROTATE_HANDLE_DP = 28f
+
 internal enum class CanvasMode { Write, Lasso, MoveSelection, Shape, Pan, FreeZoom, Fill, Objects, ColorPicker, ZoomWindow }
 internal enum class ShapeKind(val label: String, val closed: Boolean = true) {
     Line("Line", false), WavyLine("Wavy line", false), Curve("Curve", false), Arrow("Arrow", false), DoubleArrow("Double arrow", false),
@@ -73,6 +76,9 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private var eraserCursor: Offset? = null
     private var movingSelection = false
     private var resizingSelection = false
+    private var rotatingSelection = false
+    private var rotatePivot = Offset.Zero
+    private var rotateStartAngle = 0f
     private var resizeVector = Offset.Zero
     private var resizePivot = Offset.Zero
     private var lastPosition = Offset.Zero
@@ -608,6 +614,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         selectionBounds()?.let {
             canvas.drawRect(it, selectionPaint)
             val radius = 7f * resources.displayMetrics.density / zoomValue
+            val rotateY = it.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue
+            canvas.drawLine(it.centerX(), it.top, it.centerX(), rotateY, selectionPaint)
+            canvas.drawCircle(it.centerX(), rotateY, radius + 2f / zoomValue, selectionHandleBackground)
+            canvas.drawCircle(it.centerX(), rotateY, radius, handlePaint)
             listOf(Offset(it.left, it.top), Offset(it.right, it.top), Offset(it.right, it.bottom), Offset(it.left, it.bottom)).forEach { handle ->
                 canvas.drawCircle(handle.x, handle.y, radius + 2f / zoomValue, selectionHandleBackground)
                 canvas.drawCircle(handle.x, handle.y, radius, handlePaint)
@@ -781,7 +791,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             val previousEdits = editBaseline; editBaseline = null
             if (previousEdits != null) strokes = previousEdits
             lastEraserPoint = null; eraseGesture = false; eraserCursor = null
-            draggingObject = false; resizingImage = false; resizingSelection = false
+            draggingObject = false; resizingImage = false; resizingSelection = false; rotatingSelection = false
             horizontalSwipeTracking = false; horizontalSwipeConsumed = false
             activePointerId = MotionEvent.INVALID_POINTER_ID; multitouch = false; postInvalidateOnAnimation(); return true
         }
@@ -845,8 +855,15 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                         if (handle.second.y < bounds.centerY()) bounds.top + 8f else bounds.bottom - 8f)
                     resizeVector = Offset(px - resizePivot.x, py - resizePivot.y)
                 }
+                val rotateHandle = bounds?.let { Offset(it.centerX(), it.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue) }
+                rotatingSelection = selectionTool && !resizingSelection && rotateHandle != null &&
+                    hypot(px - rotateHandle.x, py - rotateHandle.y) <= 30f * resources.displayMetrics.density / zoomValue
+                if (rotatingSelection && bounds != null) {
+                    rotatePivot = Offset(bounds.centerX(), bounds.centerY())
+                    rotateStartAngle = kotlin.math.atan2(py - rotatePivot.y, px - rotatePivot.x)
+                }
                 val selectionDrag = selectedStrokeIds.isNotEmpty() && selectionTool &&
-                    (resizingSelection || mode == CanvasMode.MoveSelection || bounds?.contains(point.x * width, point.y * documentHeight) == true)
+                    (resizingSelection || rotatingSelection || mode == CanvasMode.MoveSelection || bounds?.contains(point.x * width, point.y * documentHeight) == true)
                 val pageSwipeGesture = singlePageFingerSwipeEnabled && !fingerDrawing && mode == CanvasMode.Write && !brush.eraser
                 val panByFinger = !stylus && !mouse && !fingerDrawing && !selectionDrag && (infiniteCanvas || zoomValue > 1.01f)
                 if (!stylus && !mouse && !fingerDrawing && !selectionDrag && !pageSwipeGesture && mode != CanvasMode.Pan && !panByFinger) return true
@@ -958,7 +975,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             // and wait for a new contact instead of turning the remaining MOVE into a lasso.
             if (movingSelection) activePointerId = MotionEvent.INVALID_POINTER_ID
             commitSegment(); commitShape(); finishLasso(); movingSelection = false; publishDrag(); publishObjects(); publishEdits()
-            lastEraserPoint = null; eraserCursor = null; resizingSelection = false
+            lastEraserPoint = null; eraserCursor = null; resizingSelection = false; rotatingSelection = false
             return
         }
         val normalizedPressure = ((raw.coerceIn(0f, 1f) - threshold) / max(.0001f, 1f - threshold)).coerceIn(0f, 1f)
@@ -1007,7 +1024,16 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 if (selected.isNotEmpty()) {
                     val minX = selected.minOf { it.x }; val maxX = selected.maxOf { it.x }
                     val minY = selected.minOf { it.y }; val maxY = selected.maxOf { it.y }
-                    if (resizingSelection) {
+                    if (rotatingSelection) {
+                        val delta = kotlin.math.atan2(point.y * documentHeight - rotatePivot.y, point.x * width - rotatePivot.x) - rotateStartAngle
+                        val cosine = kotlin.math.cos(delta); val sine = kotlin.math.sin(delta)
+                        strokes = baseline.map { if (it.id in selectedStrokeIds && editable(it.layerId)) it.copy(points = it.points.map { p ->
+                            val rx = p.x * width - rotatePivot.x; val ry = p.y * documentHeight - rotatePivot.y
+                            val nx = (rotatePivot.x + rx * cosine - ry * sine) / width
+                            val ny = (rotatePivot.y + rx * sine + ry * cosine) / documentHeight
+                            p.copy(x = if (infiniteCanvas) nx else nx.coerceIn(0f, 1f), y = if (infiniteCanvas) ny else ny.coerceIn(0f, 1f))
+                        }) else it }
+                    } else if (resizingSelection) {
                         val current = Offset(point.x * width - resizePivot.x, point.y * documentHeight - resizePivot.y)
                         val baselineVector = resizeVector
                         val startLength = baselineVector.getDistance().coerceAtLeast(1f)
@@ -1160,7 +1186,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun finishGesture() {
         commitSegment(); commitShape(); finishLasso(); publishDrag(); publishObjects(); movingSelection = false
         activePointerId = MotionEvent.INVALID_POINTER_ID; lastEraserPoint = null; eraserCursor = null
-        publishEdits(); resizingSelection = false; rulerSnapSide = 0; postInvalidateOnAnimation()
+        publishEdits(); resizingSelection = false; rotatingSelection = false; rulerSnapSide = 0; postInvalidateOnAnimation()
     }
     private fun publishDrag() { if (dragBaseline != null) { dragBaseline = null; onStrokesChanged(strokes) } }
     private fun shapeStroke(): InkStroke? {
