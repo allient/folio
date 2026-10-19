@@ -247,6 +247,17 @@ With more than one device connected, pass the serial to adb: `adb -s <serial> in
 
 `gradle.properties` keeps test APKs installed after a run, so data on the device isn't wiped. The `shared` module's tests (`:shared:testAndroidHostTest`, `:shared:iosSimulatorArm64Test`) are still template placeholders. Results and UI flow replays are in [validation.md](apps/docs/src/content/docs/testing/validation.md).
 
+### Mirror the tablet while testing
+
+To see and control the tablet from the Mac, mirror it with [scrcpy](https://github.com/Genymobile/scrcpy) (`brew install scrcpy`):
+
+```bash
+scrcpy -d              # -d = the only physical device connected over USB
+just mirror            # same thing
+```
+
+Use `-d` when an emulator is also running; otherwise scrcpy refuses to pick between several devices. See [Mirroring](apps/docs/src/content/docs/testing/mirroring.md).
+
 ## Platforms
 
 Only Android is implemented. `iosApp` builds the `Shared` framework but shows the Kotlin Multiplatform starter screen (`App.kt`). The library screen, storage, ink and reader are not wired up on iOS.

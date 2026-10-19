@@ -69,6 +69,10 @@ release:
 install-release serial=TABLET: release
     adb -s {{ serial }} install --no-incremental -r {{ RELEASE_DIR }}/Folio-release.apk
 
+# Mirror and control the connected physical tablet (needs scrcpy)
+mirror:
+    scrcpy -d
+
 # Launch Folio on one device
 launch serial="emulator-5554":
     adb -s {{ serial }} shell monkey -p com.allient.folio -c android.intent.category.LAUNCHER 1
