@@ -22,6 +22,9 @@ import kotlin.math.max
 /** Distance of the rotation handle above the selection box. */
 private const val ROTATE_HANDLE_DP = 40f
 
+/** Buttons in the on-canvas selection bar; the last one deletes. */
+private const val SELECTION_ACTIONS = 5
+
 internal enum class CanvasMode { Write, Lasso, MoveSelection, Shape, Pan, FreeZoom, Fill, Objects, ColorPicker, ZoomWindow }
 internal enum class ShapeKind(val label: String, val closed: Boolean = true) {
     Line("Line", false), WavyLine("Wavy line", false), Curve("Curve", false), Arrow("Arrow", false), DoubleArrow("Double arrow", false),
@@ -125,9 +128,9 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private val actionIconPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.rgb(30, 43, 40); style = Paint.Style.STROKE; strokeWidth = 1.8f; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
     }
-    /** On-canvas actions under a selection: mirror left-right, mirror top-bottom, rotate left, rotate right. */
+    /** On-canvas actions under a selection: mirror left-right, mirror top-bottom, rotate left, rotate right, delete. */
     private val selectionActionIcons by lazy {
-        listOf(InkIcon.FlipHorizontal, InkIcon.FlipVertical, InkIcon.Rotate, InkIcon.RotateRight).map { androidx.core.graphics.PathParser.createPathFromPathData(it.path) }
+        listOf(InkIcon.FlipHorizontal, InkIcon.FlipVertical, InkIcon.Rotate, InkIcon.RotateRight, InkIcon.Trash).map { androidx.core.graphics.PathParser.createPathFromPathData(it.path) }
     }
     private val rotateGlyph by lazy { androidx.core.graphics.PathParser.createPathFromPathData(InkIcon.RotateRight.path) }
     private val scaler = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -1175,6 +1178,11 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     }
     private fun applyObjectAction(index: Int) {
         val id = selectedObjectId ?: return
+        if (index == SELECTION_ACTIONS - 1) {
+            textContent = texts.filterNot { it.id == id && it.kind == "plain" && editable(it.layerId) }
+            imageContent = images.filterNot { it.id == id && editable(it.layerId) }
+            contentChanged(); onObjectsChanged(texts, images); deselectObject(); return
+        }
         val turn = when (index) { 2 -> -90f; 3 -> 90f; else -> 0f }
         val mirrorX = index == 0; val mirrorY = index == 1
         fun turned(r: Float) = ((r + turn) % 360f + 360f) % 360f
@@ -1445,23 +1453,34 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         actionIconPaint.color = Color.rgb(30, 43, 40)
         buttons.forEachIndexed { i, r ->
             val icon = 22f * d
+            // Delete is separated by a hairline and drawn in red.
+            if (i == SELECTION_ACTIONS - 1) {
+                canvas.drawLine(r.left - 1f * d, r.top + 8f * d, r.left - 1f * d, r.bottom - 8f * d, actionBarBorder)
+                actionIconPaint.color = Color.rgb(196, 58, 50)
+            }
             canvas.save(); canvas.translate(r.centerX() - icon / 2, r.centerY() - icon / 2); canvas.scale(icon / 24f, icon / 24f)
             canvas.drawPath(selectionActionIcons[i], actionIconPaint); canvas.restore()
         }
+        actionIconPaint.color = Color.rgb(30, 43, 40)
     }
     private fun selectionActionRects(b: RectF): List<RectF> {
         val d = resources.displayMetrics.density / zoomValue
         val size = 40f * d; val gap = 2f * d
-        val total = 4 * size + 3 * gap
+        val total = SELECTION_ACTIONS * size + (SELECTION_ACTIONS - 1) * gap
         var top = b.bottom + 16f * d
         // Near the bottom of a page, show the bar above the rotation knob instead.
         if (!infiniteCanvas && top + size > documentHeight) top = (b.top - ROTATE_HANDLE_DP * d - 24f * d - size).coerceAtLeast(0f)
         val left = b.centerX() - total / 2
-        return (0 until 4).map { RectF(left + it * (size + gap), top, left + it * (size + gap) + size, top + size) }
+        return (0 until SELECTION_ACTIONS).map { RectF(left + it * (size + gap), top, left + it * (size + gap) + size, top + size) }
     }
     private fun applySelectionAction(index: Int) {
         val ids = strokes.filter { it.id in selectedStrokeIds && editable(it.layerId) }.map { it.id }.toSet()
         if (ids.isEmpty()) return
+        if (index == SELECTION_ACTIONS - 1) {
+            strokes = strokes.filterNot { it.id in ids }
+            selectedStrokeIds = emptySet(); onSelectionChanged(emptySet())
+            onStrokesChanged(strokes); postInvalidateOnAnimation(); return
+        }
         strokes = when (index) {
             0 -> InkSelection.transform(strokes, ids, flipX = true, unbounded = infiniteCanvas)
             1 -> InkSelection.transform(strokes, ids, flipY = true, unbounded = infiniteCanvas)
