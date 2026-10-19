@@ -640,10 +640,13 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             }
         }
         if (mode == CanvasMode.Objects) selectedObjectBounds()?.let {
+            val xform = selectedObjectTransform()
+            if (xform != null) { canvas.save(); canvas.rotate(xform.rotation, xform.px, xform.py) }
             canvas.drawRect(it, selectionPaint)
             if (!selectedObjectIsText || texts.any { it.id == selectedObjectId && it.kind != "plain" }) {
                 canvas.drawCircle(it.right, it.bottom, 7f / zoomValue, handlePaint)
             }
+            if (xform != null) canvas.restore()
         }
         if (lasso.isNotEmpty()) {
             val polygon = lassoPolygon()
@@ -1093,6 +1096,23 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         return RectF(left, text.y * documentHeight + paint.ascent(), right, text.y * documentHeight + paint.descent() + (lines.size - 1) * lineHeight)
     }
     private fun imageBounds(image: InkImage) = RectF(image.x * width, image.y * documentHeight, (image.x + image.width) * width, (image.y + image.height) * documentHeight)
+    private class ObjectTransform(val px: Float, val py: Float, val rotation: Float, val flipX: Boolean, val flipY: Boolean)
+    private fun selectedObjectTransform(): ObjectTransform? {
+        if (selectedObjectIsText) {
+            val t = texts.firstOrNull { it.id == selectedObjectId && it.kind == "plain" } ?: return null
+            return ObjectTransform(t.x * width, t.y * documentHeight, t.rotation, t.flipX, t.flipY)
+        }
+        val i = images.firstOrNull { it.id == selectedObjectId } ?: return null
+        return ObjectTransform((i.x + i.width / 2f) * width, (i.y + i.height / 2f) * documentHeight, i.rotation, i.flipX, i.flipY)
+    }
+    /** Maps a page point into an object's unrotated frame, so hit tests can use its plain bounds. */
+    private fun toObjectFrame(x: Float, y: Float, px: Float, py: Float, rotation: Float, flipX: Boolean, flipY: Boolean): Offset {
+        val a = -Math.toRadians(rotation.toDouble())
+        val dx = x - px; val dy = y - py
+        val rx = (dx * kotlin.math.cos(a) - dy * kotlin.math.sin(a)).toFloat()
+        val ry = (dx * kotlin.math.sin(a) + dy * kotlin.math.cos(a)).toFloat()
+        return Offset(px + if (flipX) -rx else rx, py + if (flipY) -ry else ry)
+    }
     private fun selectedObjectBounds(): RectF? {
         return if (selectedObjectIsText) texts.firstOrNull { it.id == selectedObjectId && layers.any { l -> l.id == it.layerId && l.visible } }?.let(::textBounds)
         else images.firstOrNull { it.id == selectedObjectId && layers.any { l -> l.id == it.layerId && l.visible } }?.let(::imageBounds)
@@ -1116,15 +1136,23 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         val selectedImage = images.firstOrNull { it.id == selectedObjectId && editable(it.layerId) }
         if (!selectedObjectIsText && selectedImage != null) {
             val bounds = imageBounds(selectedImage)
-            if (hypot(x - bounds.right, y - bounds.bottom) < 20f / zoomValue) {
+            val local = toObjectFrame(x, y, bounds.centerX(), bounds.centerY(), selectedImage.rotation, false, false)
+            if (hypot(local.x - bounds.right, local.y - bounds.bottom) < 20f / zoomValue) {
                 draggingObject = true; resizingImage = true; objectsBaseline = texts to images; return
             }
         }
         selectedObjectId = null; selectedBlockId = null
         for (layer in layers.asReversed().filter { it.visible && !it.locked }) {
-            val text = texts.asReversed().firstOrNull { it.layerId == layer.id && textBounds(it).apply { inset(-8f, -8f) }.contains(x, y) }
+            val text = texts.asReversed().firstOrNull { t ->
+                val local = if (t.kind == "plain") toObjectFrame(x, y, t.x * width, t.y * documentHeight, t.rotation, t.flipX, t.flipY) else Offset(x, y)
+                t.layerId == layer.id && textBounds(t).apply { inset(-8f, -8f) }.contains(local.x, local.y)
+            }
             if (text != null) { selectedObjectId = text.id; selectedObjectIsText = true; break }
-            val image = images.asReversed().firstOrNull { it.layerId == layer.id && imageBounds(it).contains(x, y) }
+            val image = images.asReversed().firstOrNull { i ->
+                val b = imageBounds(i)
+                val local = toObjectFrame(x, y, b.centerX(), b.centerY(), i.rotation, false, false)
+                i.layerId == layer.id && b.contains(local.x, local.y)
+            }
             if (image != null) { selectedObjectId = image.id; selectedObjectIsText = false; break }
             val block = blockContent.asReversed().firstOrNull { it.layerId == layer.id && blockBounds(it).contains(x, y) }
             if (block != null) { selectedBlockId = block.id; break }
@@ -1160,11 +1188,17 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             imageContent = images.map { image ->
                 if (image.id != selectedObjectId || !editable(image.layerId)) image
                 else if (infiniteCanvas && !resizingImage) image.copy(x = image.x + dx, y = image.y + dy)
-                else if (resizingImage) image.copy(width = (image.width + dx).coerceIn(.02f, if (infiniteCanvas) 1f else (1f - image.x).coerceAtLeast(.02f)), height = (image.height + dy).coerceIn(.02f, if (infiniteCanvas) 1f else (1f - image.y).coerceAtLeast(.02f)))
+                else if (resizingImage) image.copy(width = (image.width + localDelta(dx, dy, image.rotation).x).coerceIn(.02f, if (infiniteCanvas) 1f else (1f - image.x).coerceAtLeast(.02f)), height = (image.height + localDelta(dx, dy, image.rotation).y).coerceIn(.02f, if (infiniteCanvas) 1f else (1f - image.y).coerceAtLeast(.02f)))
                 else image.copy(x = (image.x + dx).coerceIn(0f, (1f - image.width).coerceAtLeast(0f)), y = (image.y + dy).coerceIn(0f, (1f - image.height).coerceAtLeast(0f)))
             }
         }
         contentChanged()
+    }
+    /** A drag delta in page space, expressed along an object's rotated axes (in page-normalised units). */
+    private fun localDelta(dx: Float, dy: Float, rotation: Float): Offset {
+        val a = -Math.toRadians(rotation.toDouble())
+        val px = dx * width; val py = dy * documentHeight
+        return Offset(((px * kotlin.math.cos(a) - py * kotlin.math.sin(a)) / width).toFloat(), ((px * kotlin.math.sin(a) + py * kotlin.math.cos(a)) / documentHeight).toFloat())
     }
     private fun publishObjects() {
         val previous = objectsBaseline

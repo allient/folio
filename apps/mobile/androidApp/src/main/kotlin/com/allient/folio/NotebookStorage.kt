@@ -57,6 +57,9 @@ internal data class InkText(
     val kind: String = "plain",
     val target: String = "",
     val boxWidth: Float = .32f,
+    val rotation: Float = 0f,
+    val flipX: Boolean = false,
+    val flipY: Boolean = false,
 )
 
 internal data class InkImage(
@@ -67,6 +70,9 @@ internal data class InkImage(
     val width: Float = .6f,
     val height: Float = .4f,
     val layerId: String = "ink",
+    val rotation: Float = 0f,
+    val flipX: Boolean = false,
+    val flipY: Boolean = false,
 )
 
 /** Tables and sticky notes. Geometry is page-normalised like images; a table's rows and columns are fractions of its height and width. */
@@ -385,11 +391,13 @@ internal class NotebookStorage(context: Context) {
                     text.number("size", 22f, 1f, 512f), text.optInt("color", 0xFF252525.toInt()), text.layer(),
                     text.optString("font", "Sans"), text.optBoolean("bold", false), text.optBoolean("italic", false),
                     text.optBoolean("underline", false), text.optString("alignment", "Start"), text.number("lineSpacing", 1f, .6f, 2.5f),
-                    text.optString("kind", "plain"), text.optString("target", ""), text.number("boxWidth", .32f, .08f, 1f))
+                    text.optString("kind", "plain"), text.optString("target", ""), text.number("boxWidth", .32f, .08f, 1f),
+                    text.number("rotation", 0f, -360f, 360f), text.optBoolean("flipX", false), text.optBoolean("flipY", false))
             }
             val images = page.objects("images").map { image ->
                 InkImage(image.id(), image.optString("path", ""), image.coordinate("x", note, .1f), image.coordinate("y", note, .1f),
-                    image.number("width", .6f, .001f, 1f), image.number("height", .4f, .001f, 1f), image.layer())
+                    image.number("width", .6f, .001f, 1f), image.number("height", .4f, .001f, 1f), image.layer(),
+                    image.number("rotation", 0f, -360f, 360f), image.optBoolean("flipX", false), image.optBoolean("flipY", false))
             }
             val blocks = page.objects("blocks").map { block ->
                 fun fractions(key: String) = block.optJSONArray(key)?.let { a -> (0 until a.length()).map { a.optDouble(it, 0.0).toFloat().coerceIn(.001f, 1f) } }.orEmpty()
@@ -446,9 +454,11 @@ internal class NotebookStorage(context: Context) {
                         .put("font", text.font).put("bold", text.bold).put("italic", text.italic).put("underline", text.underline)
                         .put("alignment", text.alignment).put("lineSpacing", finite(text.lineSpacing, 1f).toDouble())
                         .put("kind", text.kind).put("target", text.target).put("boxWidth", finite(text.boxWidth, .32f).toDouble())
+                        .put("rotation", finite(text.rotation).toDouble()).put("flipX", text.flipX).put("flipY", text.flipY)
                 })).put("images", array(page.images.map { image ->
                     JSONObject().put("id", image.id).put("path", image.path).put("x", finite(image.x).toDouble()).put("y", finite(image.y).toDouble())
                         .put("width", finite(image.width, .6f).toDouble()).put("height", finite(image.height, .4f).toDouble()).put("layerId", image.layerId)
+                        .put("rotation", finite(image.rotation).toDouble()).put("flipX", image.flipX).put("flipY", image.flipY)
                 })).put("blocks", array(page.blocks.map { block ->
                     JSONObject().put("id", block.id).put("kind", block.kind).put("x", finite(block.x).toDouble()).put("y", finite(block.y).toDouble())
                         .put("width", finite(block.width, .5f).toDouble()).put("height", finite(block.height, .3f).toDouble()).put("layerId", block.layerId)

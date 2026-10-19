@@ -602,6 +602,15 @@ internal fun NotebookEditor(
         val ids = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }.map { it.id }.toSet()
         applyPage(page.copy(strokes = InkSelection.transform(page.strokes, ids, scale, rotation, flipX, flipY, unbounded = notebook.infiniteCanvas)))
     }
+    /** Rotates or mirrors the selected image or plain text box. */
+    fun transformObject(rotation: Float = 0f, flipX: Boolean = false, flipY: Boolean = false) {
+        canvas?.flushInput()
+        val id = selectedObjectId ?: return
+        fun turned(current: Float) = ((current + rotation) % 360f + 360f) % 360f
+        applyPage(page.copy(
+            texts = page.texts.map { if (it.id == id && it.kind == "plain" && editableLayer(it.layerId)) it.copy(rotation = turned(it.rotation), flipX = it.flipX != flipX, flipY = it.flipY != flipY) else it },
+            images = page.images.map { if (it.id == id && editableLayer(it.layerId)) it.copy(rotation = turned(it.rotation), flipX = it.flipX != flipX, flipY = it.flipY != flipY) else it }))
+    }
     fun paste() {
         canvas?.flushInput()
         val layer = page.layers.firstOrNull { it.id == activeLayer }
@@ -1584,6 +1593,12 @@ internal fun NotebookEditor(
                                 if (selectedText?.kind == "plain" || selectedText?.kind == "timestamp") InkToolButton(InkIcon.Rename, "Edit selected item", {
                                     selectedText?.let { editingTextId = it.id; draft = it.text; sheet = if (it.kind == "timestamp") "timestamp" else "edit text" }
                                 })
+                                if (selectedText == null || selectedText.kind == "plain") {
+                                    InkToolButton(InkIcon.Flip, "Mirror left-right", { transformObject(flipX = true) })
+                                    InkToolButton(InkIcon.Flip, "Mirror top-bottom", { transformObject(flipY = true) })
+                                    InkToolButton(InkIcon.Rotate, "Rotate left 90°", { transformObject(rotation = -90f) })
+                                    InkToolButton(InkIcon.Rotate, "Rotate right 90°", { transformObject(rotation = 90f) })
+                                }
                                 if (selectedText != null && selectedText.kind in listOf("link-note", "link-web", "link-file", "audio")) InkToolButton(InkIcon.Next, "Open selected item", { openEmbedded(selectedText) })
                                 InkToolButton(InkIcon.Trash, if (selectedText?.kind != "plain" && selectedText != null) "Remove marker" else "Delete selected object", {
                                     if (selectedText != null && selectedText.kind != "plain") markerToDelete = selectedText.id

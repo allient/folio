@@ -35,7 +35,14 @@ internal object NotebookRenderer {
                 val bitmap = if (imageBitmaps != null) imageBitmaps[image.path] else NotebookImageStore.get(image.path, filesDir, allowImageDecode)
                 if (bitmap == null) continue
                 scratch.bounds.set(image.x * w, image.y * h, (image.x + image.width) * w, (image.y + image.height) * h)
+                val transformed = image.rotation != 0f || image.flipX || image.flipY
+                if (transformed) {
+                    canvas.save()
+                    canvas.rotate(image.rotation, scratch.bounds.centerX(), scratch.bounds.centerY())
+                    canvas.scale(if (image.flipX) -1f else 1f, if (image.flipY) -1f else 1f, scratch.bounds.centerX(), scratch.bounds.centerY())
+                }
                 canvas.drawBitmap(bitmap, null, scratch.bounds, scratch.imagePaint)
+                if (transformed) canvas.restore()
             }
             for (block in page.blocks) if (block.layerId == layer.id) drawBlock(canvas, block, w, h)
             for (stroke in page.strokes) if (stroke.layerId == layer.id) drawStroke(canvas, stroke, w, h, ink, viewportZoom)
@@ -51,6 +58,12 @@ internal object NotebookRenderer {
                 val style = (if (text.bold) Typeface.BOLD else Typeface.NORMAL) or (if (text.italic) Typeface.ITALIC else Typeface.NORMAL)
                 paint.typeface = Typeface.create(family, style); paint.isUnderlineText = text.underline
                 paint.textAlign = when (text.alignment) { "Center" -> Paint.Align.CENTER; "End" -> Paint.Align.RIGHT; else -> Paint.Align.LEFT }
+                val transformed = text.rotation != 0f || text.flipX || text.flipY
+                if (transformed) {
+                    canvas.save()
+                    canvas.rotate(text.rotation, text.x * w, text.y * h)
+                    canvas.scale(if (text.flipX) -1f else 1f, if (text.flipY) -1f else 1f, text.x * w, text.y * h)
+                }
                 // Walk newline offsets rather than creating a list of lines during every recording.
                 var start = 0; var line = 0
                 while (start <= text.text.length) {
@@ -59,6 +72,7 @@ internal object NotebookRenderer {
                     if (end == text.text.length) break
                     start = end + 1; line++
                 }
+                if (transformed) canvas.restore()
             }
         }
     }
