@@ -625,7 +625,7 @@ internal fun NotebookEditor(
     /** Actions from the bar next to a selection that need the editor (clipboard, text editing, the full menu). */
     fun handleCanvasAction(action: CanvasAction) {
         when (action) {
-            CanvasAction.Copy -> { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; message = "Copied" }
+            CanvasAction.Copy -> { clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) } }
             CanvasAction.Cut -> { canvas?.flushInput(); clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection() }
             CanvasAction.Paste -> paste()
             CanvasAction.Fill -> sheet = "selection style"
@@ -1574,6 +1574,20 @@ internal fun NotebookEditor(
                             TextButton(onClick = { sheet = when (mode) { CanvasMode.Shape -> "shapes"; CanvasMode.Lasso -> "lasso"; CanvasMode.MoveSelection -> "selection"; else -> "eraser" } }) {
                                 Text(toolLabel, fontSize = 11.sp, color = ChromeInk)
                                 Spacer(Modifier.width(8.dp)); InkSymbol(InkIcon.Tools, Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                    // After Cut or Copy the selection is gone; this chip keeps Paste one tap away until the clipboard is cleared.
+                    if (clipboard.isNotEmpty() && selectedIds.isEmpty() && selectedObjectId == null) {
+                        Surface(Modifier.align(Alignment.BottomCenter).padding(bottom = 28.dp), shape = RoundedCornerShape(22.dp), shadowElevation = 4.dp,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, ChromeLine), color = Color.White) {
+                            Row(Modifier.padding(start = 6.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                TextButton(onClick = ::paste, modifier = Modifier.testTag("action-paste-clipboard")) {
+                                    InkSymbol(InkIcon.Paste, Modifier.size(20.dp), ChromeInk)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(if (clipboard.size == 1) "Paste 1 item" else "Paste ${clipboard.size} items", color = ChromeInk, fontSize = 14.sp)
+                                }
+                                InkToolButton(InkIcon.Close, "Clear clipboard", { clipboard = emptyList() })
                             }
                         }
                     }
