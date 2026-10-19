@@ -240,50 +240,62 @@ private fun ToolChip(label: String, selected: Boolean = false, enabled: Boolean 
 }
 
 /** Rows, columns, headers and merges, opened from the table's selection bar. Selected cells come first. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun TableStructureControls(block: InkBlock, cells: List<Int>?, onChange: (InkBlock) -> Unit, onCells: (List<Int>?) -> Unit) {
-    @Composable fun Section(title: String, content: @Composable () -> Unit) {
-        Text(title, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-        FlowRow(Modifier.padding(top = 6.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
-    }
     if (cells != null && cells.size == 4) {
         val first = cells[0]; val last = cells[2]; val left = cells[1]; val right = cells[3]
-        Section("Selected cells") {
-            ToolChip("Row above") { onChange(block.insertRow(first)); onCells(listOf(first + 1, left, first + 1, right)) }
-            ToolChip("Row below") { onChange(block.insertRow(last + 1)); onCells(null) }
-            ToolChip("Column left") { onChange(block.insertColumn(left)); onCells(listOf(first, left + 1, last, left + 1)) }
-            ToolChip("Column right") { onChange(block.insertColumn(right + 1)); onCells(null) }
-            ToolChip("Delete row", enabled = block.rows.size > 1) { var next = block; for (r in last downTo first) next = next.deleteRow(r); onChange(next); onCells(null) }
-            ToolChip("Delete column", enabled = block.columns.size > 1) { var next = block; for (c in right downTo left) next = next.deleteColumn(c); onChange(next); onCells(null) }
-            ToolChip("Merge", enabled = !(first == last && left == right)) { onChange(block.mergeRange(cells)); onCells(block.expandToMerges(cells)) }
-            ToolChip("Unmerge", enabled = block.mergeContaining(first, left) != null) { onChange(block.unmerge(first, left)) }
+        Text("Selected cells", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF666670))
+        // Pairs read as one decision each: where to add, what to delete, merge or split.
+        val actions: List<Triple<String, Boolean, () -> Unit>> = listOf(
+            Triple("Row above", true) { onChange(block.insertRow(first)); onCells(listOf(first + 1, left, first + 1, right)) },
+            Triple("Row below", true) { onChange(block.insertRow(last + 1)); onCells(null) },
+            Triple("Column left", true) { onChange(block.insertColumn(left)); onCells(listOf(first, left + 1, last, left + 1)) },
+            Triple("Column right", true) { onChange(block.insertColumn(right + 1)); onCells(null) },
+            Triple("Delete row", block.rows.size > 1) { var next = block; for (r in last downTo first) next = next.deleteRow(r); onChange(next); onCells(null) },
+            Triple("Delete column", block.columns.size > 1) { var next = block; for (c in right downTo left) next = next.deleteColumn(c); onChange(next); onCells(null) },
+            Triple("Merge cells", !(first == last && left == right)) { onChange(block.mergeRange(cells)); onCells(block.expandToMerges(cells)) },
+            Triple("Unmerge", block.mergeContaining(first, left) != null) { onChange(block.unmerge(first, left)) },
+        )
+        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            actions.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                pair.forEach { (label, enabled, run) ->
+                    OutlinedButton(run, Modifier.weight(1f), enabled = enabled, shape = RoundedCornerShape(12.dp),
+                        colors = if (label.startsWith("Delete")) ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB3261E)) else ButtonDefaults.outlinedButtonColors()) { Text(label, fontSize = 13.sp) }
+                }
+            } }
         }
-    } else Text("Tap a cell to add or delete rows and columns there, or drag across cells to merge them.", fontSize = 12.sp, color = Color(0xFF666670), modifier = Modifier.padding(bottom = 12.dp))
-    Section("Size") {
-        ToolChip("Rows −", enabled = block.rows.size > 1) { onChange(block.copy(rows = resizeFractions(block.rows, block.rows.size - 1))) }
-        Text("${block.rows.size.coerceAtLeast(1)} rows", fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
-        ToolChip("Rows +") { onChange(block.copy(rows = resizeFractions(block.rows, block.rows.size + 1))) }
-        ToolChip("Columns −", enabled = block.columns.size > 1) { onChange(block.copy(columns = resizeFractions(block.columns, block.columns.size - 1))) }
-        Text("${block.columns.size.coerceAtLeast(1)} columns", fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
-        ToolChip("Columns +") { onChange(block.copy(columns = resizeFractions(block.columns, block.columns.size + 1))) }
-        ToolChip("Equal sizes") { onChange(block.copy(rows = equalFractions(block.rows.size), columns = equalFractions(block.columns.size))) }
-    }
-    Section("Headers") {
-        ToolChip("Header row", block.headerRow) { onChange(block.copy(headerRow = !block.headerRow)) }
-        ToolChip("Header column", block.headerColumn) { onChange(block.copy(headerColumn = !block.headerColumn)) }
+        HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFE4E4E8))
+    } else Text("Tip: tap a cell first to add or delete rows and columns at that spot, or tap two cells to merge them.",
+        fontSize = 12.sp, color = Color(0xFF666670), modifier = Modifier.padding(bottom = 8.dp))
+    TableStepper("Rows", block.rows.size.coerceAtLeast(1), { onChange(block.copy(rows = resizeFractions(block.rows, it))) })
+    TableStepper("Columns", block.columns.size.coerceAtLeast(1), { onChange(block.copy(columns = resizeFractions(block.columns, it))) })
+    OutlinedButton({ onChange(block.copy(rows = equalFractions(block.rows.size), columns = equalFractions(block.columns.size))) },
+        Modifier.fillMaxWidth().padding(vertical = 8.dp), shape = RoundedCornerShape(12.dp)) { Text("Make rows and columns equal") }
+    HorizontalDivider(Modifier.padding(vertical = 8.dp), color = Color(0xFFE4E4E8))
+    ToolToggle("Header row", "Shade the first row.", block.headerRow) { onChange(block.copy(headerRow = it)) }
+    Spacer(Modifier.height(8.dp))
+    ToolToggle("Header column", "Shade the first column.", block.headerColumn) { onChange(block.copy(headerColumn = it)) }
+}
+
+/** A labelled − count + control. */
+@Composable
+private fun TableStepper(label: String, value: Int, onValue: (Int) -> Unit, min: Int = 1, max: Int = 40) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, Modifier.weight(1f), fontSize = 14.sp)
+        Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF2F2F4)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton({ onValue(value - 1) }, enabled = value > min, modifier = Modifier.semantics { contentDescription = "Fewer ${label.lowercase()}" }) { Text("−", fontSize = 20.sp) }
+                Text("$value", Modifier.widthIn(min = 32.dp), fontSize = 16.sp, fontWeight = FontWeight.Medium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                TextButton({ onValue(value + 1) }, enabled = value < max, modifier = Modifier.semantics { contentDescription = "More ${label.lowercase()}" }) { Text("+", fontSize = 20.sp) }
+            }
+        }
     }
 }
 
 /** Border and fill, opened from the table's selection bar. */
 @Composable
 internal fun TableStyleControls(block: InkBlock, onChange: (InkBlock) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Border width", Modifier.weight(1f), fontSize = 14.sp)
-        ToolChip("−", enabled = block.borderWidth > 0f) { onChange(block.copy(borderWidth = (block.borderWidth - 1f).coerceAtLeast(0f))) }
-        Text("${block.borderWidth.toInt()}", fontSize = 14.sp)
-        ToolChip("+", enabled = block.borderWidth < 8f) { onChange(block.copy(borderWidth = (block.borderWidth + 1f).coerceAtMost(8f))) }
-    }
+    TableStepper("Border width", block.borderWidth.toInt(), { onChange(block.copy(borderWidth = it.toFloat())) }, min = 0, max = 8)
     Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("Border color", Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(block.borderColor, "Border color", TableBorderColors) { onChange(block.copy(borderColor = it)) } }
     Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("Fill color", Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(block.fill, "Fill color", TableFillColors) { onChange(block.copy(fill = it)) } }
 }
