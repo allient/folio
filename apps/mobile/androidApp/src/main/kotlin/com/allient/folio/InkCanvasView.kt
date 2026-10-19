@@ -99,6 +99,9 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private var selectedObjectIsText = false
     private var draggingObject = false
     private var resizingImage = false
+    private var rotatingObject = false
+    private var objectRotationBase = 0f
+    private var objectRotationStart = 0f
     private var resizingTextCard = false
     private var embeddedTouchId: String? = null
     private var embeddedTouchAction = false
@@ -641,7 +644,15 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         }
         if (mode == CanvasMode.Objects) selectedObjectBounds()?.let {
             val xform = selectedObjectTransform()
-            if (xform != null) { canvas.save(); canvas.rotate(xform.rotation, xform.px, xform.py) }
+            if (xform != null) {
+                canvas.save(); canvas.rotate(xform.rotation, xform.px, xform.py)
+                if (selectedObjectIsText) canvas.scale(if (xform.flipX) -1f else 1f, if (xform.flipY) -1f else 1f, xform.px, xform.py)
+                val handleY = it.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue
+                val handleRadius = 7f * resources.displayMetrics.density / zoomValue
+                canvas.drawLine(it.centerX(), it.top, it.centerX(), handleY, selectionPaint)
+                canvas.drawCircle(it.centerX(), handleY, handleRadius + 2f / zoomValue, selectionHandleBackground)
+                canvas.drawCircle(it.centerX(), handleY, handleRadius, handlePaint)
+            }
             canvas.drawRect(it, selectionPaint)
             if (!selectedObjectIsText || texts.any { it.id == selectedObjectId && it.kind != "plain" }) {
                 canvas.drawCircle(it.right, it.bottom, 7f / zoomValue, handlePaint)
@@ -794,7 +805,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             val previousEdits = editBaseline; editBaseline = null
             if (previousEdits != null) strokes = previousEdits
             lastEraserPoint = null; eraseGesture = false; eraserCursor = null
-            draggingObject = false; resizingImage = false; resizingSelection = false; rotatingSelection = false
+            draggingObject = false; resizingImage = false; rotatingObject = false; resizingSelection = false; rotatingSelection = false
             horizontalSwipeTracking = false; horizontalSwipeConsumed = false
             activePointerId = MotionEvent.INVALID_POINTER_ID; multitouch = false; postInvalidateOnAnimation(); return true
         }
@@ -1120,10 +1131,22 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun beginObjectDrag(point: Offset) {
         val x = point.x * width; val y = point.y * documentHeight
         blockTouch = point
-        draggingObject = false; resizingImage = false; draggingBlock = false; resizingBlock = false
+        draggingObject = false; resizingImage = false; rotatingObject = false; draggingBlock = false; resizingBlock = false
         blockContent.firstOrNull { it.id == selectedBlockId && editable(it.layerId) }?.let { block ->
             val bounds = blockBounds(block)
             if (hypot(x - bounds.right, y - bounds.bottom) < 24f * resources.displayMetrics.density / zoomValue) { startBlockDrag(block, resize = true); return }
+        }
+        // The rotation handle floats above a selected image or plain text box.
+        selectedObjectTransform()?.let { xf ->
+            val box = selectedObjectBounds() ?: return@let
+            val local = toObjectFrame(x, y, xf.px, xf.py, xf.rotation, selectedObjectIsText && xf.flipX, selectedObjectIsText && xf.flipY)
+            val handleY = box.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue
+            if (hypot(local.x - box.centerX(), local.y - handleY) <= 30f * resources.displayMetrics.density / zoomValue) {
+                rotatingObject = true; draggingObject = true; objectsBaseline = texts to images
+                objectRotationBase = xf.rotation
+                objectRotationStart = Math.toDegrees(kotlin.math.atan2((y - xf.py).toDouble(), (x - xf.px).toDouble())).toFloat()
+                return
+            }
         }
         // A selected image's corner handle is checked before choosing a new object.
         val selectedTextCard = texts.firstOrNull { it.id == selectedObjectId && it.kind != "plain" && editable(it.layerId) }
@@ -1166,6 +1189,17 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun moveObject(point: Offset) {
         if (draggingBlock) { moveBlock(point); return }
         if (!draggingObject) return
+        if (rotatingObject) {
+            val xf = selectedObjectTransform() ?: return
+            val now = Math.toDegrees(kotlin.math.atan2((point.y * documentHeight - xf.py).toDouble(), (point.x * width - xf.px).toDouble())).toFloat()
+            var angle = ((objectRotationBase + now - objectRotationStart) % 360f + 360f) % 360f
+            // Settle on the straight angles so a quick turn lines up without effort.
+            val straight = (angle / 90f).roundToInt() * 90f
+            if (kotlin.math.abs(angle - straight) < 4f) angle = straight % 360f
+            if (selectedObjectIsText) textContent = texts.map { if (it.id == selectedObjectId && editable(it.layerId)) it.copy(rotation = angle) else it }
+            else imageContent = images.map { if (it.id == selectedObjectId && editable(it.layerId)) it.copy(rotation = angle) else it }
+            contentChanged(); return
+        }
         val dx = point.x - lastPosition.x; val dy = point.y - lastPosition.y
         if (selectedObjectIsText) {
             textContent = texts.map { text ->
@@ -1202,7 +1236,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     }
     private fun publishObjects() {
         val previous = objectsBaseline
-        objectsBaseline = null; draggingObject = false; resizingImage = false; resizingTextCard = false
+        objectsBaseline = null; draggingObject = false; resizingImage = false; rotatingObject = false; resizingTextCard = false
         publishBlocks()
         if (previous != null && (previous.first != texts || previous.second != images)) onObjectsChanged(texts, images)
     }
