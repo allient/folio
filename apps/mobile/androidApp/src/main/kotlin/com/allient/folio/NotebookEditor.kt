@@ -266,6 +266,7 @@ internal fun NotebookEditor(
     var lassoAutoSwitch by remember { mutableStateOf(false) }
     var shapeFilled by remember { mutableStateOf(preferences.getBoolean("shapeFilled", false)) }
     var shapeFillColor by remember { mutableIntStateOf(preferences.getInt("shapeFillColor", 0xFFE5EFEC.toInt())) }
+    var shapeBorderNone by remember { mutableStateOf(preferences.getBoolean("shapeBorderNone", false)) }
     val safeIndex = pageIndex.coerceIn(0, notebook.pages.lastIndex)
     val pageListState = rememberLazyListState(initialFirstVisibleItemIndex = safeIndex)
     val savedPage = notebook.pages[safeIndex]
@@ -329,11 +330,12 @@ internal fun NotebookEditor(
             presets.forEachIndexed { index, brush -> putString("brush-preset-id-$index", brush.presetId); putString("brush-preset-$index", brush.name) }
         }.apply()
     }
-    LaunchedEffect(shapeColor, shapeWidth, shapeLineStyle, fillColor, lassoAutoSwitch, shapeFilled, shapeFillColor) {
+    LaunchedEffect(shapeColor, shapeWidth, shapeLineStyle, fillColor, lassoAutoSwitch, shapeFilled, shapeFillColor, shapeBorderNone) {
         preferences.edit().putInt("shapeColor", shapeColor).putFloat("shapeWidth", shapeWidth)
             .putString("shapeLineStyle", shapeLineStyle.name).putInt("fillColor", fillColor)
             .putBoolean("lassoAutoSwitch", lassoAutoSwitch)
-            .putBoolean("shapeFilled", shapeFilled).putInt("shapeFillColor", shapeFillColor).apply()
+            .putBoolean("shapeFilled", shapeFilled).putInt("shapeFillColor", shapeFillColor)
+            .putBoolean("shapeBorderNone", shapeBorderNone).apply()
     }
     LaunchedEffect(selectedBrush) { if (!selectedBrush.eraser) previousPen = selectedBrush }
     LaunchedEffect(selectedIds.isEmpty(), mode) {
@@ -774,10 +776,12 @@ internal fun NotebookEditor(
                     }
                     VariableWidthSlider(shapeWidthMm, shapeMinMm, shapeMaxMm, Modifier.fillMaxWidth().height(34.dp), "Shape line width") { shapeWidth = brushWidthDocumentUnits(it, drawingViewportWidthPx, panelXdpi).coerceIn(.5f, 32f) }
                     HorizontalDivider(color = ChromeLine)
-                    InkColorOptions(shapeColor, { shapeColor = it }, ::pickPageColor, title = "Border")
+                    // A shape always keeps something visible: no border turns the fill on, no fill brings the border back.
+                    InkColorOptions(shapeColor, { shapeColor = it; shapeBorderNone = false }, ::pickPageColor,
+                        onClear = { shapeBorderNone = true; shapeFilled = true }, transparentSelected = shapeBorderNone, title = "Border")
                     HorizontalDivider(color = ChromeLine)
                     InkColorOptions(shapeFillColor, { shapeFillColor = it; shapeFilled = true }, ::pickPageColor,
-                        onClear = { shapeFilled = false }, transparentSelected = !shapeFilled, title = "Fill")
+                        onClear = { shapeFilled = false; shapeBorderNone = false }, transparentSelected = !shapeFilled, title = "Fill")
                 }
                 "eraser" -> EraserControls(eraserMode,
                     brushWidthMillimetres(eraserWidth, drawingViewportWidthPx, panelXdpi),
@@ -889,8 +893,13 @@ internal fun NotebookEditor(
                             }
                         }))
                     }, ::pickPageColor, onClear = if (editingFill) { {
-                        applyPage(page.copy(strokes = page.strokes.map { if (it.id in fillable) it.copy(filled = false, fillColor = null) else it }))
-                    } } else null, transparentSelected = editingFill && selection.filter { it.id in fillable }.all { !it.filled })
+                        applyPage(page.copy(strokes = page.strokes.map { if (it.id in fillable) it.copy(filled = false, fillColor = null,
+                            color = if (it.color ushr 24 == 0) it.color or 0xFF000000.toInt() else it.color) else it }))
+                    } } else if (selection.any { it.filled }) { {
+                        applyPage(page.copy(strokes = page.strokes.map { if (it.id in selectedIds && it.filled && editableLayer(it.layerId))
+                            it.copy(color = it.color and 0xFFFFFF, fillColor = it.fillColor ?: it.color) else it }))
+                    } } else null, transparentSelected = if (editingFill) selection.filter { it.id in fillable }.all { !it.filled }
+                        else selection.isNotEmpty() && selection.all { android.graphics.Color.alpha(it.color) == 0 })
                     if (!editingFill) {
                         var width by remember(first?.id, first?.width) { mutableFloatStateOf(first?.width ?: 3f) }
                         val widthMm = brushWidthMillimetres(width, drawingViewportWidthPx, panelXdpi)
@@ -1380,7 +1389,7 @@ internal fun NotebookEditor(
                                         pressureCurve = pressureCurve, pressureCurveEnabled = pressureCurveEnabled,
                                         velocityCurveEnabled = velocityCurveEnabled, velocityCurve = velocityCurve,
                                         tiltCurveEnabled = tiltCurveEnabled, tiltCurve = tiltCurve,
-                                        mode = mode, shape = shape, shapeFilled = shapeFilled, shapeFillColor = shapeFillColor, shapeColor = shapeColor, shapeWidth = shapeWidth,
+                                        mode = mode, shape = shape, shapeFilled = shapeFilled, shapeFillColor = shapeFillColor, shapeBorderNone = shapeBorderNone, shapeColor = shapeColor, shapeWidth = shapeWidth,
                                         shapeLineStyle = shapeLineStyle, fillColor = fillColor, eraserMode = eraserMode, eraserWidth = eraserWidth,
                                         eraseActiveLayerOnly = eraseActiveLayerOnly, lassoKind = lassoKind, fingerDrawing = fingerDrawing, pinchToZoom = pinchToZoom,
                                         activeLayerId = if (model.id == page.id) activeLayer else model.layers.firstOrNull()?.id ?: "ink",
@@ -1433,7 +1442,7 @@ internal fun NotebookEditor(
                                     view.pressureCurve = pressureCurve; view.pressureCurveEnabled = pressureCurveEnabled
                                     view.velocityCurveEnabled = velocityCurveEnabled; view.velocityCurve = velocityCurve
                                     view.tiltCurveEnabled = tiltCurveEnabled; view.tiltCurve = tiltCurve
-                                    view.mode = mode; view.shapeKind = shape; view.shapeFilled = shapeFilled; view.shapeFillColor = shapeFillColor; view.shapeColor = shapeColor; view.shapeWidth = shapeWidth; view.shapeLineStyle = shapeLineStyle; view.fillColor = fillColor; view.onColorPicked = { picked -> val receiver = pageColorReceiver; pageColorReceiver = null; mode = colorReturnMode; sheet = colorReturnSheet; receiver?.invoke(picked) }; view.eraserMode = eraserMode
+                                    view.mode = mode; view.shapeKind = shape; view.shapeFilled = shapeFilled; view.shapeFillColor = shapeFillColor; view.shapeBorderNone = shapeBorderNone; view.shapeColor = shapeColor; view.shapeWidth = shapeWidth; view.shapeLineStyle = shapeLineStyle; view.fillColor = fillColor; view.onColorPicked = { picked -> val receiver = pageColorReceiver; pageColorReceiver = null; mode = colorReturnMode; sheet = colorReturnSheet; receiver?.invoke(picked) }; view.eraserMode = eraserMode
                                     view.rulerVisible = rulerOn
                                     view.selectedBlockId = selectedBlockId
                                     view.selectedCells = cellSelection
@@ -1740,6 +1749,7 @@ private fun NotebookPageCanvas(
     shape: ShapeKind,
     shapeFilled: Boolean,
     shapeFillColor: Int,
+    shapeBorderNone: Boolean,
     shapeColor: Int,
     shapeWidth: Float,
     shapeLineStyle: ShapeLineStyle,
@@ -1781,7 +1791,7 @@ private fun NotebookPageCanvas(
                 view.pressureCurve = pressureCurve; view.pressureCurveEnabled = pressureCurveEnabled
                 view.velocityCurveEnabled = velocityCurveEnabled; view.velocityCurve = velocityCurve
                 view.tiltCurveEnabled = tiltCurveEnabled; view.tiltCurve = tiltCurve
-                view.mode = mode; view.shapeKind = shape; view.shapeFilled = shapeFilled; view.shapeFillColor = shapeFillColor; view.shapeColor = shapeColor
+                view.mode = mode; view.shapeKind = shape; view.shapeFilled = shapeFilled; view.shapeFillColor = shapeFillColor; view.shapeBorderNone = shapeBorderNone; view.shapeColor = shapeColor
                 view.shapeWidth = shapeWidth; view.shapeLineStyle = shapeLineStyle; view.fillColor = fillColor
                 view.onColorPicked = onColorPicked; view.eraserMode = eraserMode; view.eraserWidth = eraserWidth
                 view.eraseActiveLayerOnly = eraseActiveLayerOnly; view.lassoKind = lassoKind

@@ -39,8 +39,9 @@ import kotlin.math.sin
 @Composable
 internal fun InkColorOptions(color: Int, onChange: (Int) -> Unit, onPickFromPage: ((Int) -> Unit) -> Unit, onClear: (() -> Unit)? = null, transparentSelected: Boolean = false, title: String = "Colors") {
     var custom by remember { mutableStateOf(false) }
-    val pick = { custom = false; onPickFromPage { picked -> onChange((color and 0xFF000000.toInt()) or (picked and 0xFFFFFF)) } }
-    if (custom) BrushColorPicker(color, { custom = false }, { onChange(it); custom = false }, pick)
+    val alpha = if (color ushr 24 == 0) 0xFF000000.toInt() else color and 0xFF000000.toInt()
+    val pick = { custom = false; onPickFromPage { picked -> onChange(alpha or (picked and 0xFFFFFF)) } }
+    if (custom) BrushColorPicker(alpha or (color and 0xFFFFFF), { custom = false }, { onChange(it); custom = false }, pick)
     val palette = listOf(0xFF000000, 0xFF555555, 0xFF888888, 0xFFBBBBBB, 0xFFFFFFFF, 0xFFB96868, 0xFF286851, 0xFF252F63,
         0xFF71B0AB, 0xFF84508C, 0xFFA58D48, 0xFFB5B75B, 0xFF244D32, 0xFF6B5179, 0xFF508DA7, 0xFF995B40)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -58,7 +59,7 @@ internal fun InkColorOptions(color: Int, onChange: (Int) -> Unit, onPickFromPage
             }
         } else Box(Modifier.size(30.dp).clip(CircleShape).background(Color(value))
             .border(if (!transparentSelected && (color and 0xFFFFFF) == (value.toInt() and 0xFFFFFF)) 3.dp else 1.dp, if (!transparentSelected && (color and 0xFFFFFF) == (value.toInt() and 0xFFFFFF)) Color(0xFF287463) else ChromeLine, CircleShape)
-            .clickable { onChange((color and 0xFF000000.toInt()) or (value.toInt() and 0xFFFFFF)) }
+            .clickable { onChange(alpha or (value.toInt() and 0xFFFFFF)) }
             .semantics { contentDescription = String.format(java.util.Locale.US, "Color #%06X", value and 0xFFFFFF) }) }
         repeat(columns - row.size) { Spacer(Modifier.size(30.dp)) }
     } }
