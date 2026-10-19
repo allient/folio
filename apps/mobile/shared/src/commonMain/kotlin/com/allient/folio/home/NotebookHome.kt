@@ -82,6 +82,8 @@ fun NotebookHome(
     onCopy: (String) -> Unit,
     onExport: (String, String) -> Unit,
     onOpenSettings: () -> Unit = {},
+    /** Opens the host's pen pressure settings; the Preferences screen hides the row when null. */
+    onOpenPenSettings: (() -> Unit)? = null,
     onExportLibraryBackup: () -> Unit = {},
     templatePreview: (@Composable (String, Modifier) -> Unit)? = null,
     books: List<HomeBook> = emptyList(),
@@ -251,7 +253,7 @@ fun NotebookHome(
                             else -> settings.folders.firstOrNull { it.id == item.id }?.let { FolderArtwork(it.color, it.style, Modifier.fillMaxWidth(.85f).aspectRatio(1.35f)) }
                         }
                     }, onBack = { changeScreen("home") }, onRestore = { onRestore(it.kind, it.id) }, onDelete = { onDeleteForever(it.kind, setOf(it.id)) }, onEmpty = onEmptyTrash)
-                    "preferences" -> PreferencesScreen(preferences, onPreferencesChange, onBack = { changeScreen("home") }, onOpenBackup = onOpenSettings)
+                    "preferences" -> PreferencesScreen(preferences, onPreferencesChange, onBack = { changeScreen("home") }, onOpenBackup = onOpenSettings, onOpenPen = onOpenPenSettings)
                     "about" -> AboutScreen(appVersion, onBack = { changeScreen("home") })
                     else -> Column(Modifier.fillMaxSize()) {
                         if (selecting) Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 8.dp).testTag("selection-bar"), verticalAlignment = Alignment.CenterVertically) {

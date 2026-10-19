@@ -76,7 +76,11 @@ class ReaderActivity : AppCompatActivity() {
     private var themeName by mutableStateOf("Light")
     private var scroll by mutableStateOf(false)
     private var lineHeight by mutableDoubleStateOf(1.5)
+    private val penFilter = PenPressureFilter()
+    override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean = penFilter.dispatch(event) { super.dispatchTouchEvent(it) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        PenSettings.init(this)
         // Native navigators are rebuilt from persisted locators, never restored without a Publication.
         super.onCreate(null)
         enableEdgeToEdge()
@@ -136,6 +140,8 @@ class ReaderActivity : AppCompatActivity() {
         var chromeVisible by rememberSaveable { mutableStateOf(false) }
         var showProgress by rememberSaveable { mutableStateOf(true) }
         var readerTab by rememberSaveable { mutableStateOf("Progress") }
+        var penSettings by remember { mutableStateOf(false) }
+        if (penSettings) GlobalPenSettingsDialog { penSettings = false }
         var contentsTab by rememberSaveable { mutableStateOf("TOC") }
         var drawingToolbar by rememberSaveable { mutableStateOf(false) }
         var drawingPopup by rememberSaveable { mutableStateOf<String?>(null) }
@@ -559,6 +565,7 @@ class ReaderActivity : AppCompatActivity() {
                     Row(Modifier.fillMaxWidth().padding(16.dp)) {
                         ReaderAction(InkIcon.Pen, "Handwritten notes", Modifier.weight(1f), enabled = !engineLoading) { chromeVisible = false; openStudyMode() }
                         ReaderAction(InkIcon.Text, "Text notes", Modifier.weight(1f)) { currentAnchor()?.let { editNote(it) }; chromeVisible = false }
+                        ReaderAction(InkIcon.Pressure, "Pen pressure", Modifier.weight(1f)) { penSettings = true }
                     }
                     HorizontalDivider(Modifier.padding(horizontal = 20.dp))
                     Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -126,7 +126,7 @@ private fun OptionCard(label: String, selected: Boolean, tag: String, modifier: 
 }
 
 @Composable
-internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreferences) -> Unit, onBack: () -> Unit, onOpenBackup: () -> Unit) {
+internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreferences) -> Unit, onBack: () -> Unit, onOpenBackup: () -> Unit, onOpenPen: (() -> Unit)? = null) {
     val style = LocalHomeStyle.current
     var confirmReset by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(HomeBackground).testTag("preferences-screen")) {
@@ -185,6 +185,16 @@ internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreference
                     }
                     PreferenceSection("Trash", "Deleted items are kept in Trash for this long, then deleted when Folio starts.") {
                         TrashRules.retentionOptions.forEach { (days, label) -> ChoiceRow(label, value.trashRetentionDays == days, "retention-$days") { onChange(value.copy(trashRetentionDays = days)) } }
+                    }
+                    if (onOpenPen != null) PreferenceSection("Pen") {
+                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.item)).border(1.dp, HomeHairline, RoundedCornerShape(style.item)).clickable(onClick = onOpenPen)
+                            .padding(horizontal = 16.dp, vertical = 14.dp).testTag("pref-pen-pressure"), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Pen pressure", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = HomeInk)
+                                Text("Ignore hovering and light contact in notes, the reader and the library; pressure curves", fontSize = 12.sp, color = HomeMuted)
+                            }
+                            HomeSymbol(Symbol.ChevronRight, Modifier.size(16.dp))
+                        }
                     }
                     PreferenceSection("Backup") {
                         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.item)).border(1.dp, HomeHairline, RoundedCornerShape(style.item)).clickable(onClick = onOpenBackup)

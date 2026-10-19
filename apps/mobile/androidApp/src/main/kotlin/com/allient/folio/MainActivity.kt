@@ -37,8 +37,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
+    private val penFilter = PenPressureFilter()
+
+    override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean = penFilter.dispatch(event) { super.dispatchTouchEvent(it) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PenSettings.init(this)
         enableEdgeToEdge()
         hideSystemBars()
         val repository = ViewModelProvider(this)[NotebookViewModel::class.java]
@@ -99,6 +104,8 @@ private fun KnotesApp(repository: NotebookViewModel, backup: LocalBackupViewMode
     val importing = repository.importing
     var importError by remember { mutableStateOf<String?>(null) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    var showPenSettings by remember { mutableStateOf(false) }
+    if (showPenSettings) GlobalPenSettingsDialog { showPenSettings = false }
     var enableAfterFolderChoice by rememberSaveable { mutableStateOf(true) }
     var libraryRestoreComplete by remember { mutableStateOf<Int?>(null) }
     var backupExportMessage by remember { mutableStateOf<String?>(null) }
@@ -348,6 +355,7 @@ private fun KnotesApp(repository: NotebookViewModel, backup: LocalBackupViewMode
                             }
                         } },
                         onOpenSettings = { showSettings = true },
+                        onOpenPenSettings = { showPenSettings = true },
                         onExportLibraryBackup = ::exportFullLibraryBackup,
                         templatePreview = { id, modifier -> NotebookPageThumbnail(NotebookPage(template = id), modifier) },
                         thumbnail = { id, modifier -> notebooks.firstOrNull { it.id == id }?.let { note ->
