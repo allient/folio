@@ -1,0 +1,18 @@
+{
+  "name": "folio",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "dev:docs": "turbo run dev --filter=@folio/docs",
+    "build:docs": "turbo run build --filter=@folio/docs",
+    "build:android": "turbo run build --filter=@folio/mobile",
+    "test:android": "turbo run test --filter=@folio/mobile"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.7"
+  }
+}

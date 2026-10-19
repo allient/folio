@@ -1,0 +1,5 @@
+{
+  "name": "@folio/brand",
+  "private": true,
+  "description": "Folio logo, app icon and generator scripts (Python, see README)."
+}

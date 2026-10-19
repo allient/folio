@@ -45,8 +45,9 @@ release/
 output-metadata.json
 
 # Private device backups and local release builds (user notebooks; never commit)
-artifacts/recovery/*
-!artifacts/recovery/README.md
+apps/mobile/artifacts/recovery/*
+!apps/mobile/artifacts/recovery/README.md
+apps/mobile/artifacts/release/
 artifacts/release/
 *.knotes
 *.tar
@@ -55,7 +56,12 @@ artifacts/release/
 # Logs and tooling
 *.log
 node_modules/
+
+# Bun, Turborepo and Astro
+.turbo/
+dist/
+.astro/
 .claude/settings.local.json
 
 # Screenshots of other apps stay local
-artifacts/reader-design/boox-*.png
+apps/mobile/artifacts/reader-design/boox-*.png

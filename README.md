@@ -9,7 +9,7 @@ Folio (project and code name: Knotes) is a local-only Android app for handwritte
 - Platforms: **Android only**. The iOS app is still the Kotlin Multiplatform starter shell (see [Platforms](#platforms)).
 - Tested on: the `Knotes_Tablet` emulator (API 36, 1200×1920) and an XPPen MagicNotePad MNP1095 (Android 14).
 
-![Library](docs/screenshots/library.png)
+![Library](apps/docs/src/assets/screenshots/library.png)
 
 ## Features
 
@@ -24,7 +24,7 @@ Folio (project and code name: Knotes) is a local-only Android app for handwritte
 - Search across names, typed text, tags and outlines, plus book titles and authors. Tag search is in the ⋮ menu.
 - Notebook details (▾ or long press): open, rename, copy, delete, move, favorite, share (PDF, PNG or backup). Books: open, move, favorite, delete.
 - Folders with 6 colors (sage, blue, lavender, rose, peach, sand) and 4 styles (Classic, With papers, Tabbed, Open). Folders are one level deep.
-- **Trash:** deleted notebooks, folders and books go to the Trash bin, where they can be restored or deleted permanently. Items are deleted automatically after 7 or 30 days (or never), checked when the app starts. A deleted folder keeps its contents in the library, unfiled, until it is restored. See [local storage](docs/local-storage.md#trash).
+- **Trash:** deleted notebooks, folders and books go to the Trash bin, where they can be restored or deleted permanently. Items are deleted automatically after 7 or 30 days (or never), checked when the app starts. A deleted folder keeps its contents in the library, unfiled, until it is restored. See [local storage](apps/docs/src/content/docs/architecture/local-storage.md#trash).
 - **Preferences:** accent colour (Sage, Morning, Evening, Sea, Forest, Lavender, Desert, Graphite), corners (Sharp, Rounded, Soft), default view and sort, start notebooks in focus mode, Trash retention, and a link to backup settings. The accent and corners apply to the library screens only; the editor keeps its own colours. There is no dark theme, because the editor uses fixed light colours.
 - 35 page templates in General, Planning, Work, Study, Creative and Custom, such as lined, grid, dots, Cornell, Kanban, music staff and habit tracker.
 
@@ -41,7 +41,7 @@ Folio (project and code name: Knotes) is a local-only Android app for handwritte
 | Brushes | Renderer |
 |---|---|
 | Pen, Fineliner, Gel pen, Marker, Fountain pen, Brush pen, Calligraphy, Highlighter | [Jetpack Ink](https://developer.android.com/jetpack/androidx/releases/ink) (`JetpackInkEngine`), with low-latency wet ink through `InProgressStrokesView` |
-| Pencil (2H–6B), Chalk, Spray | `NaturalMediaRenderer`, paper grain anchored to the document |
+| Pencil (2H–6B), Chalk, Spray, Paint brush | `NaturalMediaRenderer`, paper grain anchored to the document |
 
 - Presets in `BrushCatalog.kt`, such as Pencil HB, Ballpoint Fine, Calligraphy Italic 35° and Highlighter Wide.
 - Pressure profiles Soft, Balanced and Firm, or a custom curve with an activation threshold and two Bézier control points (`DrawingProfiles.kt`). Pressure below the threshold ends the stroke segment; this filters hovering and worn stylus tips.
@@ -73,32 +73,40 @@ Folio (project and code name: Knotes) is a local-only Android app for handwritte
 - Export reading notes as Markdown.
 - Opens PDF and EPUB files from other apps ("Open with").
 
-Details: [docs/READER.md](docs/READER.md).
+Details: [reader.md](apps/docs/src/content/docs/architecture/reader.md).
 
-## Project structure
+## Repository structure
+
+A monorepo managed with [Bun](https://bun.sh) workspaces and [Turborepo](https://turborepo.com), laid out like [Better-T-Stack](https://better-t-stack.dev): apps in `apps/`, shared packages in `packages/`.
 
 ```
-knotes/
-├── androidApp/                 Android app: almost all app logic
-│   └── src/main/kotlin/com/example/knotes/
-│       ├── MainActivity.kt         Launcher; handles PDF/EPUB "Open with"
-│       ├── ReaderActivity.kt       PDF/EPUB reader
-│       ├── NotebookEditor.kt       Notebook editor UI
-│       ├── NotebookViewModel.kt    Editor state, autosave queue
-│       ├── InkCanvasView.kt        Drawing canvas, input, erasers, lasso
-│       ├── JetpackInkEngine.kt     Jetpack Ink geometry and rendering
-│       ├── FrontBufferedInkController.kt  Low-latency wet ink
-│       ├── NaturalMediaRenderer.kt Pencil, Chalk, Spray
-│       ├── NotebookStorage.kt      SQLite storage
-│       ├── NotebookFiles.kt, LocalBackup.kt  Export, import, backup
-│       └── PdfReaderEngine.kt, EpubReaderEngine.kt, ReaderStore.kt
-├── shared/                     Kotlin Multiplatform library
-│   └── src/commonMain/         Compose Multiplatform library screen, folder editor,
-│                               backup settings, template catalog, reader models
-├── iosApp/                     Xcode project (starter shell)
-├── docs/                       Design notes, formats, reviews, validation
-├── artifacts/                  Demo PDF/EPUB files, reader design references, local builds
-└── .argent/flows/              Recorded UI automation flows
+folio/
+├── apps/
+│   ├── mobile/                     Kotlin Multiplatform app (Gradle project root)
+│   │   ├── androidApp/             Android app: almost all app logic
+│   │   │   └── src/main/kotlin/com/allient/folio/
+│   │   │       ├── MainActivity.kt         Launcher; handles PDF/EPUB "Open with"
+│   │   │       ├── ReaderActivity.kt       PDF/EPUB reader
+│   │   │       ├── NotebookEditor.kt       Notebook editor UI
+│   │   │       ├── NotebookViewModel.kt    Editor state, autosave queue
+│   │   │       ├── InkCanvasView.kt        Drawing canvas, input, erasers, lasso
+│   │   │       ├── JetpackInkEngine.kt     Jetpack Ink geometry and rendering
+│   │   │       ├── FrontBufferedInkController.kt  Low-latency wet ink
+│   │   │       ├── NaturalMediaRenderer.kt Pencil, Chalk, Spray, Paint brush
+│   │   │       ├── NotebookStorage.kt      SQLite storage
+│   │   │       ├── NotebookFiles.kt, LocalBackup.kt  Export, import, backup
+│   │   │       └── PdfReaderEngine.kt, EpubReaderEngine.kt, ReaderStore.kt
+│   │   ├── shared/                 Kotlin Multiplatform library: Compose Multiplatform home,
+│   │   │                           folder editor, backup settings, templates, reader models
+│   │   ├── iosApp/                 Xcode project (starter shell)
+│   │   └── artifacts/              Demo PDF/EPUB files, reader captures, local builds
+│   └── docs/                       Documentation site (Astro Starlight, runs on Bun)
+│       └── src/content/docs/       Architecture, features, investigations, roadmap, testing
+├── packages/
+│   └── brand/                      Logo, app icon and the Python scripts that generate them
+├── .argent/flows/                  Recorded UI automation flows
+├── package.json, turbo.json        Workspace and task pipeline
+└── bun.lock
 ```
 
 ## Tech stack
@@ -125,13 +133,26 @@ Storage uses plain `SQLiteOpenHelper` and `org.json`, with no Room or SQLDelight
 - Media is stored in the app's private `files/media/` folder. Android's cloud backup is off (`allowBackup="false"`), and nothing is encrypted yet.
 - `.knotes` files are ZIP archives with a `manifest.json` and Zstandard-compressed JSON. Stroke engines are versioned (`jetpack-ink-v1`, `jetpack-ink-v2`, `shape-v1`, `fill-cut-v1`), so old ink still renders the same way.
 
-Details: [local storage](docs/local-storage.md), [portable format](docs/portable-format.md), [SQLite migrations](docs/sqlite-migrations.md), and the [JSON schemas](docs/schemas).
+Details: [local storage](apps/docs/src/content/docs/architecture/local-storage.md), [portable format](apps/docs/src/content/docs/architecture/portable-format.md), [SQLite migrations](apps/docs/src/content/docs/architecture/sqlite-migrations.md), and the [JSON schemas](apps/docs/public/schemas).
 
 ## Build and run
 
-Requires Android Studio, or the Android SDK and JDK 21.
+Requires Bun 1.4+, plus Android Studio or the Android SDK and JDK 21. Open `apps/mobile` in Android Studio.
 
 ```bash
+bun install              # once, at the repository root
+
+bun run dev:docs         # docs site at http://localhost:4321
+bun run build:docs       # static site in apps/docs/dist
+bun run build:android    # debug APK (runs Gradle in apps/mobile)
+bun run test:android     # shared module host tests
+bun run build            # everything
+```
+
+Gradle can also be run directly from `apps/mobile`:
+
+```bash
+cd apps/mobile
 # Debug build
 ./gradlew :androidApp:assembleDebug
 
@@ -164,7 +185,7 @@ With more than one device connected, pass the serial to adb: `adb -s <serial> in
 | `NaturalBrushTest` | Pencil, Chalk, Spray |
 | `TrashTest` | Trash: soft delete, restore, permanent delete, retention purge, folders, backups; home preferences |
 
-`gradle.properties` keeps test APKs installed after a run, so data on the device isn't wiped. The `shared` module's tests (`:shared:testAndroidHostTest`, `:shared:iosSimulatorArm64Test`) are still template placeholders. Results and UI flow replays are in [docs/validation.md](docs/validation.md).
+`gradle.properties` keeps test APKs installed after a run, so data on the device isn't wiped. The `shared` module's tests (`:shared:testAndroidHostTest`, `:shared:iosSimulatorArm64Test`) are still template placeholders. Results and UI flow replays are in [validation.md](apps/docs/src/content/docs/testing/validation.md).
 
 ## Platforms
 
@@ -172,7 +193,7 @@ Only Android is implemented. `iosApp` builds the `Shared` framework but shows th
 
 ## Known issues and limits
 
-- **Jetpack Ink mesh crash on Android 14:** Ink's default mesh rendering crashed on the MNP1095 tablet. Finished strokes are now forced to path rendering; keep `forcePathRendering = true` when upgrading Ink. Wet ink still uses mesh on API 34+. See [docs/mnp1095-mesh-crash.md](docs/mnp1095-mesh-crash.md).
+- **Jetpack Ink mesh crash on Android 14:** Ink's default mesh rendering crashed on the MNP1095 tablet. Finished strokes are now forced to path rendering; keep `forcePathRendering = true` when upgrading Ink. Wet ink still uses mesh on API 34+. See [mnp1095-mesh-crash.md](apps/docs/src/content/docs/investigations/mnp1095-mesh-crash.md).
 - Jetpack Ink is an alpha dependency.
 - Undo history is lost when the app restarts.
 - Unused media files are never cleaned up.
@@ -181,7 +202,7 @@ Only Android is implemented. `iosApp` builds the `Shared` framework but shows th
 - Audio is not synced with ink, and recording stops in the background.
 - Backups are not encrypted.
 - Not implemented: handwriting recognition, shape recognition, nested folders, cloud sync, and BOOX `.note` files.
-- Reader limits (password-protected PDFs, OCR scripts, PDF outline and more): see [docs/READER.md](docs/READER.md).
+- Reader limits (password-protected PDFs, OCR scripts, PDF outline and more): see [reader.md](apps/docs/src/content/docs/architecture/reader.md).
 
 ## Publishing
 
@@ -197,23 +218,26 @@ The application ID is `com.allient.folio` since 2026-10-19. Builds installed ear
 
 Before the first store release:
 
-2. Create the release signing key and keep it outside the repository (`*.jks` is git-ignored). Losing it means the store app can never be updated.
-3. Set `PRODUCT_BUNDLE_IDENTIFIER` in `iosApp/Configuration/Config.xcconfig` to the final iOS bundle ID when the iOS app ships.
+1. Create the release signing key and keep it outside the repository (`*.jks` is git-ignored). Losing it means the store app can never be updated.
+2. Set `PRODUCT_BUNDLE_IDENTIFIER` in `apps/mobile/iosApp/Configuration/Config.xcconfig` to the final iOS bundle ID when the iOS app ships.
 
 Unchanged on purpose: the `.knotes` backup extension and its format ID (`application/vnd.knotes.archive+zip`), and the database file names (`knotes.db`, `knotes-reader.db`). Renaming them would break existing backups and data.
 
 ## Documentation
 
+The documentation lives in the Starlight site (`apps/docs`); run `bun run dev:docs` to browse it.
+
 | Document | Topic |
 |---|---|
-| [boox-feature-coverage.md](docs/boox-feature-coverage.md) | Feature comparison with BOOX Notes (partly out of date: brushes and infinite canvas have since been added) |
-| [canvas-tools-review.md](docs/canvas-tools-review.md) | Erasers, lasso, shapes and fill review |
-| [ink-rendering-research.md](docs/ink-rendering-research.md) | Rendering performance research and the Jetpack Ink plan |
-| [jetpack-ink-implementation.md](docs/jetpack-ink-implementation.md) | Jetpack Ink integration notes |
-| [mnp1095-mesh-crash.md](docs/mnp1095-mesh-crash.md) | Android 14 mesh rendering crash: analysis and fix |
-| [local-storage.md](docs/local-storage.md) | On-device storage, backup and import limits |
-| [portable-format.md](docs/portable-format.md) | `.knotes` archive format |
-| [sqlite-migrations.md](docs/sqlite-migrations.md) | Database migration rules |
-| [READER.md](docs/READER.md) | PDF and EPUB reader |
-| [validation.md](docs/validation.md) | Test results and UI flow replays |
-| [planned-preferences.md](docs/planned-preferences.md) | Pending: dark/light theme, colour options, multi-language |
+| [boox-feature-coverage.md](apps/docs/src/content/docs/features/boox-feature-coverage.md) | Feature comparison with BOOX Notes (partly out of date: brushes and infinite canvas have since been added) |
+| [canvas-tools-review.md](apps/docs/src/content/docs/features/canvas-tools-review.md) | Erasers, lasso, shapes and fill review |
+| [ink-rendering-research.md](apps/docs/src/content/docs/architecture/ink-rendering-research.md) | Rendering performance research and the Jetpack Ink plan |
+| [jetpack-ink-implementation.md](apps/docs/src/content/docs/architecture/jetpack-ink-implementation.md) | Jetpack Ink integration notes |
+| [mnp1095-mesh-crash.md](apps/docs/src/content/docs/investigations/mnp1095-mesh-crash.md) | Android 14 mesh rendering crash: analysis and fix |
+| [local-storage.md](apps/docs/src/content/docs/architecture/local-storage.md) | On-device storage, backup and import limits |
+| [portable-format.md](apps/docs/src/content/docs/architecture/portable-format.md) | `.knotes` archive format |
+| [sqlite-migrations.md](apps/docs/src/content/docs/architecture/sqlite-migrations.md) | Database migration rules |
+| [reader.md](apps/docs/src/content/docs/architecture/reader.md) | PDF and EPUB reader |
+| [validation.md](apps/docs/src/content/docs/testing/validation.md) | Test results and UI flow replays |
+| [planned-preferences.md](apps/docs/src/content/docs/roadmap/planned-preferences.md) | Pending: dark/light theme, colour options, multi-language |
+| [brand.md](apps/docs/src/content/docs/brand.md) | Logo, app icon and how to regenerate them |
