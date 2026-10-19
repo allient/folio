@@ -1,0 +1,4 @@
+executionPrerequisite: Knotes notebook editor is open in normal mode on Android.
+steps:
+  - assert: { visible: { id: rail-shapes } }
+  - assert: { visible: { id: rail-lasso } }

@@ -1,0 +1,38 @@
+steps:
+  - echo: Open the local library and create a notebook. This flow creates one notebook on each run.
+  - launch: com.allient.folio
+  - await: { visible: { text: New notebook } }
+  - await: { idle: true }
+  - tap: { text: New notebook }
+  - await: { visible: { id: action-focus-mode } }
+  - await: { idle: true }
+  - echo: Open Layers and add an editable layer.
+  - tap: { id: rail-layers }
+  - await: { visible: { text: Add layer } }
+  - await: { idle: true }
+  - tap: { text: Add layer }
+  - assert: { visible: { text: 2/6 layers } }
+  - await: { idle: true }
+  - tap: { id: action-close-layers }
+  - await: { visible: { id: action-focus-mode } }
+  - await: { idle: true }
+  - echo: Add a second page and inspect navigation.
+  - tap: { id: rail-addpage }
+  - await: { visible: { text: 'Page manager, page 2 of 2' } }
+  - await: { idle: true }
+  - tap: { text: Page manager }
+  - await: { visible: { id: action-close-page-navigation } }
+  - await: { idle: true }
+  - tap: { id: action-close-page-navigation }
+  - await: { hidden: { id: action-close-page-navigation } }
+  - await: { idle: true }
+  - echo: Enter focus mode to expose the full-page surface and floating toolbox.
+  - tap: { id: action-focus-mode }
+  - await: { visible: { id: action-exit-focus-mode } }
+  - await: { idle: true }
+  - tap: { id: action-exit-focus-mode }
+  - await: { visible: { id: action-back-to-notebooks } }
+  - await: { idle: true }
+  - tap: { id: action-back-to-notebooks }
+  - await: { visible: { text: New notebook } }
+  - await: { idle: true }

@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:knotes:schema:notebook:2",
+  "title": "Knotes Notebook document v2",
+  "description": "Portable editable notebook content stored as UTF-8 JSON inside a Knotes archive.",
+  "type": "object",
+  "required": ["version", "id", "title", "updatedAt", "pages"],
+  "properties": {
+    "version": { "const": 2 },
+    "id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string" },
+    "updatedAt": { "type": "integer", "minimum": 0 },
+    "lastViewedPageId": { "type": "string" },
+    "folderId": { "type": "string" },
+    "favorite": { "type": "boolean" },
+    "openedAt": { "type": "integer", "minimum": 0 },
+    "createdAt": { "type": "integer", "minimum": 0, "description": "Creation time. Missing in older notebooks; readers use updatedAt instead." },
+    "deletedAt": { "type": "integer", "minimum": 0, "description": "0 or missing: in the library. Greater than 0: in Trash since this time (milliseconds)." },
+    "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "attachments": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/attachment" }
+    },
+    "pages": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/page" }
+    }
+  },
+  "$defs": {
+    "point": {
+      "type": "object",
+      "required": ["x", "y", "pressure", "elapsedMillis"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "pressure": { "type": "number", "minimum": 0, "maximum": 1 },
+        "elapsedMillis": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "stroke": {
+      "type": "object",
+      "required": ["id", "brush", "color", "width", "points"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "layerId": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "engine": { "type": "string", "description": "Rendering identifier. Existing engines include legacy, jetpack-ink-v1, jetpack-ink-v2, shape-v1 and fill-cut-v1. Filled fill-cut-v1 strokes are compound winding polygons without a separate outline; closed contours are joined by zero-area bridges to preserve vector holes." },
+        "filled": { "type": "boolean" },
+        "lineStyle": { "type": "string", "enum": ["solid", "dotted", "dashed", "dashdot"], "default": "solid", "description": "Outline pattern for vector shapes." },
+        "brush": { "type": "string" },
+        "color": { "type": "integer" },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "points": { "type": "array", "items": { "$ref": "#/$defs/point" } }
+      },
+      "additionalProperties": true
+    },
+    "layer": {
+      "type": "object",
+      "required": ["id", "name", "visible", "locked"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "visible": { "type": "boolean" },
+        "locked": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "text": {
+      "type": "object",
+      "required": ["id", "text", "x", "y", "size", "color"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "text": { "type": "string" },
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "size": { "type": "number", "exclusiveMinimum": 0 },
+        "color": { "type": "integer" },
+        "layerId": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "image": {
+      "type": "object",
+      "required": ["id", "path", "x", "y", "width", "height"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "pattern": "^assets/[^/].*$" },
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "layerId": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "page": {
+      "type": "object",
+      "required": ["id", "template", "layers", "strokes", "texts", "images"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "template": { "type": "string" },
+        "outline": { "type": "string" },
+        "layers": { "type": "array", "items": { "$ref": "#/$defs/layer" } },
+        "strokes": { "type": "array", "items": { "$ref": "#/$defs/stroke" } },
+        "texts": { "type": "array", "items": { "$ref": "#/$defs/text" } },
+        "images": { "type": "array", "items": { "$ref": "#/$defs/image" } }
+      },
+      "additionalProperties": true
+    },
+    "attachment": {
+      "type": "object",
+      "required": ["id", "name", "path", "mimeType"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "name": { "type": "string" },
+        "path": { "type": "string", "pattern": "^assets/[^/].*$" },
+        "mimeType": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,11 @@
+executionPrerequisite: Knotes editor open with the left tool rail visible.
+steps:
+  - assert:
+      visible:
+        id: rail-layers
+  - assert:
+      visible:
+        id: rail-addpage
+  - assert:
+      visible:
+        id: action-focus-mode

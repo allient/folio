@@ -1,0 +1,5 @@
+executionPrerequisite: Knotes is open on the Android emulator with the Pens dialog visible.
+steps:
+  - assert: { visible: { id: drawing-pen } }
+  - assert: { visible: { id: drawing-pencil } }
+  - assert: { visible: { id: drawing-highlighter } }

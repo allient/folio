@@ -1,0 +1,5 @@
+executionPrerequisite: Knotes Eraser settings dialog is visible on Android.
+steps:
+  - assert: { visible: { id: drawing-partial-eraser } }
+  - assert: { visible: { id: drawing-stroke-eraser } }
+  - assert: { visible: { id: drawing-lasso-eraser } }

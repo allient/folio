@@ -1,0 +1,94 @@
+steps:
+  - echo: Creates one local notebook per run. Requires default Highlighter opacity (27%). Stable ids verified in canvas selector-check fragments.
+  - launch: com.allient.folio
+  - await: { visible: { id: "create-notebook" } }
+  - await: { idle: true }
+  - tap:
+      id: create-notebook
+  - await: { visible: { id: "confirm-create-notebook" } }
+  - await: { idle: true }
+  - tap: { id: confirm-create-notebook }
+  - await: { visible: { id: "action-focus-mode" } }
+  - await: { idle: true }
+  - tap:
+      id: action-eraser
+  - tap:
+      id: action-eraser
+  - await: { visible: { id: "action-close-eraser" } }
+  - await: { idle: true }
+  - tap: { id: drawing-partial-eraser }
+  - await: { visible: { text: "Erase only the touched area of handwriting or shapes." } }
+  - await: { idle: true }
+  - tap: { id: drawing-stroke-eraser }
+  - await: { visible: { text: "Touch any part of a stroke to erase the whole stroke." } }
+  - await: { idle: true }
+  - tap: { id: drawing-lasso-eraser }
+  - await: { visible: { text: "Draw a loop around ink to erase the selected strokes." } }
+  - await: { idle: true }
+  - tap:
+      id: action-close-eraser
+  - await: { visible: { id: "action-focus-mode" } }
+  - await: { idle: true }
+  - tap: { id: rail-shapes }
+  - await: { visible: { id: "action-close-shapes" } }
+  - await: { idle: true }
+  - tap: { id: drawing-arrow }
+  - await: { visible: { text: "Arrow · Outline" } }
+  - await: { idle: true }
+  - tap: { id: rail-lasso }
+  - tap: { id: rail-lasso }
+  - await: { visible: { id: "action-close-lasso" } }
+  - await: { idle: true }
+  - tap: { id: drawing-rectangle-selection }
+  - await: { visible: { text: "Rectangle selection" } }
+  - await: { idle: true }
+  - tap:
+      id: action-focus-mode
+  - await: { visible: { id: "action-exit-focus-mode" } }
+  - await: { idle: true }
+  - tap:
+      id: action-pen
+  - tap:
+      id: action-pen
+  - await: { visible: { id: "action-close-pens" } }
+  - await: { idle: true }
+  - tap: { id: drawing-highlighter }
+  - await: { visible: { text: "27%" } }
+  - await: { idle: true }
+  - tap:
+      id: action-close-pens
+  - await: { visible: { id: "action-exit-focus-mode" } }
+  - await: { idle: true }
+  - tap:
+      id: action-exit-focus-mode
+  - await: { visible: { id: "action-focus-mode" } }
+  - await: { idle: true }
+  - tap: { id: rail-shapes }
+  - await: { visible: { id: "action-close-shapes" } }
+  - await: { idle: true }
+  - tap:
+      id: action-close-shapes
+  - await: { visible: { id: "action-focus-mode" } }
+  - await: { idle: true }
+  - tap: { id: rail-lasso }
+  - tap: { id: rail-lasso }
+  - await: { visible: { id: "action-close-lasso" } }
+  - await: { idle: true }
+  - tap:
+      id: action-close-lasso
+  - await: { visible: { id: "action-focus-mode" } }
+  - await: { idle: true }
+  - tap:
+      id: action-eraser
+  - tap:
+      id: action-eraser
+  - await: { visible: { id: "action-close-eraser" } }
+  - await: { idle: true }
+  - tap:
+      id: action-close-eraser
+  - await: { visible: { id: "action-focus-mode" } }
+  - await: { idle: true }
+  - tap:
+      id: action-back-to-notebooks
+  - await: { visible: { id: "create-notebook" } }
+  - await: { idle: true }

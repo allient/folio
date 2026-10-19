@@ -1,0 +1,5 @@
+executionPrerequisite: Knotes Shapes dialog is visible on Android.
+steps:
+  - assert: { visible: { id: drawing-arrow } }
+  - assert: { visible: { id: drawing-circle } }
+  - assert: { visible: { id: drawing-star } }

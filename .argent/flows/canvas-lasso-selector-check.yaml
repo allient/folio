@@ -1,0 +1,4 @@
+executionPrerequisite: Knotes Lasso settings dialog is visible on Android.
+steps:
+  - assert: { visible: { id: drawing-freeform-lasso } }
+  - assert: { visible: { id: drawing-rectangle-selection } }

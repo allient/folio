@@ -1,0 +1,61 @@
+# Gradle / Kotlin
+.gradle
+.kotlin
+**/build/
+!src/**/build/
+captures
+.externalNativeBuild
+.cxx
+
+# Local machine config (SDK path, secrets)
+local.properties
+*.env
+.env.*
+.argent/secrets.env
+
+# IDEs
+*.iml
+.idea
+.vscode/
+.fleet/
+
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
+iosApp/Pods/
+*.xcframework/
+
+# Android build outputs and signing
+*.apk
+*.aab
+*.ap_
+*.idsig
+*.jks
+*.keystore
+*.p12
+release/
+output-metadata.json
+
+# Private device backups and local release builds (user notebooks; never commit)
+artifacts/recovery/*
+!artifacts/recovery/README.md
+artifacts/release/
+*.knotes
+*.tar
+*.tgz
+
+# Logs and tooling
+*.log
+node_modules/
+.claude/settings.local.json
+
+# Screenshots of other apps stay local
+artifacts/reader-design/boox-*.png

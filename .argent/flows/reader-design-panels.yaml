@@ -1,0 +1,16 @@
+steps:
+  - echo: Open Format and verify PDF display controls; then check Contrast and Split
+      View.
+  - tap: { id: reader-format }
+  - await: { visible: { text: Page display } }
+  - await: { idle: true }
+  - tap: { id: reader-contrast }
+  - await: { visible: { text: Brightness } }
+  - await: { idle: true }
+  - tap: { id: reader-split-view }
+  - await: { visible: { text: Split screen style } }
+  - await: { idle: true }
+  - tap: { id: reader-progress }
+  - await: { visible: { id: reader-export-notes } }
+  - await: { idle: true }
+executionPrerequisite: Android PDF reader open with reader controls visible on the Progress tab.
