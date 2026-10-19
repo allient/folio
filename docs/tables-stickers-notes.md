@@ -28,9 +28,22 @@ Strokes are not otherwise linked to the table: a stroke written outside it and l
 - In Objects mode a finger only selects/moves objects when **Write with finger** is on (Gestures panel), the same rule that already applied to images and text boxes.
 - Tap empty page in Objects mode to deselect.
 
+## Cells, rows, columns and merges
+
+- Entering Objects mode (Text rail → **Arrange objects**, or long-press when "Long press to select" is on) and tapping a table selects it; **tapping a cell selects the cell**
+  (blue highlight). Tapping a second cell extends the selection to the rectangle between them, grown to include any merged range it cuts through. Tapping the same single cell again clears it.
+- With a cell or range selected the toolbar shows: **Row above / Row below / Column left / Column right**, **Delete row / Delete column** (every selected row or column),
+  **Merge**, **Unmerge** and **Done**. With nothing selected it shows header toggles and append-only Rows/Columns +/- counters.
+- Merges are stored as `merges: [[firstRow, firstColumn, lastRow, lastColumn], ...]` on the block. Inserting or deleting rows and columns shifts, grows or drops merges
+  (`InkBlock.insertRow/insertColumn/deleteRow/deleteColumn` in `BlockUi.kt`). Merging draws no grid lines inside the merged range; header shading is by position, so a merged header stays shaded.
+- Verified on the emulator: select one cell, extend to two, merge (interior line disappears, Unmerge becomes enabled), then Row below (a fourth row appears and the merge is kept).
+  Not yet exercised: Delete row/column with merges present, Column left/right, and Unmerge.
+
 ## Known gaps
 
 - Cells have no typed text; tables carry ink only. Individual row and column dividers cannot be dragged (use Equalize, or resize the whole table).
-- No cell merge, per-cell fill, or row/column selection handles as in the reference design.
+- No per-cell fill or row/column selection handles as in the reference design.
+- A cell tap also happens on the tap that first selects the table, so the first tap selects the table and that cell together.
 - Sticker set is built-in emoji (five categories); there is no sticker search, recents, or imported sticker packs.
 - Exports use the shared page renderer, so blocks are drawn in PNG and PDF exports; this has not been checked on a real export yet.
+- Stickers and sticky notes were built but not exercised on a device yet.

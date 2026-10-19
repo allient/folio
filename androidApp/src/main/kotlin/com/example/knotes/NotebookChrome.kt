@@ -155,7 +155,7 @@ internal fun ChromeDivider() {
 }
 
 @Composable
-internal fun BrushPreset(name: String, width: Float, color: Int, selected: Boolean, scale: Float = 1f, id: String = name,
+internal fun BrushPreset(name: String, width: Float, color: Int, selected: Boolean, scale: Float = 1f, id: String = name, verticalDrag: Boolean = false,
     onClick: () -> Unit, onReorderDrag: (String, Float) -> Unit = { _, _ -> }, onReorderStart: () -> Unit = {}, onReorderEnd: () -> Unit = {},
     modifier: Modifier = Modifier) {
     val currentId by androidx.compose.runtime.rememberUpdatedState(id)
@@ -169,7 +169,7 @@ internal fun BrushPreset(name: String, width: Float, color: Int, selected: Boole
             .pointerInput(Unit) { var draggedId = ""; detectDragGesturesAfterLongPress(
                 onDragStart = { draggedId = currentId; dragging = true; currentStart() },
                 onDragEnd = { dragging = false; currentEnd() }, onDragCancel = { dragging = false; currentEnd() },
-            ) { change, drag -> change.consume(); currentDrag(draggedId, drag.x) } }
+            ) { change, drag -> change.consume(); currentDrag(draggedId, if (verticalDrag) drag.y else drag.x) } }
             .background(if (dragging) Color(0xFFCCE8DD) else if (selected) Color(0xFFE8ECEA) else Color.Transparent)
             .then(if (dragging) Modifier.shadow(8.dp, RoundedCornerShape(8.dp)).border(2.dp, Color(0xFF287463), RoundedCornerShape(8.dp)) else Modifier)
             .then(modifier)

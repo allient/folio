@@ -232,7 +232,14 @@ internal fun NotebookEditor(
     var fingerDrawing by remember { mutableStateOf(preferences.getBoolean("fingerDrawing", true)) }
     var railOnRight by remember { mutableStateOf(preferences.getBoolean("railOnRight", false)) }
     var toolbarTools by remember {
-        mutableStateOf(preferences.getStringSet("toolbarTools", null)?.toSet() ?: setOf("Template", "Layers", "Shapes", "Lasso", "Fill", "Pressure", "Gestures", "Zoom", "Page layout", "Text", "Insert", "Page +", "Share"))
+        val newTools = setOf("Table", "Stickers", "Sticky", "Ruler")
+        val saved = preferences.getStringSet("toolbarTools", null)?.toSet()
+        // Layouts saved before these tools existed keep them visible once, then follow the user's choice.
+        mutableStateOf(when {
+            saved == null -> setOf("Template", "Layers", "Shapes", "Lasso", "Fill", "Pressure", "Gestures", "Zoom", "Page layout", "Text", "Insert", "Page +", "Share") + newTools
+            !preferences.getBoolean("toolbarBlockToolsAdded", false) -> saved + newTools
+            else -> saved
+        })
     }
     var mode by remember { mutableStateOf(CanvasMode.Write) }
     var shape by remember { mutableStateOf(ShapeKind.Rectangle) }
@@ -306,7 +313,7 @@ internal fun NotebookEditor(
     LaunchedEffect(horizontalPageSwipe, longPressSelectEnabled) {
         preferences.edit().putBoolean("horizontalPageSwipe", horizontalPageSwipe).putBoolean("longPressSelectEnabled", longPressSelectEnabled).apply()
     }
-    LaunchedEffect(toolbarTools) { preferences.edit().putStringSet("toolbarTools", toolbarTools).apply() }
+    LaunchedEffect(toolbarTools) { preferences.edit().putStringSet("toolbarTools", toolbarTools).putBoolean("toolbarBlockToolsAdded", true).apply() }
     LaunchedEffect(eraserMode, eraserWidth, eraseActiveLayerOnly, autoReturnToPen) {
         preferences.edit().putString("eraserMode", eraserMode.name).putFloat("eraserWidth", eraserWidth)
             .putBoolean("eraseActiveLayerOnly", eraseActiveLayerOnly).putBoolean("autoReturnToPen", autoReturnToPen).apply()
@@ -1125,7 +1132,7 @@ internal fun NotebookEditor(
                         Text("Toolbar on the right", Modifier.weight(1f), fontSize = 14.sp)
                         Switch(railOnRight, onCheckedChange = { railOnRight = it })
                     }
-                    listOf("Template", "Layers", "Shapes", "Lasso", "Fill", "Pressure", "Gestures", "Zoom", "Page layout", "Text", "Insert", "Page +", "Share").forEach { tool ->
+                    listOf("Template", "Layers", "Shapes", "Lasso", "Fill", "Pressure", "Gestures", "Table", "Stickers", "Sticky", "Ruler", "Zoom", "Page layout", "Text", "Insert", "Page +", "Share").forEach { tool ->
                         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                             Text(tool, Modifier.weight(1f), fontSize = 14.sp)
                             Switch(checked = tool in toolbarTools, onCheckedChange = { checked -> toolbarTools = if (checked) toolbarTools + tool else toolbarTools - tool })
@@ -1224,10 +1231,10 @@ internal fun NotebookEditor(
                 if ("Fill" in toolbarTools) InkRailButton(InkIcon.Fill, "Fill", { canvas?.flushInput(); mode = CanvasMode.Fill; if (selectedIds.isNotEmpty()) sheet = "selection style" else sheet = "fill" }, mode == CanvasMode.Fill)
                 if ("Pressure" in toolbarTools) InkRailButton(InkIcon.Pressure, "Pressure", { openToolPanel("pressure") })
                 if ("Gestures" in toolbarTools) InkRailButton(InkIcon.Hand, "Gestures", { openToolPanel("gestures") })
-                InkRailButton(InkIcon.Table, "Table", { openToolPanel("table") })
-                InkRailButton(InkIcon.Sticker, "Stickers", { openToolPanel("stickers") })
-                InkRailButton(InkIcon.Sticky, "Sticky", { addStickyNote() })
-                InkRailButton(InkIcon.Ruler, "Ruler", { canvas?.flushInput(); rulerOn = !rulerOn }, rulerOn)
+                if ("Table" in toolbarTools) InkRailButton(InkIcon.Table, "Table", { openToolPanel("table") })
+                if ("Stickers" in toolbarTools) InkRailButton(InkIcon.Sticker, "Stickers", { openToolPanel("stickers") })
+                if ("Sticky" in toolbarTools) InkRailButton(InkIcon.Sticky, "Sticky", { addStickyNote() })
+                if ("Ruler" in toolbarTools) InkRailButton(InkIcon.Ruler, "Ruler", { canvas?.flushInput(); rulerOn = !rulerOn }, rulerOn)
                 if ("Zoom" in toolbarTools) InkRailButton(InkIcon.Zoom, "${(zoom * 100).toInt()}%", { openToolPanel("zoom") }, mode == CanvasMode.Pan)
                 if ("Page layout" in toolbarTools && !notebook.infiniteCanvas) InkRailButton(InkIcon.Pages, "Page", { openToolPanel("page layout") })
                 if ("Text" in toolbarTools) InkRailButton(InkIcon.Text, "Text", { openToolPanel("text") })
@@ -1592,6 +1599,8 @@ internal fun NotebookEditor(
                                 "Eraser" -> if (selectedBrush.eraser) { sheet = "eraser" } else selectEraser()
                                 "Lasso" -> { canvas?.flushInput(); mode = CanvasMode.Lasso; selectedIds = emptySet() }
                                 "Page +" -> addPage()
+                                "Sticky" -> addStickyNote()
+                                "Ruler" -> { canvas?.flushInput(); rulerOn = !rulerOn }
                                 "Pages" -> { if (notebook.infiniteCanvas) sheet = "pins" else { focusMode = false; showPages = true } }
                                 else -> sheet = when (tool) { "Templates" -> "templates"; "Pressure" -> "pressure"; "Share" -> "share & export"; else -> tool.lowercase(Locale.ROOT) }
                             } }, onRestoreBrushes = { restored -> brushOptions = restored; presets = restored; selectedBrush = restored.firstOrNull { it.presetId == selectedBrush.presetId } ?: restored.first() },

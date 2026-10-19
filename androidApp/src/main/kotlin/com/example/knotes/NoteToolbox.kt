@@ -38,6 +38,13 @@ private val toolboxTools = linkedMapOf(
 )
 private val defaultTools = listOf("Undo", "Redo", "Eraser")
 
+/** The floating toolbar's row (horizontal) or column (vertical); both scroll when the screen is too small. */
+@Composable
+private fun ToolboxBar(vertical: Boolean, content: @Composable () -> Unit) {
+    if (vertical) Column(Modifier.padding(horizontal = 2.dp, vertical = 4.dp).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) { content() }
+    else Row(Modifier.padding(horizontal = 4.dp, vertical = 2.dp).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) { content() }
+}
+
 /** Canvas input is never captured by the toolbar's drag handle. Positions stay within the viewport. */
 @Composable
 internal fun NoteToolbox(
@@ -77,6 +84,7 @@ internal fun NoteToolbox(
     var scale by remember { mutableFloatStateOf(prefs.getFloat("scale", 1f).coerceIn(.8f, 1.2f)) }
     fun persist() { prefs.edit().putString("tools-$scenario", tools.joinToString("|")).putString("brushes-$scenario", brushNames.joinToString("|")).putString("scenario", scenario).putFloat("scale", scale).apply() }
     var position by remember { mutableStateOf(Offset(prefs.getFloat("x", 12f), prefs.getFloat("y", 12f))) }
+    var vertical by remember { mutableStateOf(prefs.getBoolean("vertical", false)) }
     var barWidth by remember { mutableIntStateOf(0) }
     var barHeight by remember { mutableIntStateOf(0) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -84,11 +92,11 @@ internal fun NoteToolbox(
         val limitX = (with(density) { maxWidth.toPx() } - barWidth).coerceAtLeast(0f)
         val limitY = (with(density) { maxHeight.toPx() } - barHeight).coerceAtLeast(0f)
         Surface(Modifier.offset { IntOffset(position.x.coerceIn(0f, limitX).roundToInt(), position.y.coerceIn(0f, limitY).roundToInt()) }
-            .widthIn(max = maxWidth).onSizeChanged { barWidth = it.width; barHeight = it.height },
-            shape = RoundedCornerShape(28.dp), color = Color(0xFFFAFAFA), shadowElevation = 4.dp,
+            .then(if (vertical) Modifier.heightIn(max = maxHeight) else Modifier.widthIn(max = maxWidth)).onSizeChanged { barWidth = it.width; barHeight = it.height },
+            shape = RoundedCornerShape(if (vertical) 24.dp else 28.dp), color = Color(0xFFFAFAFA), shadowElevation = 4.dp,
             border = androidx.compose.foundation.BorderStroke(1.dp, ChromeLine)) {
-            Row(Modifier.padding(horizontal = 4.dp, vertical = 2.dp).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.width(24.dp).height(44.dp).semantics { contentDescription = "Drag floating toolbar" }
+            ToolboxBar(vertical) {
+                Box(Modifier.then(if (vertical) Modifier.width(44.dp).height(24.dp) else Modifier.width(24.dp).height(44.dp)).semantics { contentDescription = "Drag floating toolbar" }
                     .pointerInput(limitX, limitY) { detectDragGestures(onDragEnd = { prefs.edit().putFloat("x", position.x).putFloat("y", position.y).apply() }) { change, delta ->
                         change.consume(); position = Offset((position.x + delta.x).coerceIn(0f, limitX), (position.y + delta.y).coerceIn(0f, limitY))
                     } }, contentAlignment = Alignment.Center) { Text("⠿", color = ChromeMuted) }
@@ -103,16 +111,12 @@ internal fun NoteToolbox(
                     if (index >= 0 && visible.isNotEmpty() && (index <= visible.first().index || index >= visible.last().index))
                         brushListState.animateScrollToItem((index - 2).coerceAtLeast(0))
                 }
-                androidx.compose.foundation.lazy.LazyRow(Modifier.width(((32f * scale + 4f) * shown.size.coerceIn(1, 5) - 4f).dp).height(36.dp)
-                    .horizontalFadeEdges(brushListState, shown.size > 5),
-                    state = brushListState, userScrollEnabled = shown.size > 5, horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                items(shown, key = { it.presetId }) { brush ->
-                    BrushPreset(brush.label, widthMillimetres(brush), brush.color, !selected.eraser && selected.presetId == brush.presetId, scale = scale, onClick = {
+                val brushItem: @Composable (BrushStyle) -> Unit = { brush ->
+                    BrushPreset(brush.label, widthMillimetres(brush), brush.color, !selected.eraser && selected.presetId == brush.presetId, scale = scale, verticalDrag = vertical, onClick = {
                         if (!selected.eraser && selected.presetId == brush.presetId) panel = "brush" else onBrush(brush)
                     }, onReorderStart = { brushReordering = true }, onReorderDrag = { draggedId, delta ->
                         brushDragRemainder += delta
-                        val step = with(density) { (32f * scale + 4f).dp.toPx() }
+                        val step = with(density) { (if (vertical) 36f else 32f * scale + 4f).dp.toPx() }
                         fun ordered() = brushNames.map { n -> brushes.first { it.presetId == n } }
                         while (brushDragRemainder >= step && brushNames.indexOf(draggedId) < brushNames.lastIndex) {
                             brushNames = reorderByDrag(ordered(), draggedId, 1, BrushStyle::presetId).map { it.presetId }; brushDragRemainder -= step
@@ -122,8 +126,14 @@ internal fun NoteToolbox(
                         }
                     }, onReorderEnd = { brushDragRemainder = 0f; brushReordering = false; persist() })
                 }
-                }
-                ChromeDivider()
+                if (vertical) androidx.compose.foundation.lazy.LazyColumn(Modifier.width((32f * scale).dp).height((36f * shown.size.coerceIn(1, 5) - 4f).dp),
+                    state = brushListState, userScrollEnabled = shown.size > 5, verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) { items(shown, key = { it.presetId }) { brushItem(it) } }
+                else androidx.compose.foundation.lazy.LazyRow(Modifier.width(((32f * scale + 4f) * shown.size.coerceIn(1, 5) - 4f).dp).height(36.dp)
+                    .horizontalFadeEdges(brushListState, shown.size > 5),
+                    state = brushListState, userScrollEnabled = shown.size > 5, horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically) { items(shown, key = { it.presetId }) { brushItem(it) } }
+                if (vertical) HorizontalDivider(Modifier.padding(vertical = 3.dp).width(24.dp), color = ChromeLine) else ChromeDivider()
                 tools.forEach { tool -> InkToolButton(toolboxTools.getValue(tool), tool, { onAction(tool) },
                     enabled = when(tool) { "Undo" -> canUndo; "Redo" -> canRedo; else -> true }) }
                 Box {
@@ -131,6 +141,9 @@ internal fun NoteToolbox(
                     DropdownMenu(panel == "more", { panel = null }) {
                         DropdownMenuItem(text = { Text("Brush options") }, onClick = { panel = "brush" })
                         DropdownMenuItem(text = { Text("Customize Toolbar") }, onClick = { panel = "customize" })
+                        DropdownMenuItem(text = { Text(if (vertical) "Horizontal toolbar" else "Vertical toolbar") }, onClick = {
+                            vertical = !vertical; prefs.edit().putBoolean("vertical", vertical).apply(); panel = null
+                        })
                         DropdownMenuItem(text = { Text("Reset toolbar position") }, onClick = { position = Offset(12f, 12f); prefs.edit().putFloat("x", 12f).putFloat("y", 12f).apply(); panel = null })
                     }
                 }
