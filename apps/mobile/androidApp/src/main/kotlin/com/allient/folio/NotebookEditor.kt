@@ -867,7 +867,7 @@ internal fun NotebookEditor(
                 }
                 "selection style" -> {
                     val selection = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }
-                    val fillable = selection.filter { it.points.size >= 3 && (it.filled ||
+                    val fillable = selection.filter { it.points.size >= 3 && (it.filled || SolidPen.isCoded(it) ||
                         (kotlin.math.abs(it.points.first().x - it.points.last().x) < .003f && kotlin.math.abs(it.points.first().y - it.points.last().y) < .003f)) }.map { it.id }.toSet()
                     var editingFill by remember { mutableStateOf(fillable.isNotEmpty()) }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {

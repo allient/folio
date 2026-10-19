@@ -68,18 +68,6 @@ internal object ShapeLibrary {
             fun wing(side: Float) = clamp(Offset(tip.x + (-ux - uy * side * .5f) * headSize / width, tip.y + (-uy + ux * side * .5f) * headSize / height))
             return listOf(wing(1f), tip, wing(-1f), tip)
         }
-        fun polyhedron(v: List<Offset>, edges: List<Pair<Int, Int>>): List<Offset> {
-            val visited = mutableSetOf<Int>()
-            return buildList {
-                fun walk(index: Int) {
-                    add(v[index])
-                    edges.forEachIndexed { e, (from, to) ->
-                        if (e !in visited && (from == index || to == index)) { visited += e; walk(if (from == index) to else from); add(v[index]) }
-                    }
-                }
-                walk(0)
-            }
-        }
         val connectorDirX = sign(finish.x - (start.x + finish.x) / 2f).let { if (it == 0f) 1f else it }
         val midX = (start.x + finish.x) / 2f
         fun elbow() = listOf(start, Offset(midX, start.y), Offset(midX, finish.y), finish)
@@ -160,12 +148,6 @@ internal object ShapeLibrary {
                 val t = -PI / 2 + i * PI / 12; val r = if (i % 2 == 0) 1f else .62f
                 p(.5f + .5f * r * cos(t).toFloat(), .5f + .5f * r * sin(t).toFloat())
             }
-            ShapeKind.Hemisphere -> ellipse(.5f, .7f, .5f, .7f, PI, 2 * PI, 32) + ellipse(.5f, .7f, .5f, .14f, 0.0, 2 * PI, 40)
-            ShapeKind.TriPrism -> polyhedron(
-                listOf(p(0f, 1f), p(.7f, 1f), p(.35f, .4f), p(.3f, .6f), p(1f, .6f), p(.65f, 0f)),
-                listOf(0 to 1, 1 to 2, 2 to 0, 3 to 4, 4 to 5, 5 to 3, 0 to 3, 1 to 4, 2 to 5))
-            ShapeKind.Frustum -> ellipse(.5f, .86f, .5f, .14f, 0.0, 2 * PI, 40) + listOf(p(.8f, .14f)) + ellipse(.5f, .14f, .3f, .1f, 0.0, 2 * PI, 32) +
-                ellipse(.5f, .14f, .3f, .1f, 0.0, PI, 16) + listOf(p(0f, .86f))
             ShapeKind.Axes2D -> listOf(p(.1f, .9f), p(.1f, 0f)) + head(p(.1f, 0f), 0f, -1f) + listOf(p(.1f, .9f), p(1f, .9f)) + head(p(1f, .9f), 1f, 0f)
             ShapeKind.Axes3D -> listOf(p(.35f, .65f), p(.35f, 0f)) + head(p(.35f, 0f), 0f, -1f) + listOf(p(.35f, .65f), p(1f, .65f)) + head(p(1f, .65f), 1f, 0f) +
                 listOf(p(.35f, .65f), p(0f, 1f)) + head(p(0f, 1f), -1f, 1f)

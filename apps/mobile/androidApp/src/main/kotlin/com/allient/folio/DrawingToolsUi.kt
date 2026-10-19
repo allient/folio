@@ -114,12 +114,15 @@ private fun ShapeCell(shape: ShapeKind, selected: Boolean, modifier: Modifier, o
         border = BorderStroke(1.dp, if (selected) Color(0xFF357568) else ChromeLine)) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Canvas(Modifier.size(26.dp, 22.dp)) {
-                val points = ShapeGeometry.points(shape, Offset(.1f, .1f), Offset(.9f, .9f), size.width, size.height, arrowHeadSize = size.minDimension * .35f)
-                val path = Path().apply {
-                    moveTo(points.first().x * size.width, points.first().y * size.height)
-                    points.drop(1).forEach { lineTo(it.x * size.width, it.y * size.height) }
+                val points = ShapeGeometry.coded(shape, Offset(.1f, .1f), Offset(.9f, .9f), size.width, size.height, arrowHeadSize = size.minDimension * .35f)
+                val edges = Path(); val hidden = Path()
+                points.zipWithNext { (from, _), (to, code) ->
+                    if (code == SolidPen.EDGE || code == SolidPen.HIDDEN) (if (code == SolidPen.EDGE) edges else hidden).apply {
+                        moveTo(from.x * size.width, from.y * size.height); lineTo(to.x * size.width, to.y * size.height)
+                    }
                 }
-                drawPath(path, ChromeInk, style = Stroke(1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                drawPath(edges, ChromeInk, style = Stroke(1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+                drawPath(hidden, ChromeInk.copy(alpha = .45f), style = Stroke(1.dp.toPx(), cap = StrokeCap.Round))
             }
         }
     }

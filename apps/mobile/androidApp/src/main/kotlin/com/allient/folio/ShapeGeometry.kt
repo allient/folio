@@ -7,56 +7,29 @@ import kotlin.math.min
 import kotlin.math.sin
 
 internal object ShapeGeometry {
-    fun points(kind: ShapeKind, start: Offset, end: Offset, width: Float, height: Float,
-               arrowHeadSize: Float = 24f * width / 600f, unbounded: Boolean = false): List<Offset> {
+    /** Points with their pressure codes: solids carry [SolidPen] codes, every other shape is one visible edge. */
+    fun coded(kind: ShapeKind, start: Offset, end: Offset, width: Float, height: Float,
+              arrowHeadSize: Float = 24f * width / 600f, unbounded: Boolean = false): List<Pair<Offset, Float>> {
+        val (a, b) = box(kind, start, end, width, height)
+        return SolidPen.points(kind, a, b) ?: points(kind, start, end, width, height, arrowHeadSize, unbounded).map { it to SolidPen.EDGE }
+    }
+
+    private fun box(kind: ShapeKind, start: Offset, end: Offset, width: Float, height: Float): Pair<Offset, Offset> {
         var finish = end
         if (kind == ShapeKind.Circle || kind == ShapeKind.Square || kind == ShapeKind.Cube) {
             val side = min(abs(end.x - start.x) * width, abs(end.y - start.y) * height)
             finish = Offset(start.x + side / width * if (end.x >= start.x) 1f else -1f,
                 start.y + side / height * if (end.y >= start.y) 1f else -1f)
         }
-        val a = Offset(min(start.x, finish.x), min(start.y, finish.y))
-        val b = Offset(maxOf(start.x, finish.x), maxOf(start.y, finish.y))
+        return Offset(min(start.x, finish.x), min(start.y, finish.y)) to Offset(maxOf(start.x, finish.x), maxOf(start.y, finish.y))
+    }
+
+    private fun points(kind: ShapeKind, start: Offset, end: Offset, width: Float, height: Float,
+               arrowHeadSize: Float = 24f * width / 600f, unbounded: Boolean = false): List<Offset> {
+        val (a, b) = box(kind, start, end, width, height)
+        val finish = if (kind == ShapeKind.Circle || kind == ShapeKind.Square) Offset(if (end.x >= start.x) b.x else a.x, if (end.y >= start.y) b.y else a.y) else end
         val center = (a + b) / 2f
         return when (kind) {
-            ShapeKind.Cube, ShapeKind.Cuboid, ShapeKind.Pyramid -> {
-                fun p(x: Float, y: Float) = Offset(a.x + (b.x-a.x)*x, a.y + (b.y-a.y)*y)
-                val vertices = if (kind == ShapeKind.Pyramid) listOf(p(.5f,0f), p(0f,.72f), p(.52f,1f), p(1f,.72f), p(.5f,.48f))
-                    else listOf(p(0f,.25f), p(.7f,.25f), p(.7f,1f), p(0f,1f), p(.3f,0f), p(1f,0f), p(1f,.75f), p(.3f,.75f))
-                val edges = if (kind == ShapeKind.Pyramid) listOf(0 to 1, 0 to 2, 0 to 3, 0 to 4, 1 to 2, 2 to 3, 3 to 4, 4 to 1)
-                    else listOf(0 to 1, 1 to 2, 2 to 3, 3 to 0, 4 to 5, 5 to 6, 6 to 7, 7 to 4, 0 to 4, 1 to 5, 2 to 6, 3 to 7)
-                val visited = mutableSetOf<Int>()
-                buildList {
-                    fun walk(index: Int) {
-                        add(vertices[index])
-                        edges.forEachIndexed { edgeIndex, (from, to) ->
-                            if (edgeIndex !in visited && (from == index || to == index)) {
-                                visited += edgeIndex; walk(if (from == index) to else from); add(vertices[index])
-                            }
-                        }
-                    }
-                    walk(0)
-                }
-            }
-            ShapeKind.Cone, ShapeKind.Cylinder, ShapeKind.Sphere -> {
-                fun ellipse(cy: Float, ry: Float, rx: Float = .5f) = (0..64).map { i ->
-                    val angle = Math.PI + i * Math.PI * 2 / 64
-                    Offset(center.x + (b.x-a.x)*rx*cos(angle).toFloat(), a.y + (b.y-a.y)*(cy + ry*sin(angle).toFloat()))
-                }
-                val bottom = ellipse(.86f,.14f)
-                when (kind) {
-                    ShapeKind.Cone -> listOf(Offset(center.x,a.y), bottom.first()) + bottom + listOf(Offset(center.x,a.y), Offset(b.x,a.y+(b.y-a.y)*.86f))
-                    ShapeKind.Cylinder -> {
-                        val top = ellipse(.14f,.14f)
-                        top + bottom + listOf(top.first()) + top.take(33) + listOf(bottom[32])
-                    }
-                    else -> {
-                        val outline = ellipse(.5f,.5f)
-                        val equator = ellipse(.5f,.13f)
-                        outline + equator + outline.take(17) + ellipse(.5f,.5f,.15f).drop(16).take(49)
-                    }
-                }
-            }
             ShapeKind.Line -> listOf(start, finish)
             ShapeKind.WavyLine, ShapeKind.Curve -> {
                 val dx = (finish.x - start.x) * width; val dy = (finish.y - start.y) * height

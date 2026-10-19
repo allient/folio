@@ -37,8 +37,8 @@ internal enum class ShapeKind(val label: String, val closed: Boolean = true) {
     Rectangle("Rectangle"), RoundedRectangle("Rounded rectangle"), Square("Square"), Parallelogram("Parallelogram"), Trapezoid("Trapezoid"),
     Triangle("Triangle"), RightTriangle("Right triangle"), Diamond("Diamond"), Pentagon("Pentagon"), Hexagon("Hexagon"),
     Ellipse("Ellipse"), Circle("Circle"), Star("Star"), Cross("Cross"),
-    Cube("Cube", false), Cuboid("Cuboid", false), Pyramid("Pyramid", false),
-    Cone("Cone", false), Cylinder("Cylinder", false), Sphere("Sphere", false),
+    Cube("Cube"), Cuboid("Cuboid"), Pyramid("Pyramid"),
+    Cone("Cone"), Cylinder("Cylinder"), Sphere("Sphere"),
     Capsule("Terminator"), Octagon("Octagon"), Heart("Heart"), Cloud("Cloud"), Pie("Pie"), Crescent("Crescent"), Arc("Arc", false),
     PredefinedProcess("Predefined process", false), InternalStorage("Internal storage", false), Document("Document"), ManualInput("Manual input"),
     ManualOperation("Manual operation"), OffPage("Off-page connector"), Delay("Delay"), Display("Display"),
@@ -46,7 +46,7 @@ internal enum class ShapeKind(val label: String, val closed: Boolean = true) {
     BlockRight("Right arrow"), BlockLeft("Left arrow"), BlockUp("Up arrow"), BlockDown("Down arrow"), BlockLeftRight("Left-right arrow"),
     BlockUpDown("Up-down arrow"), BlockFourWay("Four-way arrow"), Chevron("Chevron"), HomePlate("Pentagon arrow"),
     CalloutRect("Speech bubble"), CalloutRounded("Rounded speech bubble"), CalloutOval("Oval speech bubble"), Starburst("Starburst"),
-    Hemisphere("Hemisphere", false), TriPrism("Triangular prism", false), Frustum("Frustum", false), Axes2D("Axes", false), Axes3D("3D axes", false),
+    Hemisphere("Hemisphere"), TriPrism("Triangular prism"), Frustum("Frustum"), Axes2D("Axes", false), Axes3D("3D axes", false),
     NumberGrid("Number grid", false), Angle("Angle", false), RightAngle("Right angle", false), Brace("Curly brace", false), Bracket("Bracket", false), Paren("Parenthesis", false),
     ElbowLine("Elbow connector", false), ElbowArrow("Elbow arrow connector", false), ElbowDouble("Elbow double arrow connector", false),
     SCurve("Curved connector", false), SCurveArrow("Curved arrow connector", false), SCurveDouble("Curved double arrow connector", false),
@@ -1214,9 +1214,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             CanvasMode.Objects -> moveObject(point)
             CanvasMode.Fill -> if (editable(activeLayerId)) {
                 val target = strokes.lastOrNull { stroke ->
-                    stroke.layerId == activeLayerId && stroke.points.size >= 3 &&
-                        hypot((stroke.points.first().x - stroke.points.last().x) * width, (stroke.points.first().y - stroke.points.last().y) * documentHeight) < 24f &&
-                        InkGeometry.contains(point, stroke.points.map { Offset(it.x, it.y) })
+                    val outline = if (SolidPen.isCoded(stroke)) SolidPen.silhouette(stroke.points) else stroke.points.takeIf {
+                        hypot((it.first().x - it.last().x) * width, (it.first().y - it.last().y) * documentHeight) < 24f }
+                    stroke.layerId == activeLayerId && outline != null && outline.size >= 3 &&
+                        InkGeometry.contains(point, outline.map { Offset(it.x, it.y) })
                 }
                 if (target != null && (!target.filled || (target.fillColor ?: target.color) != fillColor)) {
                     if (editBaseline == null) editBaseline = strokes
@@ -1484,8 +1485,8 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun shapeStroke(): InkStroke? {
         val start = shapeStart ?: return null
         val end = shapeEnd ?: return null
-        val outline = ShapeGeometry.points(shapeKind, start, end, width.toFloat(), documentHeight.toFloat(), unbounded = infiniteCanvas)
-        return makeStroke(outline.map { InkPoint(it.x, it.y, 1f) })
+        val outline = ShapeGeometry.coded(shapeKind, start, end, width.toFloat(), documentHeight.toFloat(), unbounded = infiniteCanvas)
+        return makeStroke(outline.map { (at, code) -> InkPoint(at.x, at.y, code) })
             .copy(engine = "shape-v1", brush = "Fineliner", width = shapeWidth,
                 color = if (shapeBorderNone && shapeFilled && shapeKind.closed) shapeColor and 0xFFFFFF else shapeColor,
                 lineStyle = shapeLineStyle.name.lowercase(), filled = shapeFilled && shapeKind.closed,

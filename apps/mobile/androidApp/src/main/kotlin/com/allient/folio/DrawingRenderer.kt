@@ -205,8 +205,48 @@ internal object NotebookRenderer {
         canvas.drawText(visible, labelLeft, iconY - (paint.ascent() + paint.descent()) / 2f, paint)
     }
 
+    /** A 3D solid: silhouette fill, visible edges in the stroke's line style, hidden edges dashed. */
+    private fun drawSolid(canvas: Canvas, stroke: InkStroke, width: Float, height: Float) {
+        val paint = local.get()!!.paint.apply {
+            reset(); isAntiAlias = true; strokeWidth = (stroke.width * width / 600f).coerceAtLeast(.5f)
+            strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND
+        }
+        if (stroke.filled) {
+            val outline = SolidPen.silhouette(stroke.points)
+            if (outline.size >= 3) {
+                val fill = Path().apply { moveTo(outline[0].x * width, outline[0].y * height); outline.drop(1).forEach { lineTo(it.x * width, it.y * height) }; close() }
+                paint.style = Paint.Style.FILL; paint.color = stroke.fillColor ?: stroke.color; canvas.drawPath(fill, paint)
+            }
+        }
+        val edges = Path(); val hidden = Path()
+        var previous: InkPoint? = null; var run = -1f
+        for (point in stroke.points) {
+            if (point.pressure == SolidPen.SILHOUETTE) { previous = null; continue }
+            val from = previous
+            if (from != null && point.pressure != SolidPen.LIFT) {
+                val path = if (point.pressure == SolidPen.HIDDEN) hidden else edges
+                // Continuing runs stay one path so dashes flow around curves instead of restarting on each segment.
+                if (run != point.pressure) path.moveTo(from.x * width, from.y * height)
+                path.lineTo(point.x * width, point.y * height)
+            }
+            run = point.pressure; previous = point
+        }
+        paint.style = Paint.Style.STROKE; paint.color = stroke.color
+        val unit = paint.strokeWidth.coerceAtLeast(1f)
+        paint.pathEffect = when (stroke.lineStyle) {
+            "dotted" -> DashPathEffect(floatArrayOf(unit, unit * 2.4f), 0f)
+            "dashed" -> DashPathEffect(floatArrayOf(unit * 6f, unit * 4f), 0f)
+            "dashdot" -> DashPathEffect(floatArrayOf(unit * 6f, unit * 3f, unit, unit * 3f), 0f)
+            else -> null
+        }
+        canvas.drawPath(edges, paint)
+        paint.pathEffect = DashPathEffect(floatArrayOf(unit * 3f, unit * 3f), 0f)
+        canvas.drawPath(hidden, paint); paint.pathEffect = null
+    }
+
     fun drawStroke(canvas: Canvas, stroke: InkStroke, width: Float, height: Float, ink: JetpackInkEngine? = null, viewportZoom: Float = 1f) {
         if (stroke.points.isEmpty()) return
+        if (SolidPen.isCoded(stroke)) { drawSolid(canvas, stroke, width, height); return }
         if (stroke.engine == "shape-v1") {
             val scratch = local.get()!!
             val path = scratch.path.apply {
