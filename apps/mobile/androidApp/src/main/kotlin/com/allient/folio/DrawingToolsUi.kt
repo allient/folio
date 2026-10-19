@@ -10,6 +10,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.CircleShape
@@ -83,15 +86,20 @@ internal fun DrawingChoice(label: String, selected: Boolean, onClick: () -> Unit
 
 @Composable
 internal fun ShapeChoices(kind: ShapeKind, onChange: (ShapeKind) -> Unit) {
+    // One section at a time keeps the panel short; it opens on the section holding the current shape.
+    var tab by rememberSaveable { mutableIntStateOf(ShapeLibrary.groups.indexOfFirst { kind in it.second }.coerceAtLeast(0)) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        ShapeLibrary.groups.forEach { (title, kinds) ->
-            Text(title, fontSize = 12.sp, color = ChromeMuted, fontWeight = FontWeight.Medium)
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                kinds.chunked(6).forEach { row ->
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        row.forEach { shape -> ShapeCell(shape, kind == shape, Modifier.weight(1f)) { onChange(shape) } }
-                        repeat(6 - row.size) { Spacer(Modifier.weight(1f)) }
-                    }
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ShapeLibrary.groups.forEachIndexed { i, (title, _) ->
+                FilterChip(selected = tab == i, onClick = { tab = i }, label = { Text(title, fontSize = 12.sp) },
+                    modifier = Modifier.testTag("shape-tab-${stableControlSlug(title)}"))
+            }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            ShapeLibrary.groups[tab].second.chunked(6).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                    row.forEach { shape -> ShapeCell(shape, kind == shape, Modifier.weight(1f)) { onChange(shape) } }
+                    repeat(6 - row.size) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
