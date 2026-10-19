@@ -294,7 +294,7 @@ Built with open-source libraries, among them [Jetpack Ink](https://developer.and
 
 **Release**
 - [ ] Create the release signing key (kept outside the repository)
-- [ ] Play Store listing: screenshots, description, privacy policy
+- [ ] Play Store listing: screenshots, description, privacy policy (icon: `packages/brand/png/folio-store-primary-512.png`, the primary brand icon)
 - [ ] Set the final iOS bundle ID
 - [ ] Publish the docs site (GitHub Pages or Vercel)
 - [ ] Refresh the screenshots in the README and docs with the new home design

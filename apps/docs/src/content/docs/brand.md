@@ -51,6 +51,22 @@ Brand colours do not replace a WCAG contrast check for small text.
 
 Stretch or rotate the F, separate the dot, add strong shadows, change the sage, add arbitrary gradients, or put a second book or pencil icon on top. Do not place the cream version on light backgrounds without a border or enough separation.
 
+## Decision: the primary icon is Folio's icon
+
+2026-10-19. The owner prefers the primary icon (sage F on cream paper with the folded corner) over the flat one (white F on sage). It is now the app's icon everywhere it is shown, including the store listings:
+
+| Where | Asset |
+|---|---|
+| Android launcher | Primary icon: cream adaptive background, fold and F in the foreground, white-F monochrome layer for themed icons |
+| Google Play app icon (512×512) | `packages/brand/png/folio-store-primary-512.png` (full bleed, opaque, no rounded corners: Play applies its own mask) |
+| App Store icon (1024×1024) | `packages/brand/png/folio-store-primary-1024.png`, also in `apps/mobile/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png` |
+| In the app (About) | `folio_icon_primary.xml` |
+| Website | Landing logo and Starlight logo use `folio-icon-primary.svg`; the favicon is the one-colour symbol |
+
+The flat icon stays in the kit for places where the fold cannot read, below about 64 px: tiny favicons, notification icons and watermarks. The kit's own `folio-play-store-512.png` and `svg/folio-play-store-full-bleed.svg` are the flat version and are not used for the store.
+
+Source: `packages/brand/svg/folio-store-primary-full-bleed.svg`. Re-export with `rsvg-convert -w 512 -h 512 svg/folio-store-primary-full-bleed.svg -o png/folio-store-primary-512.png`.
+
 ## In the app
 
 | Where | What |

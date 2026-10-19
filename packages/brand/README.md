@@ -13,6 +13,10 @@ Version 1.0, October 2026. The full guide is in Spanish: [`docs/GUIA_DE_MARCA.md
 | `preview/` | Variant sheet |
 | `legacy/` | The earlier generated concepts (A, B, C) and their Python generator; kept for reference, no longer used |
 
+## Decision: store icon
+
+The primary icon (sage F on cream with the folded corner) is the one to publish. Use `png/folio-store-primary-512.png` for Google Play and `png/folio-store-primary-1024.png` for the App Store (both full bleed and opaque; the stores apply their own mask). Source: `svg/folio-store-primary-full-bleed.svg`. The kit's `folio-play-store-512.png` is the flat variant and is not used. Details: [Brand](../../apps/docs/src/content/docs/brand.md#decision-the-primary-icon-is-folios-icon).
+
 ## Where the app uses it
 
 - **Launcher icon:** the primary icon (sage F on cream paper with the folded corner). The adaptive background is cream; the foreground draws the fold and the F, mapped to the 72 dp visible area with the fold running past the edge. The monochrome layer (Android 13 themed icons) is the white F from the kit, scaled to 0.7 so it stays inside the 66 dp safe circle. The legacy mipmaps are rendered from `png/folio-icon-primary-512.png`. The flat icon (white F on sage) is kept for the iOS icon and the Play Store image.
