@@ -1589,7 +1589,7 @@ internal fun NotebookEditor(
                         val selectedText = page.texts.firstOrNull { it.id == selectedObjectId }
                         Surface(Modifier.align(Alignment.TopCenter).padding(10.dp), shape = RoundedCornerShape(16.dp), shadowElevation = 3.dp) {
                             Row(Modifier.padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(when (selectedText?.kind) { "timestamp" -> "Date marker"; "audio" -> "Recording"; "link-note", "link-web", "link-file" -> "Link"; else -> if (selectedObjectIsText) "Text box" else "Image · drag corner to resize" }, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp))
+                                Text(when (selectedText?.kind) { "timestamp" -> "Date marker"; "audio" -> "Recording"; "link-note", "link-web", "link-file" -> "Link"; else -> if (selectedObjectIsText) "Text box" else "Image" }, fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp))
                                 if (selectedText?.kind == "plain" || selectedText?.kind == "timestamp") InkToolButton(InkIcon.Rename, "Edit selected item", {
                                     selectedText?.let { editingTextId = it.id; draft = it.text; sheet = if (it.kind == "timestamp") "timestamp" else "edit text" }
                                 })

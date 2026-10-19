@@ -104,6 +104,9 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private var draggingObject = false
     private var resizingImage = false
     private var rotatingObject = false
+    /** Object frame handle being dragged: 0–3 corners (TL, TR, BR, BL), 4–7 sides (L, R, T, B). */
+    private var objectHandle = -1
+    private var objectHandleStart = Offset.Zero
     private var objectRotationBase = 0f
     private var objectRotationStart = 0f
     private var resizingTextCard = false
@@ -649,19 +652,16 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         if (mode == CanvasMode.Objects) selectedObjectBounds()?.let {
             val xform = selectedObjectTransform()
             if (xform != null) {
+                // Same frame as ink selections, turned with the object; the action bar stays upright.
                 canvas.save(); canvas.rotate(xform.rotation, xform.px, xform.py)
                 if (selectedObjectIsText) canvas.scale(if (xform.flipX) -1f else 1f, if (xform.flipY) -1f else 1f, xform.px, xform.py)
-                val handleY = it.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue
-                val handleRadius = 7f * resources.displayMetrics.density / zoomValue
-                canvas.drawLine(it.centerX(), it.top, it.centerX(), handleY, selectionPaint)
-                canvas.drawCircle(it.centerX(), handleY, handleRadius + 2f / zoomValue, selectionHandleBackground)
-                canvas.drawCircle(it.centerX(), handleY, handleRadius, handlePaint)
-            }
-            canvas.drawRect(it, selectionPaint)
-            if (!selectedObjectIsText || texts.any { it.id == selectedObjectId && it.kind != "plain" }) {
+                drawTransformFrame(canvas, it, sides = !selectedObjectIsText)
+                canvas.restore()
+                drawActionBar(canvas, selectionActionRects(objectPageBounds(it, xform)))
+            } else {
+                canvas.drawRect(it, selectionPaint)
                 canvas.drawCircle(it.right, it.bottom, 7f / zoomValue, handlePaint)
             }
-            if (xform != null) canvas.restore()
         }
         if (lasso.isNotEmpty()) {
             val polygon = lassoPolygon()
@@ -809,7 +809,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             val previousEdits = editBaseline; editBaseline = null
             if (previousEdits != null) strokes = previousEdits
             lastEraserPoint = null; eraseGesture = false; eraserCursor = null
-            draggingObject = false; resizingImage = false; rotatingObject = false; resizingSelection = false; rotatingSelection = false; stretchAxis = 0
+            draggingObject = false; resizingImage = false; rotatingObject = false; objectHandle = -1; resizingSelection = false; rotatingSelection = false; stretchAxis = 0
             horizontalSwipeTracking = false; horizontalSwipeConsumed = false
             activePointerId = MotionEvent.INVALID_POINTER_ID; multitouch = false; postInvalidateOnAnimation(); return true
         }
@@ -1162,6 +1162,64 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         val ry = (dx * kotlin.math.sin(a) + dy * kotlin.math.cos(a)).toFloat()
         return Offset(px + if (flipX) -rx else rx, py + if (flipY) -ry else ry)
     }
+    /** Upright page-space box around a turned object, used to place its action bar. */
+    private fun objectPageBounds(box: RectF, xf: ObjectTransform): RectF {
+        val a = Math.toRadians(xf.rotation.toDouble()); val cos = kotlin.math.cos(a).toFloat(); val sin = kotlin.math.sin(a).toFloat()
+        val flip = selectedObjectIsText
+        val corners = listOf(Offset(box.left, box.top), Offset(box.right, box.top), Offset(box.right, box.bottom), Offset(box.left, box.bottom)).map {
+            val lx = (it.x - xf.px) * if (flip && xf.flipX) -1f else 1f
+            val ly = (it.y - xf.py) * if (flip && xf.flipY) -1f else 1f
+            Offset(xf.px + lx * cos - ly * sin, xf.py + lx * sin + ly * cos)
+        }
+        return RectF(corners.minOf { it.x }, corners.minOf { it.y }, corners.maxOf { it.x }, corners.maxOf { it.y })
+    }
+    private fun applyObjectAction(index: Int) {
+        val id = selectedObjectId ?: return
+        val turn = when (index) { 2 -> -90f; 3 -> 90f; else -> 0f }
+        val mirrorX = index == 0; val mirrorY = index == 1
+        fun turned(r: Float) = ((r + turn) % 360f + 360f) % 360f
+        textContent = texts.map { if (it.id == id && it.kind == "plain" && editable(it.layerId)) it.copy(rotation = turned(it.rotation), flipX = it.flipX != mirrorX, flipY = it.flipY != mirrorY) else it }
+        imageContent = images.map { if (it.id == id && editable(it.layerId)) it.copy(rotation = turned(it.rotation), flipX = it.flipX != mirrorX, flipY = it.flipY != mirrorY) else it }
+        contentChanged(); onObjectsChanged(texts, images)
+    }
+    /** Corner and side handles of an image or text box, measured along the object's own (turned) axes. */
+    private fun resizeObject(point: Offset) {
+        val base = objectsBaseline ?: return
+        val px = point.x * width; val py = point.y * documentHeight
+        if (selectedObjectIsText) {
+            val t = base.first.firstOrNull { it.id == selectedObjectId } ?: return
+            val ax = t.x * width; val ay = t.y * documentHeight
+            val local = toObjectFrame(px, py, ax, ay, t.rotation, t.flipX, t.flipY)
+            val start = hypot(objectHandleStart.x - ax, objectHandleStart.y - ay).coerceAtLeast(1f)
+            val factor = (hypot(local.x - ax, local.y - ay) / start).coerceIn(.1f, 10f)
+            textContent = texts.map { if (it.id == t.id) it.copy(size = (t.size * factor).coerceIn(6f, 400f)) else it }
+            return
+        }
+        val image = base.second.firstOrNull { it.id == selectedObjectId } ?: return
+        val b = imageBounds(image)
+        val cx = b.centerX(); val cy = b.centerY(); val hw = b.width() / 2f; val hh = b.height() / 2f
+        val local = toObjectFrame(px, py, cx, cy, image.rotation, false, false)
+        val lx = local.x - cx; val ly = local.y - cy
+        val (sx, sy) = when (objectHandle) { 0 -> -1 to -1; 1 -> 1 to -1; 2 -> 1 to 1; 3 -> -1 to 1; 4 -> -1 to 0; 5 -> 1 to 0; 6 -> 0 to -1; else -> 0 to 1 }
+        val fixedX = -sx * hw; val fixedY = -sy * hh
+        val minSize = 16f * resources.displayMetrics.density
+        var newW = b.width(); var newH = b.height()
+        if (objectHandle < 4) {
+            // Corners keep the proportions: project the pointer on the diagonal from the fixed corner.
+            val dx = 2f * sx * hw; val dy = 2f * sy * hh
+            val factor = (((lx - fixedX) * dx + (ly - fixedY) * dy) / (dx * dx + dy * dy).coerceAtLeast(1f))
+                .coerceAtLeast(minSize / minOf(b.width(), b.height()).coerceAtLeast(1f))
+            newW = b.width() * factor; newH = b.height() * factor
+        } else if (sx != 0) newW = ((lx - fixedX) * sx).coerceAtLeast(minSize)
+        else newH = ((ly - fixedY) * sy).coerceAtLeast(minSize)
+        newW = newW.coerceAtMost(width.toFloat()); newH = newH.coerceAtMost(documentHeight.toFloat())
+        // Keep the opposite corner or side where it was, also when the image is turned.
+        val ox = fixedX + sx * newW / 2f; val oy = fixedY + sy * newH / 2f
+        val a = Math.toRadians(image.rotation.toDouble()); val cos = kotlin.math.cos(a).toFloat(); val sin = kotlin.math.sin(a).toFloat()
+        val centerX = cx + ox * cos - oy * sin; val centerY = cy + ox * sin + oy * cos
+        imageContent = images.map { if (it.id == image.id) it.copy(x = (centerX - newW / 2f) / width, y = (centerY - newH / 2f) / documentHeight,
+            width = newW / width, height = newH / documentHeight) else it }
+    }
     private fun selectedObjectBounds(): RectF? {
         return if (selectedObjectIsText) texts.firstOrNull { it.id == selectedObjectId && layers.any { l -> l.id == it.layerId && l.visible } }?.let(::textBounds)
         else images.firstOrNull { it.id == selectedObjectId && layers.any { l -> l.id == it.layerId && l.visible } }?.let(::imageBounds)
@@ -1169,17 +1227,32 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun beginObjectDrag(point: Offset) {
         val x = point.x * width; val y = point.y * documentHeight
         blockTouch = point
-        draggingObject = false; resizingImage = false; rotatingObject = false; draggingBlock = false; resizingBlock = false
+        draggingObject = false; resizingImage = false; rotatingObject = false; objectHandle = -1; draggingBlock = false; resizingBlock = false
         blockContent.firstOrNull { it.id == selectedBlockId && editable(it.layerId) }?.let { block ->
             val bounds = blockBounds(block)
             if (hypot(x - bounds.right, y - bounds.bottom) < 24f * resources.displayMetrics.density / zoomValue) { startBlockDrag(block, resize = true); return }
         }
         // The rotation handle floats above a selected image or plain text box.
-        selectedObjectTransform()?.let { xf ->
+        selectedObjectTransform()?.takeIf { xf ->
+            if (selectedObjectIsText) texts.any { it.id == selectedObjectId && editable(it.layerId) } else images.any { it.id == selectedObjectId && editable(it.layerId) }
+        }?.let { xf ->
             val box = selectedObjectBounds() ?: return@let
+            val action = selectionActionRects(objectPageBounds(box, xf)).indexOfFirst { it.contains(x, y) }
+            if (action >= 0) { applyObjectAction(action); return }
             val local = toObjectFrame(x, y, xf.px, xf.py, xf.rotation, selectedObjectIsText && xf.flipX, selectedObjectIsText && xf.flipY)
-            val handleY = box.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue
-            if (hypot(local.x - box.centerX(), local.y - handleY) <= 30f * resources.displayMetrics.density / zoomValue) {
+            val d = resources.displayMetrics.density / zoomValue
+            val handles = listOf(Offset(box.left, box.top), Offset(box.right, box.top), Offset(box.right, box.bottom), Offset(box.left, box.bottom)) +
+                if (selectedObjectIsText) emptyList() else listOf(Offset(box.left, box.centerY()), Offset(box.right, box.centerY()), Offset(box.centerX(), box.top), Offset(box.centerX(), box.bottom))
+            val reach = minOf(22f * d, minOf(box.width(), box.height()) * .35f)
+            val handle = handles.indices.filter { hypot(local.x - handles[it].x, local.y - handles[it].y) <= reach }
+                .minByOrNull { hypot(local.x - handles[it].x, local.y - handles[it].y) }
+            val handleY = box.top - ROTATE_HANDLE_DP * d
+            if (handle == null && hypot(local.x - box.centerX(), local.y - handleY) > 20f * d) {
+                // Not on a handle: fall through to moving or picking an object.
+            } else if (handle != null) {
+                objectHandle = handle; objectHandleStart = local; draggingObject = true; objectsBaseline = texts to images
+                return
+            } else {
                 rotatingObject = true; draggingObject = true; objectsBaseline = texts to images
                 objectRotationBase = xf.rotation
                 objectRotationStart = Math.toDegrees(kotlin.math.atan2((y - xf.py).toDouble(), (x - xf.px).toDouble())).toFloat()
@@ -1192,14 +1265,6 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             val bounds = textBounds(selectedTextCard)
             if (hypot(x - bounds.right, y - bounds.bottom) < 20f * resources.displayMetrics.density / zoomValue) {
                 draggingObject = true; resizingTextCard = true; objectsBaseline = texts to images; return
-            }
-        }
-        val selectedImage = images.firstOrNull { it.id == selectedObjectId && editable(it.layerId) }
-        if (!selectedObjectIsText && selectedImage != null) {
-            val bounds = imageBounds(selectedImage)
-            val local = toObjectFrame(x, y, bounds.centerX(), bounds.centerY(), selectedImage.rotation, false, false)
-            if (hypot(local.x - bounds.right, local.y - bounds.bottom) < 20f / zoomValue) {
-                draggingObject = true; resizingImage = true; objectsBaseline = texts to images; return
             }
         }
         selectedObjectId = null; selectedBlockId = null
@@ -1227,6 +1292,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     private fun moveObject(point: Offset) {
         if (draggingBlock) { moveBlock(point); return }
         if (!draggingObject) return
+        if (objectHandle >= 0) { resizeObject(point); contentChanged(); return }
         if (rotatingObject) {
             val xf = selectedObjectTransform() ?: return
             val now = Math.toDegrees(kotlin.math.atan2((point.y * documentHeight - xf.py).toDouble(), (point.x * width - xf.px).toDouble())).toFloat()
@@ -1274,7 +1340,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     }
     private fun publishObjects() {
         val previous = objectsBaseline
-        objectsBaseline = null; draggingObject = false; resizingImage = false; rotatingObject = false; resizingTextCard = false
+        objectsBaseline = null; draggingObject = false; resizingImage = false; rotatingObject = false; objectHandle = -1; resizingTextCard = false
         publishBlocks()
         if (previous != null && (previous.first != texts || previous.second != images)) onObjectsChanged(texts, images)
     }
@@ -1339,6 +1405,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     }
     /** The standard transform frame: corners scale, side bars stretch, the top knob rotates, the bar below mirrors and turns. */
     private fun drawTransformBox(canvas: Canvas, b: RectF) {
+        drawTransformFrame(canvas, b, sides = true)
+        drawActionBar(canvas, selectionActionRects(b))
+    }
+    private fun drawTransformFrame(canvas: Canvas, b: RectF, sides: Boolean) {
         val d = resources.displayMetrics.density / zoomValue
         canvas.drawRect(b, selectionPaint)
         transformFrame.strokeWidth = 1.5f * d
@@ -1349,6 +1419,14 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         canvas.save(); canvas.translate(b.centerX() - 8f * d, knobY - 8f * d); canvas.scale(16f * d / 24f, 16f * d / 24f)
         actionIconPaint.color = Color.rgb(55, 108, 177); canvas.drawPath(rotateGlyph, actionIconPaint); canvas.restore()
         // Side bars: drag to change only the width or only the height.
+        if (sides) drawSideBars(canvas, b, d)
+        // Corner squares: scale keeping the proportions.
+        val c = 6f * d
+        listOf(Offset(b.left, b.top), Offset(b.right, b.top), Offset(b.right, b.bottom), Offset(b.left, b.bottom)).forEach {
+            canvas.drawRect(it.x - c, it.y - c, it.x + c, it.y + c, transformFill); canvas.drawRect(it.x - c, it.y - c, it.x + c, it.y + c, transformFrame)
+        }
+    }
+    private fun drawSideBars(canvas: Canvas, b: RectF, d: Float) {
         val barLong = 18f * d; val barShort = 6f * d
         listOf(Offset(b.centerX(), b.top), Offset(b.centerX(), b.bottom)).forEach {
             val r = RectF(it.x - barLong / 2, it.y - barShort / 2, it.x + barLong / 2, it.y + barShort / 2)
@@ -1358,13 +1436,9 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             val r = RectF(it.x - barShort / 2, it.y - barLong / 2, it.x + barShort / 2, it.y + barLong / 2)
             canvas.drawRoundRect(r, barShort / 2, barShort / 2, transformFill); canvas.drawRoundRect(r, barShort / 2, barShort / 2, transformFrame)
         }
-        // Corner squares: scale keeping the proportions.
-        val c = 6f * d
-        listOf(Offset(b.left, b.top), Offset(b.right, b.top), Offset(b.right, b.bottom), Offset(b.left, b.bottom)).forEach {
-            canvas.drawRect(it.x - c, it.y - c, it.x + c, it.y + c, transformFill); canvas.drawRect(it.x - c, it.y - c, it.x + c, it.y + c, transformFrame)
-        }
-        // Action bar.
-        val buttons = selectionActionRects(b)
+    }
+    private fun drawActionBar(canvas: Canvas, buttons: List<RectF>) {
+        val d = resources.displayMetrics.density / zoomValue
         val bar = RectF(buttons.first().left - 4f * d, buttons.first().top - 4f * d, buttons.last().right + 4f * d, buttons.last().bottom + 4f * d)
         actionBarBorder.strokeWidth = 1f * d
         canvas.drawRoundRect(bar, 12f * d, 12f * d, transformFill); canvas.drawRoundRect(bar, 12f * d, 12f * d, actionBarBorder)
