@@ -163,6 +163,7 @@ Sources: [`docs/`](docs). Each file needs a `title` in its frontmatter; the webs
 | `roadmap/*.md` | Planned preferences (themes, languages), responsive improvements |
 | `testing/validation.md`, `testing/mirroring.md` | Test results, UI flow replays, device mirroring |
 | `publishing/google-play.md` | Play Store setup and release process |
+| `publishing/play-console-answers.md` | Copy-ready listing text and every Play Console form answer |
 | `brand.md` | Brand kit and where the app uses it |
 
 ## Conventions

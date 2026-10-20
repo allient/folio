@@ -3,7 +3,7 @@ title: Publish on Google Play
 description: Step-by-step guide to publishing Folio on Google Play, from the first upload to routine releases.
 ---
 
-This guide takes Folio from the repository to Google Play. Part 1 is done once. Part 2 is the routine for every new version.
+This guide takes Folio from the repository to Google Play. Copy-ready listing text and every form answer are in [Play Console answers](play-console-answers.md). Part 1 is done once. Part 2 is the routine for every new version.
 
 Every step runs on your own computer. GitHub Actions only deploys the website.
 

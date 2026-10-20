@@ -5,6 +5,7 @@ These Markdown files are the project's developer documentation. They read well o
 ## Publishing
 
 - [Publish on Google Play](publishing/google-play.md): first release and routine updates, step by step
+- [Play Console answers](publishing/play-console-answers.md): copy-ready listing text and every form answer
 
 ## Architecture
 
