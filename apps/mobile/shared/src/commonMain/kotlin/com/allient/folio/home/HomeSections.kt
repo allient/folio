@@ -32,7 +32,8 @@ internal fun SegmentPill(options: List<Pair<String, String>>, selected: String, 
             options.forEach { (id, label) ->
                 val on = id == selected
                 Box(Modifier.clip(RoundedCornerShape((style.pill - 4.dp).coerceAtLeast(2.dp))).background(if (on) style.accent else Color.Transparent)
-                    .clickable { onSelect(id) }.heightIn(min = 40.dp).padding(horizontal = if (compact) 13.dp else 22.dp)
+                    // A minimum width keeps short labels ("All", "Live") from becoming tiny pills.
+                    .clickable { onSelect(id) }.heightIn(min = 40.dp).widthIn(min = if (compact) 60.dp else 72.dp).padding(horizontal = if (compact) 13.dp else 22.dp)
                     .testTag("segment-$id").semantics { contentDescription = label; this.selected = on }, contentAlignment = Alignment.Center) {
                     Text(label, color = if (on) Color.White else HomeInk, fontSize = 14.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium)
                 }

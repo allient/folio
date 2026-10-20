@@ -79,9 +79,9 @@ install-release serial=TABLET: release
 mirror:
     scrcpy -d
 
-# Launch Folio on one device
+# Launch Folio Dev (debug build) on one device
 launch serial="emulator-5554":
-    adb -s {{ serial }} shell monkey -p com.allient.folio -c android.intent.category.LAUNCHER 1
+    adb -s {{ serial }} shell monkey -p com.allient.folio.dev -c android.intent.category.LAUNCHER 1
 
 # Crash and error log from one device
 crashlog serial=TABLET:

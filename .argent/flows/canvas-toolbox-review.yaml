@@ -1,6 +1,6 @@
 steps:
   - echo: Creates one local notebook per run. Requires default Highlighter opacity (27%). Stable ids verified in canvas selector-check fragments.
-  - launch: com.allient.folio
+  - launch: com.allient.folio.dev
   - await: { visible: { id: "create-notebook" } }
   - await: { idle: true }
   - tap:

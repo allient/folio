@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Debug builds (com.allient.folio.dev) install next to the store app; this name tells them apart. -->
+    <string name="app_name">Folio Dev</string>
+</resources>

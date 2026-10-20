@@ -40,6 +40,12 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
+        <!-- Live board (Excalidraw in a WebView). Handles rotation itself so the board isn't reloaded. -->
+        <activity
+            android:name=".LiveBoardActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|density|uiMode"
+            android:theme="@style/FolioTheme" />
         <activity
             android:name=".ReaderActivity"
             android:exported="false"

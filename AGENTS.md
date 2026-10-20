@@ -8,7 +8,7 @@ Engineering guide for Folio, for human contributors and coding agents. Read it b
 |---|---|
 | App | Folio: handwritten notes, infinite canvas, PDF and EPUB reader |
 | Platforms | **Android only** (phones and tablets). iOS is planned; shared code must stay iOS-compatible |
-| Application ID / package | `com.allient.folio` |
+| Application ID / package | `com.allient.folio` (release). Debug builds are **`com.allient.folio.dev`**, named "Folio Dev", and install next to the store app |
 | Store title | `Folio: Notes & PDF Reader` (Google Play allows 30 characters) |
 | Privacy | Content never leaves the device. No account or ads. Anonymous usage statistics via Google Analytics (`AppAnalytics`), on by default with an off switch; consent first in EU/EEA, UK and CH. Only runtime permission: `RECORD_AUDIO` |
 | Reference devices | Android tablet emulator (API 36, 1200×1920), XPPen MagicNotePad MNP1095 (Android 14), phone-size emulator (~411 dp wide) |
@@ -112,6 +112,7 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 - **Jetpack Ink mesh crash (Android 14, MNP1095):** keep `CanvasStrokeRenderer.create(forcePathRendering = true)` in `JetpackInkEngine.kt` when upgrading Ink. See `investigations/mnp1095-mesh-crash.md`.
 - **R8:** release builds are minified. Keep rules for JNI and reflection libraries (Pdfium, zstd, Ink, PDFBox, Readium, ML Kit) are in `androidApp/proguard-rules.pro`. After adding or upgrading a library, test the release build: OCR silently broke until ML Kit's rules were added.
 - **Analytics rules:** log through `AppAnalytics` only. Event parameters are short identifiers (`kind=pdf`), never user text: no note or book content, titles, file names or search text. The advertising ID and Privacy Sandbox ad permissions are removed in the manifest; keep it that way. Any new kind of collected data needs the privacy policy and the Play Data safety form updated first.
+- **Two apps on one device:** debug = `com.allient.folio.dev` (`applicationIdSuffix`, name in `src/debug/res`), release = `com.allient.folio`. Different IDs mean different signing keys never clash. Dev builds never use Firebase (no Analytics or Crashlytics), whatever `google-services.json` contains. Code that needs the ID uses `context.packageName` / `${applicationId}`, never a hard-coded string.
 - **Firebase config:** `androidApp/google-services.json` comes from the Firebase console and is git-ignored. The Google Services and Crashlytics plugins are applied only when it exists, so builds without it work and Firebase stays inactive. Analytics and Crashlytics share one user switch (`AppAnalytics`); report handled errors with `AppAnalytics.recordError(error, where)` (no user text).
 - **Website analytics:** Cloudflare Web Analytics (cookieless), enabled when `PUBLIC_CF_BEACON_TOKEN` is set at build time (repository variable or secret `CF_BEACON_TOKEN`; the bare token or the whole snippet both work).
 - **Permissions:** after adding a dependency, check the merged release manifest (`build/intermediates/merged_manifest/release/`) for new permissions or exported components.

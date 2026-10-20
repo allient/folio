@@ -147,9 +147,11 @@ private fun legacyBezierValue(input: Float, first: Offset, second: Offset): Floa
 }
 
 /** Brush feel follows contact filtering; the resulting pressure is stored with each point. */
-internal fun BrushStyle.mapPressure(pressure: Float): Float = if (!eraser)
+internal fun BrushStyle.mapPressure(pressure: Float): Float = if (!eraser) sensitivityCurve(pressure, sensitivity) else pressure.coerceIn(0f, 1f)
+
+/** Pressure response of a brush: sensitivity 0.5 is linear, higher reaches full width with a lighter touch. */
+internal fun sensitivityCurve(pressure: Float, sensitivity: Float): Float =
     Math.pow(pressure.coerceIn(0f, 1f).toDouble(), 1.8 - sensitivity.coerceIn(0f, 1f) * 1.6).toFloat()
-else pressure.coerceIn(0f, 1f)
 
 /** Convert document width units to physical millimetres using the actual drawing viewport and reported panel DPI. */
 internal fun brushWidthMillimetres(documentUnits: Float, viewportWidthPx: Int, xdpi: Float): Float {

@@ -114,6 +114,12 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
         // Closing the reader is a natural pause: back up its notes and highlights soon, if anything changed.
         LocalBackupScheduler.soon(context)
     }
+    val boardStore = remember(context) { LiveBoardStore(context.applicationContext) }
+    fun boardList() = boardStore.list().map { com.allient.folio.home.HomeBoard(it.id, it.title, it.updatedAt) }
+    var homeBoards by remember { mutableStateOf(boardList()) }
+    fun refreshBoards() { homeBoards = boardList() }
+    val boardScreen = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { refreshBoards() }
+    fun openBoard(id: String) = boardScreen.launch(android.content.Intent(context, LiveBoardActivity::class.java).putExtra(LiveBoardActivity.EXTRA_BOARD_ID, id))
     fun openReader(id: String) {
         readBook.launch(android.content.Intent(context, ReaderActivity::class.java).putExtra("documentId", id))
     }
@@ -297,6 +303,12 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                         books = homeBooks,
                         bookCover = { id, modifier -> reader.documents.firstOrNull { it.id == id }?.let { BookCover(it, modifier) } },
                         onOpenBook = ::openReader,
+                        boards = homeBoards,
+                        boardPreview = { id, modifier -> LiveBoardPreview(boardStore, id, homeBoards.firstOrNull { it.id == id }?.updatedAt ?: 0L, modifier) },
+                        onOpenBoard = ::openBoard,
+                        onNewBoard = { title -> val board = boardStore.create(title); refreshBoards(); openBoard(board.id) },
+                        onRenameBoard = { id, title -> boardStore.rename(id, title); refreshBoards() },
+                        onDeleteBoard = { id -> boardStore.delete(id); refreshBoards() },
                         onImportBook = { folderId ->
                             pendingReaderFolderId = folderId
                             importBook.launch(arrayOf("application/pdf", "application/epub+zip"))
