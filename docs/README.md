@@ -22,6 +22,7 @@ These Markdown files are the project's developer documentation. They read well o
 - [Canvas tools review](features/canvas-tools-review.md)
 - [Ruler and zoom window](features/ruler-and-zoom-window.md)
 - [Tables, stickers and sticky notes](features/tables-stickers-notes.md)
+- [Live boards](features/live-boards.md): Excalidraw boards with Folio's pen filter and live sessions for calls
 
 ## Investigations
 

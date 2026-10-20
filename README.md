@@ -40,6 +40,11 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 - An infinite canvas with pins and a minimap.
 - Layers, lasso, shapes, fill, text, tables, stickers, sticky notes, images, a ruler, a zoom window and voice notes.
 
+**Live boards for calls**
+- A **Live** tab with whiteboards built on [Excalidraw](https://excalidraw.com), written with your pen and Folio's pressure settings.
+- Start a live session and share a link: people in your call watch and draw from any browser.
+- Palm rejection, and export as an image or an Excalidraw file.
+
 **Read with a pen in hand**
 - Open PDF and EPUB books, from the library or from other apps.
 - Highlight, underline, write in the margins, add notes and bookmarks.

@@ -44,6 +44,7 @@ Key Android files (`apps/mobile/androidApp/src/main/kotlin/com/allient/folio/`):
 | `NotebookFiles.kt`, `LocalBackup.kt` | Export, import, `.folio` archives, smart backups |
 | `ReaderActivity.kt`, `PdfReaderEngine.kt`, `EpubReaderEngine.kt`, `ReaderStore.kt`, `ReaderExport.kt` | PDF/EPUB reader, annotations, OCR, export |
 | `AppUpdates.kt` | Google Play in-app updates |
+| `LiveBoardActivity.kt`, `PressureFilteringWebView.kt`, `PenPressureMapper.kt`, `LiveBoardStore.kt` | Live boards: Excalidraw in a WebView with Folio's pen filter, boards on disk (see `docs/features/live-boards.md`) |
 | `ViewUtils.kt` | Android view helpers (`dp()`, `ReaderChromeBands`) |
 
 ## Commands
@@ -104,6 +105,7 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 - Stroke engines are versioned (`jetpack-ink-v1`, `jetpack-ink-v2`, `shape-v1`, `fill-cut-v1`, …). Old ink must render unchanged; add a new version rather than changing an old one.
 - `.folio` archives: ZIP with `manifest.json` and Zstandard-compressed JSON, format ID `application/vnd.folio.archive+zip`. Legacy `.knotes` archives and `Knotes-Backup-*.knotes` files must keep importing. JSON schemas are in `apps/docs/public/schemas`.
 - Imports must reject unsafe archive paths (zip-slip) and must never erase existing data.
+- Live boards live in `files/liveboards/` (`index.json`, `<id>.json` with Excalidraw's own `elements`/`appState` strings, `<id>.jpg` preview). Keep Excalidraw's JSON untouched so boards stay openable in Excalidraw.
 - Android cloud backup stays off (`allowBackup="false"`).
 - Schema changes follow `docs/architecture/sqlite-migrations.md`.
 
@@ -117,6 +119,7 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 - **Website analytics:** Cloudflare Web Analytics (cookieless), enabled when `PUBLIC_CF_BEACON_TOKEN` is set at build time (repository variable or secret `CF_BEACON_TOKEN`; the bare token or the whole snippet both work).
 - **Permissions:** after adding a dependency, check the merged release manifest (`build/intermediates/merged_manifest/release/`) for new permissions or exported components.
 - **Stale Gradle outputs** from the project's old folder name can break dex merging. `./gradlew clean` fixes it.
+- **Live boards (WebView + Excalidraw):** give the WebView `MATCH_PARENT` (Compose's default `WRAP_CONTENT` collapses the page); keep `currentItemStrokeVariability = "variable"` or Excalidraw ignores pen pressure; every pen down sent to the page needs an up/cancel or later strokes become pinch-zoom; capture previews with `PixelCopy` (`View.draw` can't see the GPU canvas). Details in `docs/features/live-boards.md`.
 
 ## Testing
 
@@ -160,6 +163,7 @@ Sources: [`docs/`](docs). Each file needs a `title` in its frontmatter; the webs
 | `architecture/jetpack-ink-implementation.md` | Jetpack Ink integration |
 | `architecture/ink-rendering-research.md` | Rendering performance research |
 | `investigations/mnp1095-mesh-crash.md` | Android 14 mesh crash: analysis and fix |
+| `features/live-boards.md` | Live boards: Excalidraw with Folio's pen filter, storage, pitfalls, limits |
 | `features/*.md` | Feature reviews (BOOX coverage, canvas tools, ruler and zoom window, tables and stickers) |
 | `roadmap/*.md` | Planned preferences (themes, languages), responsive improvements |
 | `testing/validation.md`, `testing/mirroring.md` | Test results, UI flow replays, device mirroring |
