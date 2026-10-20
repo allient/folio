@@ -3,7 +3,8 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
 // Cloudflare Web Analytics (cookieless) for the developer docs too; see src/layouts/Landing.astro.
-const beaconToken = process.env.PUBLIC_CF_BEACON_TOKEN;
+// Accepts the bare token or the whole snippet Cloudflare shows; the token is the 32-hex-digit value.
+const beaconToken = process.env.PUBLIC_CF_BEACON_TOKEN?.match(/[0-9a-f]{32}/i)?.[0];
 
 // https://astro.build/config
 export default defineConfig({

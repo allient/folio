@@ -37,8 +37,8 @@ jobs:
       - name: Build docs
         id: build
         env:
-          # Cloudflare Web Analytics beacon token (public; set as a repository variable). Optional.
-          PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+          # Cloudflare Web Analytics beacon token (public). Repository variable or secret; optional.
+          PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN || secrets.CF_BEACON_TOKEN }}
         run: bun run build:docs
       - name: Deploy to Cloudflare
         id: deploy

@@ -9,7 +9,8 @@ interface Props {
 const { title, description } = Astro.props;
 const github = 'https://github.com/allient/folio';
 // Cloudflare Web Analytics (cookieless). Set at build time; without it no beacon is added.
-const beaconToken = import.meta.env.PUBLIC_CF_BEACON_TOKEN;
+// Accepts the bare token or the whole snippet Cloudflare shows; the token is the 32-hex-digit value.
+const beaconToken = import.meta.env.PUBLIC_CF_BEACON_TOKEN?.match(/[0-9a-f]{32}/i)?.[0];
 ---
 
 <!doctype html>
