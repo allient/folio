@@ -150,7 +150,12 @@ class InkCanvasViewTest {
         val note = Notebook(title = "Infinite", infiniteCanvas = true, pages = listOf(NotebookPage(strokes = canvas.strokes)),
             pins = listOf(CanvasPin(name = "Far away", x = -2f, y = 3f)))
         val restored = NotebookStorage.deserializeNotebook(NotebookStorage.serializeNotebook(note))
-        assertEquals(note, restored)
+        // Storage rounds points to 5 decimals; everything else must survive unchanged.
+        assertEquals(note.copy(pages = emptyList()), restored.copy(pages = emptyList()))
+        note.pages.single().strokes.zip(restored.pages.single().strokes).forEach { (a, b) ->
+            assertEquals(a.copy(points = emptyList()), b.copy(points = emptyList()))
+            a.points.zip(b.points).forEach { (p, q) -> assertEquals(p.x, q.x, 1e-5f); assertEquals(p.y, q.y, 1e-5f) }
+        }
         assertTrue(restored.pages.single().strokes.any { it.points.first().x < 0f })
         assertTrue(restored.pages.single().strokes.any { it.points.first().y > 1f })
     }

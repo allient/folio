@@ -1,5 +1,6 @@
 package com.allient.folio
 
+import android.annotation.SuppressLint
 import android.graphics.Canvas
 import android.graphics.Matrix
 import android.util.LruCache
@@ -22,6 +23,8 @@ import androidx.ink.strokes.Stroke
 internal class JetpackInkEngine {
     // API 34+ defaults to android.graphics.Mesh; drawing finished strokes that way crashes
     // hwui's MeshOp on early Android 14 builds (MNP1095). Ink's wet layer is unaffected.
+    // forcePathRendering is library-restricted but required for the MNP1095 crash fix above.
+    @SuppressLint("RestrictedApi")
     private val renderer = CanvasStrokeRenderer.create(forcePathRendering = true)
     private val transform = Matrix()
     private data class BrushKey(val style: BrushStyle, val format: String)

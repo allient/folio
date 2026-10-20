@@ -28,11 +28,11 @@
 
 | | |
 |---|---|
-| **App** | Kotlin Multiplatform: Android app, `shared` module with Compose Multiplatform UI and models, iOS shell (see [Platforms](#platforms)) |
+| **App** | Kotlin Multiplatform. Ships on **Android only**; the `shared` module keeps compiling for iOS (see [Platforms](#platforms)) |
 | **Application ID** | `com.allient.folio` (Kotlin packages use the same name) |
-| **Store title** | Folio: Handwritten Notes & eReader |
+| **Store title** | Folio: Notes & PDF Reader (Google Play limit: 30 characters) |
 | **Privacy** | Local first. The only runtime permission is `RECORD_AUDIO`, for voice notes |
-| **Website** | Landing page in `apps/docs` (Astro, Bun); see [Website](#website) |
+| **Website** | Landing page, privacy policy and developer notes in `apps/docs` (Astro, Bun), deployed to Cloudflare; see [Website](#website) |
 | **Brand** | Brand kit v1.0 in [`packages/brand`](packages/brand) |
 | **Tested on** | Android tablet emulator (API 36, 1200×1920) and an XPPen MagicNotePad MNP1095 (Android 14) |
 
@@ -123,7 +123,8 @@ folio/
 │   │   │       └── PdfReaderEngine.kt, EpubReaderEngine.kt, ReaderStore.kt
 │   │   ├── shared/                 Kotlin Multiplatform library: Compose Multiplatform home,
 │   │   │                           folder editor, backup settings, templates, reader models
-│   │   ├── iosApp/                 Xcode project (starter shell)
+│   │   ├── iosApp/                 Xcode shell (placeholder screen; Android ships first)
+│   │   └── fastlane/               Google Play lanes and store listing (text, icon, screenshots)
 │   │   └── artifacts/              Demo PDF/EPUB files, reader captures, local builds
 │   └── docs/                       Website: landing page + developer notes (Astro, Starlight, Bun)
 │       ├── src/pages/index.astro   Landing page
@@ -143,7 +144,12 @@ folio/
 ```bash
 bun run dev:docs      # http://localhost:4321
 bun run build:docs    # static site in apps/docs/dist
+just deploy-docs      # deploy from this machine (after `bunx wrangler login`)
 ```
+
+**Deploy:** `.github/workflows/docs.yml` builds the site and runs `wrangler deploy` (Workers Static Assets, config in `apps/docs/wrangler.jsonc`) on every push to `main` that touches `apps/docs` or `packages/brand`. Pull requests only build. There is one environment. The workflow needs three repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `SLACK_WEBHOOK_URL` (each run posts its result to #eventos). App builds never run on GitHub; they run locally with fastlane.
+
+The privacy policy used by the Play listing is `/privacy/` (`src/pages/privacy.astro`).
 
 The page is built from small layout primitives in `apps/docs/src/components/ui`, modelled on MUI:
 
@@ -219,7 +225,7 @@ cd apps/mobile
 # Install on a connected device or emulator
 ./gradlew :androidApp:installDebug
 
-# Release build (unsigned; sign it before installing)
+# Release build (R8 minified; signed when keystore.properties exists, see Publishing)
 ./gradlew :androidApp:assembleRelease
 
 # Lint
@@ -245,7 +251,7 @@ With more than one device connected, pass the serial to adb: `adb -s <serial> in
 | `NaturalBrushTest` | Pencil, Chalk, Spray |
 | `TrashTest` | Trash: soft delete, restore, permanent delete, retention purge, folders, backups; home preferences |
 
-`gradle.properties` keeps test APKs installed after a run, so data on the device isn't wiped. The `shared` module's tests (`:shared:testAndroidHostTest`, `:shared:iosSimulatorArm64Test`) are still template placeholders. Results and UI flow replays are in [validation.md](apps/docs/src/content/docs/testing/validation.md).
+`gradle.properties` keeps test APKs installed after a run, so data on the device isn't wiped. The `shared` module's common tests (`TextUtilsTest`) run with `:shared:testAndroidHostTest`; `:shared:compileKotlinIosSimulatorArm64` checks that common code stays free of Android APIs. Results and UI flow replays are in [validation.md](apps/docs/src/content/docs/testing/validation.md).
 
 ### Mirror the tablet while testing
 
@@ -260,7 +266,7 @@ Use `-d` when an emulator is also running; otherwise scrcpy refuses to pick betw
 
 ## Platforms
 
-Only Android is implemented. `iosApp` builds the `Shared` framework but shows the Kotlin Multiplatform starter screen (`App.kt`). The library screen, storage, ink and reader are not wired up on iOS.
+Folio ships on Android (phones and tablets) only. The project stays Kotlin Multiplatform: the iOS targets in `shared` keep compiling so common code can't drift onto Android APIs, and `iosApp` shows a placeholder screen. Module rules, performance notes and the order for an iPad port are in [modules.md](apps/docs/src/content/docs/architecture/modules.md).
 
 ## Inspiration and credits
 
@@ -292,7 +298,8 @@ Built with open-source libraries, among them [Jetpack Ink](https://developer.and
 **App**
 - [ ] Dark, light and OLED themes, plus colour mode, contrast and style options ([plan](apps/docs/src/content/docs/roadmap/planned-preferences.md))
 - [ ] Multi-language UI, starting with Spanish ([plan](apps/docs/src/content/docs/roadmap/planned-preferences.md#multi-language-pending))
-- [ ] iOS app: wire the shared library screen, storage, ink and reader
+- [ ] iOS app, following the [port order](apps/docs/src/content/docs/architecture/modules.md#order-for-an-ios-port)
+- [ ] Load notebook pages on open instead of at startup ([hot spots](apps/docs/src/content/docs/architecture/modules.md#performance-notes))
 - [ ] Handwriting recognition (search inside handwritten notes) and shape recognition
 - [ ] Nested folders
 - [ ] Encrypted backups and optional cloud sync
@@ -304,10 +311,9 @@ Built with open-source libraries, among them [Jetpack Ink](https://developer.and
 - [ ] Polish the layout in landscape and on phones: library grid and folder cards, editor tool rail ([details](apps/docs/src/content/docs/roadmap/responsive-improvements.md))
 
 **Release**
-- [ ] Create the release signing key (kept outside the repository)
-- [ ] Play Store listing: screenshots, description, privacy policy (icon: `packages/brand/png/folio-store-primary-512.png`, the primary brand icon)
-- [ ] Set the final iOS bundle ID
-- [ ] Publish the docs site (GitHub Pages or Vercel)
+- [ ] Create the upload key and Play Console app, then the first internal release ([guide](apps/docs/src/content/docs/publishing/google-play.md))
+- [x] Play Store listing: text (English, Spanish), icon, feature graphic, phone and tablet screenshots, privacy policy
+- [x] Docs site deploy to Cloudflare
 - [ ] Refresh the screenshots in the README and docs with the new home design
 
 **Upstream**
@@ -315,20 +321,19 @@ Built with open-source libraries, among them [Jetpack Ink](https://developer.and
 
 ## Publishing
 
-Planned store listing:
+Google Play only. Everything for the store is in the repo, and releases run locally with fastlane:
 
-| Field | Value |
+| | |
 |---|---|
-| Store title | Folio: Handwritten Notes & eReader |
-| App name (launcher) | Folio |
-| Application ID | `com.allient.folio` |
+| Store listing (en-US, es-419), icon, feature graphic, screenshots | `apps/mobile/fastlane/metadata/android/` |
+| Lanes | `just aab`, `just play-internal`, `just play-beta`, `just play-production`, `just play-promote`, `just play-metadata` |
+| Upload signing | `apps/mobile/keystore.properties` (git-ignored) or `FOLIO_UPLOAD_*` variables |
+| In-app updates | `AppUpdates.kt`: flexible update with a Restart bar; immediate for priority 4–5 or versions older than 30 days |
+| Privacy policy | `/privacy/` on the docs site |
+
+Step-by-step first setup (upload key, Play Console forms, data safety answers, service account for fastlane, first upload): [google-play.md](apps/docs/src/content/docs/publishing/google-play.md).
 
 Test builds from before 2026-10-19 used the starter ID `com.example.knotes` and install as a separate app; export a `.knotes` backup from them if needed (Folio still imports that legacy format), import it into Folio, then uninstall them.
-
-Before the first store release:
-
-1. Create the release signing key and keep it outside the repository (`*.jks` is git-ignored). Losing it means the store app can never be updated.
-2. Set `PRODUCT_BUNDLE_IDENTIFIER` in `apps/mobile/iosApp/Configuration/Config.xcconfig` to the final iOS bundle ID when the iOS app ships.
 
 Backups and exports use the Folio format: `.folio` files with the format ID `application/vnd.folio.archive+zip`. Legacy `.knotes` archives (`application/vnd.knotes.archive+zip`) and `Knotes-Backup-*.knotes` files in the backup folder are still recognised and imported. The private database file names (`knotes.db`, `knotes-reader.db`) stay unchanged on purpose: they never leave the device, and renaming a live database risks the library.
 

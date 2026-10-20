@@ -1,0 +1,3 @@
+# Google Play service account key, kept in apps/mobile (git-ignored) or pointed to by PLAY_JSON_KEY.
+json_key_file(ENV.fetch("PLAY_JSON_KEY", "play-service-account.json"))
+package_name("com.allient.folio")

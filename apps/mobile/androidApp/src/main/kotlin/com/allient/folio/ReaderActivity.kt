@@ -37,6 +37,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
@@ -123,9 +126,10 @@ class ReaderActivity : AppCompatActivity() {
         settings.edit().putFloat("fontScale",fontScale.toFloat()).putString("theme",themeName).putBoolean("scroll",scroll).putFloat("lineHeight", lineHeight.toFloat()).apply()
     }
     private fun currentAnchor(): String? = if (pdf != null) JSONObject().put("page",page).toString() else navigator?.currentLocator?.value?.toJSON()?.toString()
-    private fun jump(anchor: String) {
+    /** [searchQuote] is set for search results only, so the match opens as a selection; saved marks just open their page. */
+    private fun jump(anchor: String, searchQuote: String? = null) {
         selected = null
-        if (pdf != null) { page = JSONObject(anchor).getInt("page").coerceIn(0,pdf!!.pageCount - 1); if (JSONObject(anchor).has("rects")) selected = PdfSelection(anchor, "Search result") }
+        if (pdf != null) { page = JSONObject(anchor).getInt("page").coerceIn(0,pdf!!.pageCount - 1); if (searchQuote != null && JSONObject(anchor).has("rects")) selected = PdfSelection(anchor, searchQuote) }
         else Locator.fromJSON(JSONObject(anchor))?.let { navigator?.go(it) }
     }
     private fun saveSelection(kind: AnnotationKind, color: Int, note: String = "") {
@@ -153,6 +157,8 @@ class ReaderActivity : AppCompatActivity() {
         val redoInk = remember { mutableStateListOf<ReaderAnnotation>() }
         var bottomChromeHeight by remember { mutableIntStateOf(0) }
         var topChromeHeight by remember { mutableIntStateOf(0) }
+        // Where the selection popup sits, so page taps and swipes underneath it are left to the popup.
+        var selectionBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
         var tool by rememberSaveable { mutableStateOf("Read") }
         var color by rememberSaveable { mutableIntStateOf(0xFFFFD85A.toInt()) }
         var penColor by rememberSaveable { mutableIntStateOf(0xFF303030.toInt()) }
@@ -176,6 +182,7 @@ class ReaderActivity : AppCompatActivity() {
         var studyMode by rememberSaveable { mutableStateOf(false) }
         var studyNotebookId by rememberSaveable { mutableStateOf<String?>(null) }
         val nav = navigator
+        val currentLocator by produceState<Locator?>(null, nav) { nav?.currentLocator?.collect { value = it } }
         val studyNotebook = studyNotebookId?.let { id -> notebookRepository.notebooks.firstOrNull { it.id == id && it.deletedAt == 0L } }
         BackHandler(enabled=studyMode) { studyMode=false }
         BackHandler(enabled = drawingToolbar && !studyMode) { drawingToolbar = false; drawingPopup = null; tool = "Read" }
@@ -185,8 +192,8 @@ class ReaderActivity : AppCompatActivity() {
                 // The native PDF/EPUB view fills the screen beneath the Compose controls.
                 // Leave taps in the overlay bands for those controls; only a tap on the
                 // actual reading area dismisses the chrome.
-                val overlayTop = 88f * resources.displayMetrics.density
-                val overlayBottom = 176f * resources.displayMetrics.density
+                val overlayTop = dp(ReaderChromeBands.TOP_DP)
+                val overlayBottom = dp(ReaderChromeBands.BOTTOM_DP)
                 if (y < overlayTop || y > height - overlayBottom) return false
                 chromeVisible = false
                 return true
@@ -271,8 +278,9 @@ class ReaderActivity : AppCompatActivity() {
                 try {
                     val file = withContext(Dispatchers.IO) {
                         val dir = File(cacheDir,"exports").apply { mkdirs() }
-                        if (kind == "pdf") ReaderExport.annotatedPdf(this@ReaderActivity, doc, notes, File(dir,"${doc.contentHash.take(12)}-annotated.pdf"))
-                        else File(dir,"${doc.contentHash.take(12)}-notes.md").apply { writeText(markdown) }
+                        val name = doc.title.toSafeFileName("Book")
+                        if (kind == "pdf") ReaderExport.annotatedPdf(this@ReaderActivity, doc, notes, File(dir,"$name (annotated).pdf"))
+                        else File(dir,"$name (notes).md").apply { writeText(markdown) }
                     }
                     NotebookFiles(this@ReaderActivity).shareFile(file, if (kind == "pdf") "application/pdf" else "text/markdown")
                 } catch (error: Exception) { if (error is CancellationException) throw error; model.error = error.message ?: "Could not export document" }
@@ -446,7 +454,8 @@ class ReaderActivity : AppCompatActivity() {
                                 if (!change.pressed) {
                                     val dx = change.position.x - down.position.x
                                     val dy = change.position.y - down.position.y
-                                    val onPage = readerTab != "Contents" && down.position.y >= topChromeHeight && down.position.y <= size.height - bottomChromeHeight
+                                    val onPopup = selected != null && selectionBounds?.contains(down.position) == true
+                                    val onPage = !onPopup && readerTab != "Contents" && down.position.y >= topChromeHeight && down.position.y <= size.height - bottomChromeHeight
                                     if (onPage && kotlin.math.abs(dx) > maxOf(48.dp.toPx(), size.width * .12f) && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.25f) {
                                         if (pdf != null) page = (page + if (dx < 0f) 1 else -1).coerceIn(0, pdf!!.pageCount - 1)
                                         else if (dx < 0f) nav?.goForward(true) else nav?.goBackward(true)
@@ -461,18 +470,24 @@ class ReaderActivity : AppCompatActivity() {
                         }
                     },
                 ) {
-            if (chromeVisible) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().onSizeChanged { topChromeHeight = it.height }.zIndex(1f)) {
+            if (chromeVisible) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().onSizeChanged { topChromeHeight = it.height }.background(MaterialTheme.colorScheme.surface).zIndex(1f)) {
             Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically) {
                 InkToolButton(InkIcon.Previous, "Back to library", { finish() }, buttonSize = 48.dp, tint = MaterialTheme.colorScheme.onSurface)
                 ReaderAction(InkIcon.Library, "Doc", Modifier.width(52.dp)) { panel = "Document" }
                 Spacer(Modifier.weight(1f))
                 Row(Modifier.weight(4f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.End) {
-                    if (pdf != null) ReaderAction(InkIcon.RectangleSelect, if (recognizing) "OCR…" else "OCR", Modifier.width(60.dp), enabled = !recognizing) { recognizeScannedPage() }
-                    ReaderAction(InkIcon.Hand, "Gestures", Modifier.width(64.dp)) { panel = "Gestures" }
+                    // Phones: the everyday actions come first so they are visible without scrolling the row.
+                    val compactActions = LocalConfiguration.current.screenWidthDp < 600
+                    val secondary: @Composable () -> Unit = {
+                        if (pdf != null) ReaderAction(InkIcon.RectangleSelect, if (recognizing) "OCR…" else "OCR", Modifier.width(60.dp), enabled = !recognizing) { recognizeScannedPage() }
+                        ReaderAction(InkIcon.Hand, "Gestures", Modifier.width(64.dp)) { panel = "Gestures" }
+                    }
+                    if (!compactActions) secondary()
+                    ReaderAction(InkIcon.Search, "Search", Modifier.width(60.dp)) { panel = "Search" }
                     ReaderAction(InkIcon.Pen, "Notes", Modifier.width(60.dp)) { if (pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false } else panel = "Annotations" }
                     ReaderAction(InkIcon.Save, "Bookmark", Modifier.width(68.dp), active = bookmark != null, enabled = currentAnchor() != null) { toggleBookmark() }
-                    ReaderAction(InkIcon.Search, "Search", Modifier.width(60.dp)) { panel = "Search" }
                     ReaderAction(InkIcon.More, "More", Modifier.width(56.dp)) { panel = "More" }
+                    if (compactActions) secondary()
                 }
             }
             HorizontalDivider()
@@ -481,7 +496,7 @@ class ReaderActivity : AppCompatActivity() {
             if (chromeVisible) readerNotice?.let { notice -> Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) { Text(notice,Modifier.weight(1f),style=MaterialTheme.typography.bodySmall);TextButton(onClick={readerNotice=null}){Text("Dismiss")} } }
             }
             selected?.let { selection ->
-                Surface(Modifier.align(Alignment.Center).widthIn(max = 620.dp).padding(24.dp).zIndex(2f),shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), shadowElevation=3.dp) { Column(Modifier.padding(12.dp)) {
+                Surface(Modifier.align(Alignment.Center).widthIn(max = 620.dp).padding(24.dp).zIndex(2f).onGloballyPositioned { selectionBounds = it.boundsInParent() },shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), shadowElevation=3.dp) { Column(Modifier.padding(12.dp)) {
                     Text(selection.text.ifBlank { "Selected passage" },maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodySmall)
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),verticalAlignment=Alignment.CenterVertically) {
                         ReaderColors(color) { color=it }
@@ -498,7 +513,7 @@ class ReaderActivity : AppCompatActivity() {
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             if (readerTab == "Progress") {
             Text(doc?.title.orEmpty(), Modifier.padding(start = 24.dp, end = 24.dp, top = 18.dp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(if (pdf != null) "Page ${page + 1} of ${pdf!!.pageCount}" else nav?.currentLocator?.value?.title.orEmpty(), Modifier.padding(horizontal = 24.dp, vertical = 4.dp), fontSize = 13.sp)
+            Text(if (pdf != null) "Page ${page + 1} of ${pdf!!.pageCount}" else currentLocator?.title.orEmpty(), Modifier.padding(horizontal = 24.dp, vertical = 4.dp), fontSize = 13.sp)
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp).heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { selected = null; if (pdf != null) page = (page - 1).coerceAtLeast(0) else nav?.goBackward(true) },
                     enabled = if (pdf != null) page > 0 else nav != null, modifier = Modifier.widthIn(min = 48.dp).semantics { contentDescription = "Previous page" }) { Text("‹", fontSize = 28.sp) }
@@ -716,8 +731,8 @@ class ReaderActivity : AppCompatActivity() {
                         }
                     }
                     "Search" -> {
-                        OutlinedTextField(value=search,onValueChange={search=it},label={Text("Search this document")},singleLine=true,modifier=Modifier.fillMaxWidth())
-                        TextButton(onClick={
+                        fun runSearch() {
+                            if(search.trim().length<2) return
                             searchJob?.cancel();results=emptyList();searching=true
                             searchJob=scope.launch {
                                 try {
@@ -732,7 +747,7 @@ class ReaderActivity : AppCompatActivity() {
                                         try {
                                         while(results.size<300) {
                                             ensureActive(); val batch=iterator.next().getOrElse { throw IllegalStateException(it.message) } ?: break
-                                            results=results+batch.locators.map { ReaderSearchResult((it.text.before.orEmpty()+it.text.highlight.orEmpty()+it.text.after.orEmpty()).ifBlank { it.title ?: "Match" },it.toJSON().toString()) }
+                                            results=results+batch.locators.map { ReaderSearchResult((it.text.before.orEmpty()+it.text.highlight.orEmpty()+it.text.after.orEmpty()).collapseWhitespace().ifBlank { it.title ?: "Match" },it.toJSON().toString()) }
                                         }
                                         } finally { iterator.close() }
                                     }
@@ -740,10 +755,15 @@ class ReaderActivity : AppCompatActivity() {
                                 catch(error:Exception){model.error=error.message}
                                 finally{searching=false}
                             }
-                        },enabled=search.trim().length>=2) { Text(if(searching) "Restart search" else "Find") }
+                        }
+                        OutlinedTextField(value=search,onValueChange={search=it},label={Text("Search this document")},singleLine=true,
+                            keyboardOptions=androidx.compose.foundation.text.KeyboardOptions(imeAction=androidx.compose.ui.text.input.ImeAction.Search),
+                            keyboardActions=androidx.compose.foundation.text.KeyboardActions(onSearch={ runSearch() }),
+                            modifier=Modifier.fillMaxWidth())
+                        TextButton(onClick={ runSearch() },enabled=search.trim().length>=2) { Text(if(searching) "Restart search" else "Find") }
                         if(searching) LinearProgressIndicator(Modifier.fillMaxWidth())
                         Text("${results.size} matches${if(results.size>=300) " (first 300)" else ""}",style=MaterialTheme.typography.labelSmall)
-                        LazyColumn { items(results.size) { index -> val result=results[index]; Text(result.label,Modifier.fillMaxWidth().clickable { jump(result.anchor);searchJob?.cancel();panel=null }.padding(vertical=14.dp));HorizontalDivider() } }
+                        LazyColumn { items(results.size) { index -> val result=results[index]; Text(result.label,Modifier.fillMaxWidth().clickable { jump(result.anchor,result.quote);searchJob?.cancel();panel=null }.padding(vertical=14.dp));HorizontalDivider() } }
                     }
                 }
             }

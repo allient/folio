@@ -31,7 +31,7 @@ import androidx.compose.foundation.selection.selectable
 private fun ScreenHeader(title: String, onBack: () -> Unit, trailing: @Composable RowScope.() -> Unit = {}) {
     Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         HomeIconButton(Symbol.Back, "Back to library", false, onBack)
-        Text(title, Modifier.weight(1f).padding(start = 4.dp), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
+        Text(title, Modifier.weight(1f).padding(start = 4.dp), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
         trailing()
     }
     HorizontalDivider(color = HomeHairline)
@@ -58,11 +58,19 @@ internal fun TrashScreen(
             HomeSymbol(Symbol.Trash, Modifier.size(44.dp), tint = HomeLine)
             Text("Trash is empty", Modifier.padding(top = 16.dp), fontSize = 17.sp, fontWeight = FontWeight.Medium, color = HomeInk)
             Text("Deleted notebooks, folders and books appear here.", Modifier.padding(top = 6.dp), fontSize = 13.sp, color = HomeMuted)
-        } else LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        } else BoxWithConstraints(Modifier.fillMaxSize()) {
+          // On phones the two actions move under the item so the title is not squeezed.
+          val narrow = maxWidth < 560.dp
+          LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(items, key = { "${it.kind}:${it.id}" }) { item ->
                 val left = TrashRules.daysLeft(item.deletedAt, now, retentionDays)
-                Row(Modifier.fillMaxWidth().widthIn(max = 900.dp).clip(RoundedCornerShape(style.item)).background(Color(0xFFF8F8F8)).padding(horizontal = 12.dp, vertical = 10.dp)
-                    .testTag("trash-item-${item.id}"), verticalAlignment = Alignment.CenterVertically) {
+                val actions: @Composable () -> Unit = {
+                    TextButton(onClick = { onRestore(item) }, modifier = Modifier.testTag("trash-restore-${item.id}")) { Text("Restore", color = style.accent) }
+                    TextButton(onClick = { confirmDelete = item }, modifier = Modifier.testTag("trash-delete-${item.id}")) { Text("Delete permanently", color = HomeDanger, maxLines = 2, fontSize = 13.sp) }
+                }
+                Column(Modifier.fillMaxWidth().widthIn(max = 900.dp).clip(RoundedCornerShape(style.item)).background(Color(0xFFF8F8F8)).padding(horizontal = 12.dp, vertical = 10.dp)
+                    .testTag("trash-item-${item.id}")) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.width(44.dp).aspectRatio(.75f).clip(RoundedCornerShape(style.item / 2)).border(1.dp, HomeLine, RoundedCornerShape(style.item / 2)).background(Color.White),
                         contentAlignment = Alignment.Center) { preview(item, Modifier.fillMaxSize()) }
                     Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
@@ -71,10 +79,12 @@ internal fun TrashScreen(
                         Text(when (left) { null -> "Kept until you delete it"; 0 -> "Deleted at next start"; 1 -> "1 day left"; else -> "$left days left" },
                             Modifier.padding(top = 2.dp), fontSize = 11.sp, color = if (left != null && left <= 3) HomeDanger else HomeMuted)
                     }
-                    TextButton(onClick = { onRestore(item) }, modifier = Modifier.testTag("trash-restore-${item.id}")) { Text("Restore", color = style.accent) }
-                    TextButton(onClick = { confirmDelete = item }, modifier = Modifier.testTag("trash-delete-${item.id}")) { Text("Delete permanently", color = HomeDanger, maxLines = 2, fontSize = 13.sp) }
+                    if (!narrow) actions()
+                }
+                if (narrow) Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.End) { actions() }
                 }
             }
+          }
         }
     }
     confirmDelete?.let { item -> AlertDialog(onDismissRequest = { confirmDelete = null }, title = { Text("Delete permanently?") },
@@ -236,9 +246,9 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
                 Text("Open-source libraries", Modifier.padding(top = 28.dp, bottom = 8.dp), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
                 listOf("Jetpack Ink" to "Handwriting strokes and rendering", "PDFium" to "PDF rendering", "PdfBox-Android" to "Annotated PDF export",
                     "Readium" to "EPUB reading", "ML Kit Text Recognition" to "On-device OCR", "Zstandard (zstd-jni)" to "Backup compression", "Geist" to "Interface typeface (SIL OFL)").forEach { (name, use) ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Text(name, Modifier.weight(1f), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = HomeInk)
-                        Text(use, fontSize = 13.sp, color = HomeMuted)
+                        Text(use, Modifier.weight(1.3f), fontSize = 13.sp, color = HomeMuted, textAlign = androidx.compose.ui.text.style.TextAlign.End)
                     }
                     HorizontalDivider(color = HomeHairline)
                 }

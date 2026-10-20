@@ -60,9 +60,10 @@ fun BackupSettingsScreen(state: BackupSettingsUi, onBack: () -> Unit, onEnabled:
             dismissButton = { TextButton(onClick = { confirmRestore = null }) { Text("Cancel") } })
     }
     Column(Modifier.fillMaxSize().testTag("backup-settings-screen").background(MaterialTheme.colorScheme.surface)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = onBack, modifier = Modifier.testTag("backup-settings-back")) { Text("‹", fontSize = 30.sp); Spacer(Modifier.width(8.dp)); Text("Back") }
-            Text("Settings", Modifier.padding(start = 8.dp), fontSize = 21.sp, fontWeight = FontWeight.Medium)
+        // Same header as the library's Trash, Preferences and About screens.
+        Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.testTag("backup-settings-back")) { HomeIconButton(Symbol.Back, "Back", false, onBack) }
+            Text("Backup settings", Modifier.padding(start = 4.dp), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 28.dp),
@@ -150,7 +151,7 @@ fun BackupSettingsScreen(state: BackupSettingsUi, onBack: () -> Unit, onEnabled:
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                         Text("Choose a folder in Documents", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         Text("In the Android folder picker, open Documents. You can create a folder called Folio Backups, open it, then tap Use this folder.", fontSize = 13.sp, color = muted, lineHeight = 21.sp)
-                        Text("A .folio backup includes notebooks and their attachments, plus reader titles, file references, reading positions, highlights and notes. PDF and EPUB files stay in this tablet's storage and are not copied; after restoring on another device, reimport a book to reopen it. Matching books reconnect to their saved annotations. Restoring adds copies and never erases your library. Backups stay on this device; nothing is sent online.", fontSize = 12.sp, color = muted, lineHeight = 19.sp)
+                        Text("A .folio backup includes notebooks and their attachments, plus reader titles, file references, reading positions, highlights and notes. PDF and EPUB files stay in this device's storage and are not copied; after restoring on another device, reimport a book to reopen it. Matching books reconnect to their saved annotations. Restoring adds copies and never erases your library. Backups stay on this device; nothing is sent online.", fontSize = 12.sp, color = muted, lineHeight = 19.sp)
                     }
                 }
                 OutlinedButton(onClick = onRestore, enabled = !busy, shape = RoundedCornerShape(16.dp),

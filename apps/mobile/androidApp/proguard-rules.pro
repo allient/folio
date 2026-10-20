@@ -1,21 +1,35 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# Folio release rules. R8 runs on release builds only (see build.gradle.kts).
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Readable stack traces in Play Console (upload mapping.txt, fastlane does it with the AAB).
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Native libraries call back into these classes through JNI by name.
+-keep class io.legere.pdfiumandroid.** { *; }
+-keep class com.github.luben.zstd.** { *; }
+-keep class androidx.ink.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# PDFBox loads resources (fonts, CMaps, glyph lists) and some classes by name.
+-keep class com.tom_roush.pdfbox.** { *; }
+-keep class com.tom_roush.fontbox.** { *; }
+-keep class com.tom_roush.harmony.** { *; }
+-dontwarn com.gemalto.jp2.**
+-dontwarn org.bouncycastle.**
+-dontwarn javax.xml.**
+
+# Readium uses reflection for its JS bridge and kotlinx-serialization models.
+-keep class org.readium.** { *; }
+-keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
+-dontwarn org.readium.**
+
+# Optional dependencies referenced by libraries but not shipped.
+-dontwarn org.slf4j.**
+-dontwarn org.joda.convert.**
+
+# ML Kit text recognition (bundled model): components are created by reflection
+# (ComponentDiscovery needs the no-arg constructors) and fields are read from native code.
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_vision_** { *; }
+-keep class com.google.android.gms.internal.mlkit_common.** { *; }
+-keep class * implements com.google.firebase.components.ComponentRegistrar { <init>(); }
+-dontwarn com.google.mlkit.**

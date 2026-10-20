@@ -1,3 +1,4 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -30,6 +31,8 @@ dependencies {
     implementation("androidx.ink:ink-rendering:1.1.0-alpha09")
     implementation("com.github.luben:zstd-jni:1.5.7-23@aar")
     implementation("androidx.work:work-runtime-ktx:2.11.2")
+    // Google Play in-app updates (talks to the Play Store app over IPC; no network permission).
+    implementation("com.google.android.play:app-update-ktx:2.1.0")
     // Already on the classpath through WorkManager/Compose; declared because backups observe app background.
     implementation("androidx.lifecycle:lifecycle-process:2.11.0")
 
@@ -43,6 +46,13 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
 
+// Upload key for Google Play. Locally from apps/mobile/keystore.properties (git-ignored),
+// in CI from FOLIO_UPLOAD_* environment variables. Without either, release stays unsigned.
+val uploadKey = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+fun uploadSetting(key: String, env: String): String? = uploadKey.getProperty(key) ?: System.getenv(env)
+
 android {
     namespace = "com.allient.folio"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -51,8 +61,9 @@ android {
         applicationId = "com.allient.folio"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        // fastlane passes -PversionCode (next code on Play) and -PversionName.
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (findProperty("versionName") as String?) ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {
@@ -60,9 +71,23 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    signingConfigs {
+        val storeFile = uploadSetting("storeFile", "FOLIO_UPLOAD_KEYSTORE")
+        if (storeFile != null) {
+            create("upload") {
+                this.storeFile = rootProject.file(storeFile)
+                storePassword = uploadSetting("storePassword", "FOLIO_UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias = uploadSetting("keyAlias", "FOLIO_UPLOAD_KEY_ALIAS")
+                keyPassword = uploadSetting("keyPassword", "FOLIO_UPLOAD_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.findByName("upload")
+            // R8: smaller download and faster startup. Keep rules for JNI/reflective libraries are in proguard-rules.pro.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -36,9 +36,9 @@ internal fun HomeSidebar(folders: List<NoteFolder>, current: String, trashCount:
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             SidebarItem(Symbol.Notes, "Notes", current == "home", { onSelect("home") })
             SidebarItem(Symbol.Folder, "Folders", false, { expanded = !expanded }) {
-                Box(Modifier.size(32.dp).clip(CircleShape).clickable(onClick = onCreateFolder).semantics { contentDescription = "Create folder" }.testTag("sidebar-create-folder"),
+                Box(Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onCreateFolder).semantics { contentDescription = "Create folder" }.testTag("sidebar-create-folder"),
                     contentAlignment = Alignment.Center) { HomeSymbol(Symbol.Plus, Modifier.size(15.dp)) }
-                Box(Modifier.size(32.dp).clip(CircleShape).clickable { expanded = !expanded }.semantics { contentDescription = if (expanded) "Collapse folders" else "Expand folders" },
+                Box(Modifier.size(40.dp).clip(CircleShape).clickable { expanded = !expanded }.semantics { contentDescription = if (expanded) "Collapse folders" else "Expand folders" },
                     contentAlignment = Alignment.Center) { HomeSymbol(Symbol.ChevronDown, Modifier.size(15.dp).rotate(if (expanded) 0f else -90f)) }
             }
             if (expanded) {

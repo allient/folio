@@ -1,0 +1,32 @@
+Folio is a calm, focused notebook for your stylus. Write by hand, sketch on an infinite canvas and read PDFs and EPUBs with a pen in hand. Everything stays on your device: no account, no ads, no tracking and no internet permission.
+
+<b>Ink that behaves like ink</b>
+• Twelve brushes: ballpoint, fineliner, gel pen, marker, fountain pen, brush pen, calligraphy, highlighter, 2H–6B pencils, chalk, spray and a bristle paint brush
+• Low-latency drawing with pressure and tilt
+• Pressure curves you shape by hand, plus a threshold that ignores a worn pen tip
+• Pencil grain that stays on the paper as you zoom
+
+<b>Pages, or no edges at all</b>
+• 35 page templates: lined, grid, dots, Cornell, planner, Kanban, music staff, habit tracker and more
+• Infinite canvas with pins, a minimap and "back to content"
+• Layers, lasso, shapes, fill, text boxes, tables, stickers, sticky notes and images
+• A ruler and a zoom window for detail work
+• Voice notes inside the page
+
+<b>Read with a pen in hand</b>
+• PDF and EPUB reader with highlights, underlines, margin notes and bookmarks
+• Search, jump to page and on-device text recognition (OCR)
+• Study view: a book and a notebook side by side
+• Export the annotated PDF, or your reading notes as Markdown
+• Open books straight from your file manager or other apps
+
+<b>A library that stays tidy</b>
+• Folders with colours and styles, favourites, recent and search across names, typed text, tags and book titles
+• Trash with automatic clean-up after 7 or 30 days
+• Smart backups to a folder you choose, with daily, weekly and monthly versions
+• Export pages as PDF or PNG, or a notebook as an editable .folio file
+
+<b>Private by design</b>
+Folio works fully offline. Your notes and books never leave your device unless you export or share them yourself. The only permission is the microphone, and only when you record a voice note.
+
+Made for Android tablets and pen displays, and works on phones too.

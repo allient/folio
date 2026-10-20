@@ -107,8 +107,9 @@ internal class ReaderStore(private val context: Context) : Closeable {
                 if (assigned != existing) saveDocument(assigned)
                 return@withContext assigned
             }
-            val header = ByteArray(5); staged.inputStream().use { it.read(header) }
-            val format = if (String(header, Charsets.US_ASCII).startsWith("%PDF-")) "pdf" else "epub"
+            // PDF readers accept a header anywhere in the first 1 KiB (some generators prepend bytes).
+            val header = ByteArray(1024); val read = staged.inputStream().use { it.read(header) }.coerceAtLeast(0)
+            val format = if (String(header, 0, read, Charsets.ISO_8859_1).contains("%PDF-")) "pdf" else "epub"
             if (format == "epub") validateEpub(staged)
             val local = File(documentsDir, "$hash.$format")
             if (!local.exists()) { check(staged.renameTo(local)) { "Could not keep original document" }; created = local }
@@ -136,7 +137,8 @@ internal class ReaderStore(private val context: Context) : Closeable {
 
     /** Reject path traversal and expansion bombs before handing an EPUB to the navigator. */
     private fun validateEpub(file: File) {
-        java.util.zip.ZipFile(file).use { zip ->
+        val archive = try { java.util.zip.ZipFile(file) } catch (notZip: java.util.zip.ZipException) { throw IllegalArgumentException("This file is not a PDF or EPUB book.", notZip) }
+        archive.use { zip ->
             require(zip.getEntry("META-INF/container.xml") != null) { "This file is not an EPUB book. Import a PDF or DRM-free EPUB." }
             var expanded = 0L; var entries = 0
             zip.entries().asSequence().forEach { entry ->

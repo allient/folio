@@ -1,7 +1,7 @@
 {
   "name": "@folio/mobile",
   "private": true,
-  "description": "Folio Kotlin Multiplatform app (Android, iOS stub). Gradle does the work; these scripts let Turborepo run it.",
+  "description": "Folio Kotlin Multiplatform app (Android; iOS shell kept compiling). Gradle does the work; these scripts let Turborepo run it.",
   "scripts": {
     "build": "./gradlew :androidApp:assembleDebug",
     "build:release": "./gradlew :androidApp:assembleRelease",

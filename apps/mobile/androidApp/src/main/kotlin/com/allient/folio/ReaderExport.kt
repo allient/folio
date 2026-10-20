@@ -17,7 +17,9 @@ internal object ReaderExport {
     fun annotatedPdf(context: Context, original: ReaderDocument, annotations: List<ReaderAnnotation>, output: File): File {
         PDFBoxResourceLoader.init(context.applicationContext)
         try {
-            PDDocument.load(File(original.path), MemoryUsageSetting.setupMixed(24L * 1024 * 1024)).use { document ->
+            val loaded = try { PDDocument.load(File(original.path), MemoryUsageSetting.setupMixed(24L * 1024 * 1024)) }
+                catch (locked: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) { throw IllegalArgumentException("This PDF is password protected, so it can't be exported with annotations. Export your reading notes instead.", locked) }
+            loaded.use { document ->
                 require(document.currentAccessPermission.canModifyAnnotations()) { "This PDF does not permit annotations." }
                 annotations.filter { it.kind != AnnotationKind.BOOKMARK }.forEach { a ->
                     val anchor = JSONObject(a.anchor); val index = anchor.getInt("page")
@@ -59,7 +61,8 @@ internal object ReaderExport {
                     page.annotations.add(annotation)
                     annotation.constructAppearances()
                 }
-                document.save(output)
+                try { document.save(output) }
+                catch (error: java.io.IOException) { if (document.isEncrypted) throw IllegalArgumentException("This PDF is encrypted, so it can't be exported with annotations. Export your reading notes instead.", error) else throw error }
             }
             return output
         } catch(error:Throwable){output.delete();throw error}

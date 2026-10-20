@@ -1,0 +1,32 @@
+Folio es un cuaderno tranquilo y enfocado para tu lápiz óptico. Escribe a mano, dibuja en un lienzo infinito y lee PDF y EPUB con el lápiz en la mano. Todo se queda en tu dispositivo: sin cuenta, sin anuncios, sin rastreo y sin permiso de internet.
+
+<b>Tinta que se comporta como tinta</b>
+• Doce pinceles: bolígrafo, rotulador fino, gel, marcador, pluma estilográfica, pincel, caligrafía, resaltador, lápices 2H–6B, tiza, aerosol y pincel de cerdas
+• Trazo de baja latencia con presión e inclinación
+• Curvas de presión ajustables y un umbral que ignora una punta gastada
+• Grano de lápiz que se mantiene en el papel al hacer zoom
+
+<b>Páginas, o sin bordes</b>
+• 35 plantillas: rayado, cuadrícula, puntos, Cornell, agenda, Kanban, pentagrama, seguimiento de hábitos y más
+• Lienzo infinito con marcadores, minimapa y "volver al contenido"
+• Capas, lazo, formas, relleno, cuadros de texto, tablas, stickers, notas adhesivas e imágenes
+• Regla y ventana de zoom para el detalle
+• Notas de voz dentro de la página
+
+<b>Lee con el lápiz en la mano</b>
+• Lector de PDF y EPUB con resaltados, subrayados, notas al margen y marcadores
+• Búsqueda, ir a página y reconocimiento de texto (OCR) en el dispositivo
+• Vista de estudio: un libro y un cuaderno lado a lado
+• Exporta el PDF anotado o tus notas de lectura en Markdown
+• Abre libros directamente desde tu gestor de archivos u otras apps
+
+<b>Una biblioteca ordenada</b>
+• Carpetas con colores y estilos, favoritos, recientes y búsqueda por nombre, texto, etiquetas y títulos de libros
+• Papelera con limpieza automática a los 7 o 30 días
+• Copias de seguridad inteligentes en la carpeta que elijas, con versiones diarias, semanales y mensuales
+• Exporta páginas como PDF o PNG, o un cuaderno como archivo .folio editable
+
+<b>Privado por diseño</b>
+Folio funciona sin conexión. Tus notas y libros nunca salen de tu dispositivo a menos que tú los exportes o compartas. El único permiso es el micrófono, y solo cuando grabas una nota de voz.
+
+Hecho para tabletas Android y pantallas con lápiz, y también funciona en teléfonos.

@@ -80,3 +80,27 @@ launch serial="emulator-5554":
 # Crash and error log from one device
 crashlog serial=TABLET:
     adb -s {{ serial }} logcat -d -b crash,main -v time '*:E' | tail -200
+
+# Deploy the docs site to Cloudflare from this machine (needs `bunx wrangler login` once)
+deploy-docs: build-docs
+    cd apps/docs && bunx wrangler deploy
+
+# Signed release bundle (.aab) for Google Play; needs apps/mobile/keystore.properties
+aab:
+    cd {{ MOBILE }} && fastlane aab
+
+# Google Play uploads with fastlane (see docs: Publishing › Publish on Google Play)
+play-internal:
+    cd {{ MOBILE }} && fastlane internal
+
+play-beta:
+    cd {{ MOBILE }} && fastlane beta
+
+play-production:
+    cd {{ MOBILE }} && fastlane production
+
+play-promote:
+    cd {{ MOBILE }} && fastlane promote
+
+play-metadata:
+    cd {{ MOBILE }} && fastlane metadata

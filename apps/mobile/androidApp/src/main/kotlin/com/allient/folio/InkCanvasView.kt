@@ -350,7 +350,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 onLongPressSelection?.invoke(true)
             } else {
                 val x = point.x * width; val y = point.y * documentHeight
-                val hitRadius = 28f * resources.displayMetrics.density / zoomValue
+                val hitRadius = dp(28f) / zoomValue
                 val hit = strokes.asReversed().asSequence().filter { editable(it.layerId) }
                     .mapNotNull { stroke ->
                         val distance = stroke.points.minOfOrNull { sample -> hypot(x - sample.x * width, y - sample.y * documentHeight) } ?: Float.MAX_VALUE
@@ -409,7 +409,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 finishGesture()
-                val handleReach = 28f * resources.displayMetrics.density / zoomValue
+                val handleReach = dp(28f) / zoomValue
                 if (current != null && hypot((point.x - current.right) * width, (point.y - current.bottom) * documentHeight) <= handleReach) zoomWindowGesture = 2
                 else if (current != null && current.contains(point.x, point.y)) { zoomWindowGesture = 1; zoomWindowGrab = Offset(current.left - point.x, current.top - point.y) }
                 else {
@@ -453,7 +453,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         }
     }
     private fun blankAt(point: Offset): Boolean {
-        val radius = 18f * resources.displayMetrics.density / width.coerceAtLeast(1) / zoomValue
+        val radius = dp(18f) / width.coerceAtLeast(1) / zoomValue
         val hitInk = strokes.any { stroke -> stroke.points.isNotEmpty() &&
             InkGeometry.erase(listOf(stroke), point, point, radius * width, width.toFloat(), documentHeight.toFloat(), true) { true }.isEmpty() }
         return !hitInk && texts.none { point.x in it.x..(it.x + it.boxWidth) && point.y in it.y..(it.y + .12f) } &&
@@ -584,13 +584,13 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             if (!value) { rulerMode = 0; rulerSnapSide = 0 }
             postInvalidateOnAnimation()
         }
-    private fun rulerTolerance() = 22f * resources.displayMetrics.density
+    private fun rulerTolerance() = dp(22f)
     private fun engageRuler(x: Float, y: Float) {
         rulerSnapSide = 0
         if (!ruler.visible || !(gestureMode == CanvasMode.Shape || (gestureMode == CanvasMode.Write && !activeBrush.eraser))) return
         val a = ruler.across(x, y); val half = ruler.thickness / 2f
         val toTop = abs(a - half); val toBottom = abs(a + half)
-        if (minOf(toTop, toBottom) <= 24f * resources.displayMetrics.density) rulerSnapSide = if (toTop <= toBottom) 1 else -1
+        if (minOf(toTop, toBottom) <= dp(24f)) rulerSnapSide = if (toTop <= toBottom) 1 else -1
     }
     private fun handleRulerTouch(event: MotionEvent): Boolean {
         val tool = event.getToolType(event.actionIndex.coerceIn(0, event.pointerCount - 1))
@@ -696,7 +696,6 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         canvas.clipRect(0, 0, width, height)
         if (infiniteCanvas) canvas.drawColor(com.allient.folio.InfinitePaper.parse(template)?.background ?: Color.WHITE)
         canvas.translate(panX, panY); canvas.scale(zoomValue, zoomValue)
-        if (infiniteCanvas) NotebookRenderer.drawInfinitePattern(canvas, template, width.toFloat(), -panX / zoomValue, -panY / zoomValue, (width - panX) / zoomValue, (height - panY) / zoomValue, zoomValue)
         if (infiniteCanvas) NotebookRenderer.drawInfinitePattern(canvas, template, width.toFloat(), -panX / zoomValue, -panY / zoomValue, (width - panX) / zoomValue, (height - panY) / zoomValue, zoomValue)
         val page = cachedPage ?: NotebookPage(id = "render-cache", strokes = if (Build.VERSION.SDK_INT >= 29) strokes.filterNot { frontInk?.isPending(it.id) == true } else strokes, template = template,
             layers = layers, texts = texts, images = images, blocks = blocks).also { cachedPage = it }
@@ -848,7 +847,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 embeddedTouchId = hit.id
                 embeddedTouchStart = Offset(event.x, event.y)
                 val bounds = textBounds(hit)
-                embeddedTouchAction = hit.kind != "timestamp" && x >= bounds.right - bounds.height().coerceAtLeast(34f * resources.displayMetrics.density / zoomValue)
+                embeddedTouchAction = hit.kind != "timestamp" && x >= bounds.right - bounds.height().coerceAtLeast(dp(34f) / zoomValue)
                 if (!embeddedTouchAction) {
                     gestureMode = CanvasMode.Objects
                     lastPosition = point
@@ -885,7 +884,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                     fingerSwipeStartY = event.y; fingerSwipeLastY = event.y; fingerSwipeActive = false
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    if (!fingerSwipeActive && kotlin.math.abs(event.y - fingerSwipeStartY) > 8f * resources.displayMetrics.density) fingerSwipeActive = true
+                    if (!fingerSwipeActive && kotlin.math.abs(event.y - fingerSwipeStartY) > dp(8f)) fingerSwipeActive = true
                     if (fingerSwipeActive) onVerticalFingerScroll?.invoke(fingerSwipeLastY - event.y)
                     fingerSwipeLastY = event.y
                 }
@@ -920,7 +919,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 // In stacked-page/scroll mode, a two-finger vertical drag moves
                 // through pages. Pinching and horizontal two-finger panning keep
                 // their existing canvas behavior.
-                val scrollThreshold = 2f * resources.displayMetrics.density
+                val scrollThreshold = dp(2f)
                 if (!infiniteCanvas && twoFingerVerticalScroll && kotlin.math.abs(deltaY) > kotlin.math.abs(deltaX) * 1.15f && kotlin.math.abs(deltaY) > scrollThreshold) {
                     onVerticalFingerScroll?.invoke(-deltaY)
                 } else {
@@ -951,7 +950,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 val px = point.x * width; val py = point.y * documentHeight
                 // A fixed 30dp hit radius can cover the entire selection on a dense
                 // display. Keep a central drag region even for small/flat shapes.
-                val threshold = minOf(30f * resources.displayMetrics.density / zoomValue,
+                val threshold = minOf(dp(30f) / zoomValue,
                     bounds?.let { minOf(it.width(), it.height()) * .3f } ?: Float.MAX_VALUE)
                 if (selectionTool && bounds != null && selectedStrokeIds.isNotEmpty()) {
                     val actions = strokeActions
@@ -971,15 +970,15 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                         if (handle.second.y < bounds.centerY()) bounds.top + 8f else bounds.bottom - 8f)
                     resizeVector = Offset(px - resizePivot.x, py - resizePivot.y)
                 }
-                val rotateHandle = bounds?.let { Offset(it.centerX(), it.top - ROTATE_HANDLE_DP * resources.displayMetrics.density / zoomValue) }
+                val rotateHandle = bounds?.let { Offset(it.centerX(), it.top - dp(ROTATE_HANDLE_DP) / zoomValue) }
                 rotatingSelection = selectionTool && !resizingSelection && rotateHandle != null &&
-                    hypot(px - rotateHandle.x, py - rotateHandle.y) <= 20f * resources.displayMetrics.density / zoomValue
+                    hypot(px - rotateHandle.x, py - rotateHandle.y) <= dp(20f) / zoomValue
                 if (rotatingSelection && bounds != null) {
                     rotatePivot = Offset(bounds.centerX(), bounds.centerY())
                     rotateStartAngle = kotlin.math.atan2(py - rotatePivot.y, px - rotatePivot.x)
                 }
                 if (selectionTool && bounds != null && !resizingSelection && !rotatingSelection) {
-                    val reach = 24f * resources.displayMetrics.density / zoomValue
+                    val reach = dp(24f) / zoomValue
                     when {
                         hypot(px - bounds.left, py - bounds.centerY()) <= reach -> { stretchAxis = 1; stretchPivot = bounds.right - 8f; stretchStart = px }
                         hypot(px - bounds.right, py - bounds.centerY()) <= reach -> { stretchAxis = 1; stretchPivot = bounds.left + 8f; stretchStart = px }
@@ -1041,7 +1040,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 if (horizontalSwipeTracking && !horizontalSwipeConsumed) {
                     val dx = event.getX(pointer) - horizontalSwipeStart.x
                     val dy = event.getY(pointer) - horizontalSwipeStart.y
-                    val threshold = 56f * resources.displayMetrics.density
+                    val threshold = dp(56f)
                     if (kotlin.math.abs(dx) >= threshold && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.35f) {
                         horizontalSwipeConsumed = true; horizontalSwipeTracking = false
                         activePoints.clear(); ink.clearLive(); if (Build.VERSION.SDK_INT >= 29) frontInk?.cancelActive()
@@ -1194,7 +1193,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                         val minYPx = minY * documentHeight; val maxYPx = maxY * documentHeight
                         val xLimit = if (resizePivot.x <= minXPx) (width - resizePivot.x) / (maxXPx - resizePivot.x).coerceAtLeast(1f)
                             else resizePivot.x / (resizePivot.x - minXPx).coerceAtLeast(1f)
-                        val yLimit = if (resizePivot.y <= minYPx) (height - resizePivot.y) / (maxYPx - resizePivot.y).coerceAtLeast(1f)
+                        val yLimit = if (resizePivot.y <= minYPx) (documentHeight - resizePivot.y) / (maxYPx - resizePivot.y).coerceAtLeast(1f)
                             else resizePivot.y / (resizePivot.y - minYPx).coerceAtLeast(1f)
                         val boundedScale = if (infiniteCanvas) scale else scale.coerceAtMost(minOf(xLimit, yLimit, 20f).coerceAtLeast(.1f))
                         strokes = baseline.map { if (it.id in selectedStrokeIds && editable(it.layerId)) it.copy(
@@ -1214,7 +1213,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             CanvasMode.Objects -> moveObject(point)
             CanvasMode.Fill -> if (editable(activeLayerId)) {
                 val target = strokes.lastOrNull { stroke ->
-                    val outline = if (SolidPen.isCoded(stroke)) SolidPen.silhouette(stroke.points) else stroke.points.takeIf {
+                    val outline = if (SolidPen.isCoded(stroke)) SolidPen.silhouette(stroke.points) else stroke.points.takeIf { it.isNotEmpty() &&
                         hypot((it.first().x - it.last().x) * width, (it.first().y - it.last().y) * documentHeight) < 24f }
                     stroke.layerId == activeLayerId && outline != null && outline.size >= 3 &&
                         InkGeometry.contains(point, outline.map { Offset(it.x, it.y) })
@@ -1235,7 +1234,9 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = text.size * width / 600f
             val family = when (text.font) { "Serif" -> android.graphics.Typeface.SERIF; "Mono" -> android.graphics.Typeface.MONOSPACE; else -> android.graphics.Typeface.SANS_SERIF }
-            typeface = android.graphics.Typeface.create(family, (if (text.bold) android.graphics.Typeface.BOLD else 0) or (if (text.italic) android.graphics.Typeface.ITALIC else 0))
+            typeface = android.graphics.Typeface.create(family, when {
+                text.bold && text.italic -> android.graphics.Typeface.BOLD_ITALIC; text.bold -> android.graphics.Typeface.BOLD
+                text.italic -> android.graphics.Typeface.ITALIC; else -> android.graphics.Typeface.NORMAL })
         }
         val lines = text.text.lines()
         val textWidth = lines.maxOfOrNull { paint.measureText(it) } ?: 0f
@@ -1309,7 +1310,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         val lx = local.x - cx; val ly = local.y - cy
         val (sx, sy) = when (objectHandle) { 0 -> -1 to -1; 1 -> 1 to -1; 2 -> 1 to 1; 3 -> -1 to 1; 4 -> -1 to 0; 5 -> 1 to 0; 6 -> 0 to -1; else -> 0 to 1 }
         val fixedX = -sx * hw; val fixedY = -sy * hh
-        val minSize = 16f * resources.displayMetrics.density
+        val minSize = dp(16f)
         var newW = b.width(); var newH = b.height()
         if (objectHandle < 4) {
             // Corners keep the proportions: project the pointer on the diagonal from the fixed corner.
@@ -1342,7 +1343,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             if (action >= 0) { applyBlockAction(block, actions[action]); return }
             val handles = listOf(Offset(bounds.left, bounds.top), Offset(bounds.right, bounds.top), Offset(bounds.right, bounds.bottom), Offset(bounds.left, bounds.bottom),
                 Offset(bounds.left, bounds.centerY()), Offset(bounds.right, bounds.centerY()), Offset(bounds.centerX(), bounds.top), Offset(bounds.centerX(), bounds.bottom))
-            val reach = minOf(24f * resources.displayMetrics.density / zoomValue, minOf(bounds.width(), bounds.height()) * .35f)
+            val reach = minOf(dp(24f) / zoomValue, minOf(bounds.width(), bounds.height()) * .35f)
             handles.indices.filter { hypot(x - handles[it].x, y - handles[it].y) <= reach }.minByOrNull { hypot(x - handles[it].x, y - handles[it].y) }?.let {
                 blockHandle = it; startBlockDrag(block, resize = true); return
             }
@@ -1379,7 +1380,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         val selectedTextCard = texts.firstOrNull { it.id == selectedObjectId && it.kind != "plain" && editable(it.layerId) }
         if (selectedObjectIsText && selectedTextCard != null) {
             val bounds = textBounds(selectedTextCard)
-            if (hypot(x - bounds.right, y - bounds.bottom) < 20f * resources.displayMetrics.density / zoomValue) {
+            if (hypot(x - bounds.right, y - bounds.bottom) < dp(20f) / zoomValue) {
                 draggingObject = true; resizingTextCard = true; objectsBaseline = texts to images; return
             }
         }
@@ -1438,8 +1439,8 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                         y = (text.y + dy).coerceIn(0f, (1f - (.055f * (text.size / 22f)).coerceIn(.035f, .16f)).coerceAtLeast(0f)))
                     val bounds = textBounds(text)
                     // Baseline coordinates differ from the glyph bounds; keep the visible glyphs on the page.
-                    val minY = (text.y - bounds.top / height).coerceIn(0f, 1f)
-                    val maxY = (text.y + 1f - bounds.bottom / height).coerceIn(minY, 1f)
+                    val minY = (text.y - bounds.top / documentHeight).coerceIn(0f, 1f)
+                    val maxY = (text.y + 1f - bounds.bottom / documentHeight).coerceIn(minY, 1f)
                     text.copy(x = (text.x + dx).coerceIn(0f, (1f - bounds.width() / width).coerceAtLeast(0f)), y = (text.y + dy).coerceIn(minY, maxY))
                 }
             }
@@ -1511,8 +1512,8 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         val polygon = lassoPolygon()
         val erase = gestureMode == CanvasMode.Write && activeBrush.eraser && eraserMode == EraserMode.Lasso
         // A tap or a tiny loop with the lasso picks the object under it.
-        val tiny = lasso.isNotEmpty() && (lasso.maxOf { it.x } - lasso.minOf { it.x }) * width < 12f * resources.displayMetrics.density &&
-            (lasso.maxOf { it.y } - lasso.minOf { it.y }) * documentHeight < 12f * resources.displayMetrics.density
+        val tiny = lasso.isNotEmpty() && (lasso.maxOf { it.x } - lasso.minOf { it.x }) * width < dp(12f) &&
+            (lasso.maxOf { it.y } - lasso.minOf { it.y }) * documentHeight < dp(12f)
         if (!erase && gestureMode == CanvasMode.Lasso && tiny) { selectObjectIn(emptyList(), lasso.first()); lasso.clear(); return }
         if (polygon.size >= 3) {
             val ids = strokes.filter { (if (erase) canErase(it) else editable(it.layerId)) && InkGeometry.intersects(it, polygon) }.map { it.id }.toSet()

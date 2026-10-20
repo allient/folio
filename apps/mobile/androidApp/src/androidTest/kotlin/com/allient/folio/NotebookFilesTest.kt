@@ -174,7 +174,10 @@ class NotebookFilesTest {
         val source = Notebook(title = "Vector erasing", pages = listOf(NotebookPage(strokes = listOf(cut))))
         val restored = files.importBackup(Uri.fromFile(files.exportBackup(source)))
         val actual = restored.pages.single().strokes.single()
-        assertEquals(cut.points, actual.points); assertEquals(FilledInkEraser.FORMAT, actual.engine)
+        // Storage rounds points to 5 decimals, far below a pixel.
+        assertEquals(cut.points.size, actual.points.size)
+        cut.points.zip(actual.points).forEach { (a, b) -> assertEquals(a.x, b.x, 1e-5f); assertEquals(a.y, b.y, 1e-5f); assertEquals(a.pressure, b.pressure, 1e-5f) }
+        assertEquals(FilledInkEraser.FORMAT, actual.engine)
         fun assertHole(bitmap: Bitmap) {
             assertEquals(Color.WHITE, bitmap.getPixel(480, 768))
             assertEquals(Color.BLUE, bitmap.getPixel(600, 960))

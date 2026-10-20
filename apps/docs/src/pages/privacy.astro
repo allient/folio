@@ -1,0 +1,75 @@
+---
+import Landing from '../layouts/Landing.astro';
+import { Box, Container, Stack } from '../components/ui';
+
+const github = 'https://github.com/allient/folio';
+const updated = 'October 19, 2026';
+---
+
+<Landing title="Privacy policy · Folio" description="How Folio handles your notes, books and recordings: everything stays on your device.">
+	<Box as="section" py={{ base: 6, md: 10 }}>
+		<Container size="sm">
+			<Stack gap={3} class="policy">
+				<h1>Privacy policy</h1>
+				<p class="policy__meta">Folio: Handwritten Notes &amp; eReader · Last updated {updated}</p>
+
+				<p>Folio is a note-taking and reading app for Android. It is built to work offline. This policy explains what the app does with your information. The short version: <strong>Folio does not collect, share or sell any personal data.</strong></p>
+
+				<h2>What stays on your device</h2>
+				<p>Notebooks, drawings, typed text, images, attachments, voice notes, books (PDF and EPUB) and their highlights and notes are stored in the app's private storage on your device. They are not uploaded to us or to any third party. Folio has no account and no sign-in.</p>
+
+				<h2>No network access</h2>
+				<p>Folio does not request the Internet permission. It has no analytics, no advertising, no crash reporting service and no tracking. Text recognition (OCR) runs on the device.</p>
+
+				<h2>Permissions</h2>
+				<ul>
+					<li><strong>Microphone</strong> (optional): used only when you record a voice note. The recording is saved inside the notebook on your device. You can deny this permission and use the rest of the app.</li>
+				</ul>
+
+				<h2>Files you choose</h2>
+				<p>When you open a book, import a backup, export a PDF or PNG, share a page, or pick a folder for smart backups, Folio reads or writes only the files and folders you select through Android's system file picker. Backups go only to the folder you choose. Anything you share with another app is then handled by that app's own policy.</p>
+
+				<h2>App updates</h2>
+				<p>Folio asks Google Play whether a newer version is available so it can offer an update. This check goes through the Google Play Store app on your device and does not send any of your content. See <a href="https://policies.google.com/privacy">Google's privacy policy</a>.</p>
+
+				<h2>Android backup</h2>
+				<p>Android's automatic cloud backup is turned off for Folio, so your notes are not copied to Google Drive by the system.</p>
+
+				<h2>Deleting your data</h2>
+				<p>Delete notebooks and books in the app (they go to Trash and are removed after the period you choose), or clear everything by uninstalling Folio or using <em>Settings › Apps › Folio › Storage › Clear storage</em>. Because we hold no data, there is nothing to delete on our side.</p>
+
+				<h2>Children</h2>
+				<p>Folio does not knowingly collect information from anyone, including children under 13.</p>
+
+				<h2>Changes</h2>
+				<p>If this policy changes, the new version will be published on this page with a new date.</p>
+
+				<h2>Contact</h2>
+				<p>Questions: open an issue at <a href={`${github}/issues`}>github.com/allient/folio/issues</a>.</p>
+			</Stack>
+		</Container>
+	</Box>
+</Landing>
+
+<style>
+	.policy h1 {
+		font-size: var(--text-4xl);
+		letter-spacing: -0.03em;
+	}
+	.policy h2 {
+		font-size: var(--text-xl);
+		margin-top: 1rem;
+	}
+	.policy p,
+	.policy li {
+		line-height: 1.6;
+	}
+	.policy ul {
+		padding-left: 1.2rem;
+		margin: 0;
+	}
+	.policy__meta {
+		color: var(--folio-muted);
+		font-size: var(--text-sm);
+	}
+</style>

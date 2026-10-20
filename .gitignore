@@ -9,6 +9,12 @@ captures
 
 # Local machine config (SDK path, secrets)
 local.properties
+keystore.properties
+**/fastlane/report.xml
+**/fastlane/README.md
+**/play-service-account.json
+vendor/bundle/
+.wrangler/
 *.env
 .env.*
 .argent/secrets.env

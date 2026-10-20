@@ -103,7 +103,7 @@ internal object NotebookRenderer {
         val paint = scratch.paint
         paint.reset(); paint.isAntiAlias = true; paint.color = text.color; paint.textSize = text.size * w / 600f
         val family = when (text.font) { "Serif" -> Typeface.SERIF; "Mono" -> Typeface.MONOSPACE; else -> Typeface.SANS_SERIF }
-        val style = (if (text.bold) Typeface.BOLD else Typeface.NORMAL) or (if (text.italic) Typeface.ITALIC else Typeface.NORMAL)
+        val style = when { text.bold && text.italic -> Typeface.BOLD_ITALIC; text.bold -> Typeface.BOLD; text.italic -> Typeface.ITALIC; else -> Typeface.NORMAL }
         paint.typeface = Typeface.create(family, style); paint.isUnderlineText = text.underline
         paint.textAlign = when (text.alignment) { "Center" -> Paint.Align.CENTER; "End" -> Paint.Align.RIGHT; else -> Paint.Align.LEFT }
         val transformed = text.rotation != 0f || text.flipX || text.flipY

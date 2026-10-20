@@ -6,11 +6,15 @@
     "dev": "bunx --bun astro dev",
     "build": "bunx --bun astro build",
     "preview": "bunx --bun astro preview",
-    "check": "bunx --bun astro check"
+    "check": "bunx --bun astro check",
+    "deploy": "bunx wrangler deploy"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.6",
     "astro": "^7.2.10",
     "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.2"
   }
 }

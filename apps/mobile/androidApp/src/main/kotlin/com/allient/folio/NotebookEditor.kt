@@ -421,7 +421,7 @@ internal fun NotebookEditor(
     fun redo() {
         canvas?.flushInput()
         if (redoStack.isNotEmpty()) {
-            undoStack = undoStack + page; page = redoStack.last(); redoStack = redoStack.dropLast(1); selectedIds = emptySet(); if (page.layers.none { it.id == activeLayer }) activeLayer = page.layers.first().id; replacePage(page)
+            undoStack = (undoStack + page).takeLast(80); page = redoStack.last(); redoStack = redoStack.dropLast(1); selectedIds = emptySet(); if (page.layers.none { it.id == activeLayer }) activeLayer = page.layers.first().id; replacePage(page)
         }
     }
     fun updateBrush(brush: BrushStyle) {
@@ -949,9 +949,11 @@ internal fun NotebookEditor(
                         "EEE, MMM d, yyyy" to "Day and date", "MMM d, yyyy · h:mm a" to "Date and time",
                         "yyyy-MM-dd HH:mm" to "24-hour date and time", "h:mm a" to "12-hour time", "HH:mm" to "24-hour time",
                     )
+                    // Read through the configuration so a locale change recomposes the formatted labels.
+                    val locale = LocalConfiguration.current.locales[0]
                     var moment by remember(marker?.id) { mutableStateOf(marker?.target?.toLongOrNull() ?: System.currentTimeMillis()) }
                     var pattern by remember(marker?.id) { mutableStateOf(formats.firstOrNull { (value, _) ->
-                        marker?.text == SimpleDateFormat(value, Locale.getDefault()).format(Date(moment))
+                        marker?.text == SimpleDateFormat(value, locale).format(Date(moment))
                     }?.first ?: "MMMM d, yyyy") }
                     Text("Choose the date and time", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -960,13 +962,13 @@ internal fun NotebookEditor(
                             android.app.DatePickerDialog(context, { _, year, month, day ->
                                 moment = Calendar.getInstance().apply { timeInMillis = moment; set(year, month, day) }.timeInMillis
                             }, current.get(Calendar.YEAR), current.get(Calendar.MONTH), current.get(Calendar.DAY_OF_MONTH)).show()
-                        }) { Text(SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(moment))) }
+                        }) { Text(SimpleDateFormat("MMM d, yyyy", locale).format(Date(moment))) }
                         OutlinedButton(onClick = {
                             val current = Calendar.getInstance().apply { timeInMillis = moment }
                             android.app.TimePickerDialog(context, { _, hour, minute ->
                                 moment = Calendar.getInstance().apply { timeInMillis = moment; set(Calendar.HOUR_OF_DAY, hour); set(Calendar.MINUTE, minute) }.timeInMillis
                             }, current.get(Calendar.HOUR_OF_DAY), current.get(Calendar.MINUTE), false).show()
-                        }) { Text(SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(moment))) }
+                        }) { Text(SimpleDateFormat("h:mm a", locale).format(Date(moment))) }
                     }
                     Text("Display format", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     formats.chunked(2).forEach { row ->
@@ -974,7 +976,7 @@ internal fun NotebookEditor(
                             row.forEach { (value, label) -> FilterChip(selected = pattern == value, onClick = { pattern = value }, label = { Text(label, fontSize = 11.sp) }) }
                         }
                     }
-                    val preview = SimpleDateFormat(pattern, Locale.getDefault()).format(Date(moment))
+                    val preview = SimpleDateFormat(pattern, locale).format(Date(moment))
                     Text("Preview: $preview", fontSize = 14.sp)
                     Button(onClick = {
                         val updated = marker?.copy(text = preview, target = moment.toString())
@@ -1318,7 +1320,9 @@ internal fun NotebookEditor(
                 // Phones and narrow windows: the title gives way and fewer brushes show, so page controls always fit.
                 val screenWidthDp = LocalConfiguration.current.screenWidthDp
                 val compactBar = screenWidthDp < 600
-                val maxBrushes = if (compactBar) ((screenWidthDp - 290) / 36).coerceIn(1, 5) else 5
+                // The other controls take ~312dp (focus, back, eraser, undo, redo, page controls); each brush
+                // takes 36dp minus the last 4dp gap. More brushes overflow the row into the back button.
+                val maxBrushes = if (compactBar) ((screenWidthDp - 308) / 36).coerceIn(1, 5) else 5
                 Row(Modifier.fillMaxWidth().height(54.dp).background(Color(0xFFFAFAFA)), verticalAlignment = Alignment.CenterVertically) {
                     InkToolButton(InkIcon.Expand, "Focus mode", { focusMode = true }, Modifier.width(48.dp), buttonSize = 44.dp)
                     Box(Modifier.width(1.dp).fillMaxHeight().background(ChromeLine))

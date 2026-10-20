@@ -7,7 +7,7 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Folio',
-			description: 'Handwritten notes and eReader for Android tablets.',
+			description: 'Handwritten notes and eReader for Android.',
 			logo: { src: './src/assets/brand/folio-icon-primary.svg' },
 			customCss: ['./src/styles/brand.css'],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/allient/folio' }],
@@ -18,6 +18,7 @@ export default defineConfig({
 				{ label: 'Investigations', items: [{ autogenerate: { directory: 'investigations' } }] },
 				{ label: 'Roadmap', items: [{ autogenerate: { directory: 'roadmap' } }] },
 				{ label: 'Testing', items: [{ autogenerate: { directory: 'testing' } }] },
+				{ label: 'Publishing', items: [{ autogenerate: { directory: 'publishing' } }] },
 				{ label: 'Brand', slug: 'brand' },
 			],
 		}),

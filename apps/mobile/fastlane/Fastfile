@@ -1,0 +1,87 @@
+# Folio on Google Play. Run from apps/mobile: `fastlane <lane>` (or the `just play-*` recipes at the repo root).
+#
+#   internal    build a signed AAB and upload it to Internal testing
+#   beta        same, to Closed testing (track "alpha")
+#   production  same, to Production (staged rollout with ROLLOUT, default 20%)
+#   promote     move the latest Internal build to Production without rebuilding
+#   metadata    upload store listing text and images only (fastlane/metadata/android)
+#   aab         build the signed AAB locally, no upload
+#
+# Signing comes from apps/mobile/keystore.properties or the FOLIO_UPLOAD_* environment variables.
+# While the app has never been published, Play only accepts draft releases: set RELEASE_STATUS=draft.
+
+default_platform(:android)
+
+TRACKS = %w[internal alpha beta production].freeze
+
+platform :android do
+  desc "Next version code: one above the highest code on any Play track"
+  private_lane :next_version_code do
+    codes = TRACKS.flat_map do |track|
+      google_play_track_version_codes(track: track)
+    rescue StandardError
+      []
+    end
+    (codes.max || 0) + 1
+  end
+
+  desc "Build the signed release AAB"
+  lane :aab do |options|
+    code = options[:version_code] || (ENV["FOLIO_VERSION_CODE"] || next_version_code).to_i
+    name = (ENV["FOLIO_VERSION_NAME"].to_s.empty? ? nil : ENV["FOLIO_VERSION_NAME"].delete_prefix("v")) ||
+           options[:version_name] || "1.0.#{code}"
+    UI.message("Building Folio #{name} (#{code})")
+    gradle(
+      task: ":androidApp:bundleRelease",
+      project_dir: ".",
+      properties: { "versionCode" => code.to_s, "versionName" => name },
+    )
+    aab = File.expand_path("../androidApp/build/outputs/bundle/release/androidApp-release.aab", __dir__)
+    lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH] = aab
+    UI.user_error!("The AAB is not signed: add keystore.properties or FOLIO_UPLOAD_* variables") unless sh("jarsigner -verify '#{aab}' 2>&1 || true", log: false).include?("jar verified")
+    aab
+  end
+
+  def upload(track, extra = {})
+    aab
+    upload_to_play_store({
+      track: track,
+      aab: lane_context[SharedValues::GRADLE_AAB_OUTPUT_PATH],
+      release_status: ENV.fetch("RELEASE_STATUS", "completed"),
+      in_app_update_priority: ENV.fetch("UPDATE_PRIORITY", "0").to_i,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    }.merge(extra))
+  end
+
+  desc "Upload to Internal testing"
+  lane(:internal) { upload("internal") }
+
+  desc "Upload to Closed testing"
+  lane(:beta) { upload("alpha") }
+
+  desc "Upload to Production as a staged rollout"
+  lane :production do
+    status = ENV.fetch("RELEASE_STATUS", "inProgress")
+    upload("production", release_status: status, rollout: (status == "inProgress" ? ENV.fetch("ROLLOUT", "0.2") : nil))
+  end
+
+  desc "Promote the latest Internal build to Production"
+  lane :promote do
+    upload_to_play_store(
+      track: "internal",
+      track_promote_to: "production",
+      release_status: ENV.fetch("RELEASE_STATUS", "completed"),
+      skip_upload_changelogs: true,
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+    )
+  end
+
+  desc "Upload the store listing (text, icon, feature graphic, screenshots)"
+  lane :metadata do
+    upload_to_play_store(skip_upload_apk: true, skip_upload_aab: true, skip_upload_changelogs: true)
+  end
+end

@@ -20,6 +20,7 @@ import androidx.work.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -525,8 +526,10 @@ class LocalBackupWorker(context: Context, parameters: WorkerParameters) : Corout
                 if (!store.isCurrent(settings)) throw CancellationException("Local backup settings changed")
             }
             Result.success()
-        } catch (cancelled: CancellationException) { throw cancelled }
-        catch (error: Exception) {
+        } catch (cancelled: CancellationException) {
+            // Settings changed mid-copy: the new settings schedule their own backup, so this run just ends.
+            if (isActive) Result.success() else throw cancelled
+        } catch (error: Exception) {
             store.error(settings, if (error is SecurityException) "Folder access is no longer available. Choose the backup folder again."
                 else error.message?.takeIf { it.isNotBlank() } ?: "Could not create the backup. Check the folder and available storage.")
             if (error is IOException && runAttemptCount < 2) Result.retry() else Result.failure()
@@ -605,14 +608,20 @@ internal class LocalBackupViewModel(application: Application) : AndroidViewModel
                     val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                     val previous = store.read()
                     context.contentResolver.takePersistableUriPermission(uri, flags)
-                    val parent = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
                     var label = LocalBackupStore.folderLabel(uri)
-                    context.contentResolver.query(parent, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE,
-                        DocumentsContract.Document.COLUMN_FLAGS), null, null, null)?.use { cursor ->
-                        require(cursor.moveToFirst() && cursor.getString(1) == DocumentsContract.Document.MIME_TYPE_DIR) { "Choose a folder on this device." }
-                        require(cursor.getInt(2) and DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE != 0) { "Folio cannot write to this folder. Choose another folder." }
-                        if (label == "Selected folder") label = cursor.getString(0)
-                    } ?: error("Could not open this folder. Choose another folder.")
+                    try {
+                        val parent = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
+                        context.contentResolver.query(parent, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE,
+                            DocumentsContract.Document.COLUMN_FLAGS), null, null, null)?.use { cursor ->
+                            require(cursor.moveToFirst() && cursor.getString(1) == DocumentsContract.Document.MIME_TYPE_DIR) { "Choose a folder on this device." }
+                            require(cursor.getInt(2) and DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE != 0) { "Folio cannot write to this folder. Choose another folder." }
+                            if (label == "Selected folder") label = cursor.getString(0)
+                        } ?: error("Could not open this folder. Choose another folder.")
+                    } catch (error: Exception) {
+                        // Do not keep a grant for a folder that was rejected (apps have a limited number of grants).
+                        if (previous.folderUri != uri.toString()) runCatching { context.contentResolver.releasePersistableUriPermission(uri, flags) }
+                        throw error
+                    }
                     store.configure(uri, label, enable)
                     LocalBackupScheduler.disable(context)
                     if (previous.folderUri != null && previous.folderUri != uri.toString()) runCatching {

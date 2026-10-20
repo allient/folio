@@ -453,7 +453,7 @@ internal class NotebookStorage(context: Context) {
                         .put("texture", stroke.texture).put("grain", stroke.grain).put("angle", stroke.angle).put("variant", stroke.variant)
                         .put("engine", stroke.engine).put("filled", stroke.filled).put("fillColor", stroke.fillColor ?: JSONObject.NULL).put("lineStyle", stroke.lineStyle).put("brush", stroke.brush).put("color", stroke.color).put("width", finite(stroke.width, 3f).toDouble())
                         .put("points", array(stroke.points.map { point ->
-                            JSONObject().put("x", finite(point.x).toDouble()).put("y", finite(point.y).toDouble()).put("pressure", finite(point.pressure).toDouble()).put("elapsedMillis", point.elapsedMillis)
+                            JSONObject().put("x", compact(point.x)).put("y", compact(point.y)).put("pressure", compact(point.pressure)).put("elapsedMillis", point.elapsedMillis)
                         }))
                 })).put("texts", array(page.texts.map { text ->
                     JSONObject().put("id", text.id).put("text", text.text).put("x", finite(text.x).toDouble()).put("y", finite(text.y).toDouble())
@@ -485,6 +485,14 @@ internal class NotebookStorage(context: Context) {
     private fun JSONObject.number(key: String, default: Float, min: Float, max: Float): Float =
         finite(optDouble(key, default.toDouble()).toFloat(), default).coerceIn(min, max)
     private fun finite(value: Float, default: Float = 0f) = if (value.isFinite()) value else default
+    /**
+     * Stroke points rounded to 5 decimals (far below a pixel). A Float widened to Double prints
+     * 17 digits, which made pages ~2x larger and forced org.json onto its slow BigInteger parse path.
+     */
+    private fun compact(value: Float): Double {
+        val number = finite(value).toDouble()
+        return if (kotlin.math.abs(number) < 1e9) Math.round(number * 100_000.0) / 100_000.0 else number
+    }
     private fun JSONObject.objects(key: String): List<JSONObject> {
         if (!has(key)) return emptyList()
         val items = getJSONArray(key)

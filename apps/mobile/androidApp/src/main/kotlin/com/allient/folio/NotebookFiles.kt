@@ -301,6 +301,7 @@ internal class NotebookFiles(private val context: Context) {
                 }
                 ReaderStore(context).use { it.restore(reader) }
             }
+            staging.delete() // Only removes the folder when the backup had no assets.
             return ImportedLibrary(notebooks, com.allient.folio.home.LibrarySettings(folders, downloaded))
         } catch (error: Throwable) {
             staging.deleteRecursively()
@@ -423,6 +424,7 @@ internal class NotebookFiles(private val context: Context) {
             val note = deserializeNotebook(json.toString())
             val pageIds = note.pages.map { UUID.randomUUID().toString() }
             val lastViewedIndex = note.pages.indexOfFirst { it.id == note.lastViewedPageId }
+            staging.delete() // Only removes the folder when the backup had no assets.
             return note.copy(
                 id = UUID.randomUUID().toString(),
                 updatedAt = System.currentTimeMillis(), deletedAt = 0,
@@ -520,13 +522,16 @@ internal class NotebookFiles(private val context: Context) {
     }
 
     fun writeToUri(file: File, destination: Uri) {
-        requireNotNull(context.contentResolver.openOutputStream(destination, "wt")) { "Cannot save this document." }.use { out -> file.inputStream().use { it.copyTo(out) } }
+        // Some providers (cloud drives) reject the truncate mode; the destination is a freshly created document.
+        val stream = runCatching { context.contentResolver.openOutputStream(destination, "wt") }.getOrNull()
+            ?: context.contentResolver.openOutputStream(destination, "w")
+        requireNotNull(stream) { "Cannot save this document." }.use { out -> file.inputStream().use { it.copyTo(out) } }
     }
 
     private fun contentUri(file: File) = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
     private fun input(uri: Uri) = requireNotNull(context.contentResolver.openInputStream(uri)) { "Cannot open the selected document." }
     private fun exportFile(title: String, extension: String) = File(exportDir, "${safeName(title)}-${UUID.randomUUID()}.$extension")
-    private fun safeName(name: String) = name.replace(Regex("[^A-Za-z0-9._ -]"), "_").take(100).ifBlank { "Notebook" }
+    private fun safeName(name: String) = name.toSafeFileName("Notebook")
 
     private fun boundedCopy(input: InputStream, output: OutputStream, limit: Long): Long {
         val buffer = ByteArray(8192); var total = 0L

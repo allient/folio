@@ -57,7 +57,7 @@ internal fun SectionHeader(key: String, title: String, count: Int, foldable: Boo
 
 @Composable
 internal fun MenuCaret(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier.size(32.dp).clip(CircleShape).clickable(onClick = onClick).semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
+    Box(modifier.size(40.dp).clip(CircleShape).clickable(onClick = onClick).semantics { contentDescription = label }, contentAlignment = Alignment.Center) {
         HomeSymbol(Symbol.ChevronDown, Modifier.size(15.dp))
     }
 }
@@ -85,9 +85,9 @@ internal fun LibraryTile(
             preview()
             if (selected != null) SelectionMark(selected, Modifier.align(Alignment.TopEnd).padding(7.dp))
         }
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(title, Modifier.weight(1f), fontSize = 13.sp, lineHeight = 17.sp, fontWeight = FontWeight.Medium, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (selected == null) MenuCaret(menuLabel, onMenu, Modifier.offset(x = 6.dp))
+            if (selected == null) MenuCaret(menuLabel, onMenu, Modifier.offset(x = 10.dp))
         }
         Text(subtitle, fontSize = 10.sp, lineHeight = 13.sp, color = subtitleColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
     } else {

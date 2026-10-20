@@ -17,14 +17,18 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 internal data class PdfSelection(val anchor: String, val text: String)
-internal data class ReaderSearchResult(val label: String, val anchor: String)
+internal data class ReaderSearchResult(val label: String, val anchor: String, val quote: String = "")
 internal data class PdfTextLine(val selection: PdfSelection, val bounds: RectF)
 
 /** Native pages/text handles are scoped to one operation; no full-document bitmap conversion. */
 internal class PdfReaderSession(file: File, password: String? = null) : Closeable {
     private val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-    private val document = try { PdfiumCore().newDocument(descriptor, password) } catch (error: Throwable) { descriptor.close(); throw error }
-    val pageCount = document.getPageCount().also { require(it > 0) { "PDF has no pages" } }
+    private val document = try { PdfiumCore().newDocument(descriptor, password) } catch (error: Throwable) {
+        descriptor.close()
+        if (error is io.legere.pdfiumandroid.api.PdfPasswordException) throw IllegalArgumentException("This PDF is password protected. Remove the password in another app, then import it again.", error)
+        throw error
+    }
+    val pageCount = document.getPageCount().also { if (it <= 0) { document.close(); descriptor.close(); throw IllegalArgumentException("This PDF has no pages.") } }
     private var closed = false
     private data class OcrWord(val text: String, val box: RectF)
     private val ocrPages = linkedMapOf<Int, List<OcrWord>>()
@@ -53,16 +57,31 @@ internal class PdfReaderSession(file: File, password: String? = null) : Closeabl
         if (closed) return emptyList()
         return document.openPage(page)!!.use { p -> p.openTextPage().use { text ->
             val result = mutableListOf<PdfTextLine>()
-            val count = text.textPageCountRects(0, text.textPageCountChars().coerceAtMost(50000))
-            for (i in 0 until count.coerceAtMost(1000)) text.textPageGetRect(i)?.let { r ->
-                val quote = text.textPageGetBoundedText(r, 3000).orEmpty().trim()
-                if (quote.isNotEmpty()) {
-                    val a = p.mapPageCoordsToDevice(0,0,10000,10000,0,r.left.toDouble(),r.top.toDouble())
-                    val b = p.mapPageCoordsToDevice(0,0,10000,10000,0,r.right.toDouble(),r.bottom.toDouble())
-                    val anchor = JSONObject().put("page", page).put("rects",JSONArray().put(JSONArray(listOf(r.left,r.top,r.right,r.bottom)))).toString()
-                    result += PdfTextLine(PdfSelection(anchor,quote),RectF(min(a.x,b.x)/10000f,min(a.y,b.y)/10000f,max(a.x,b.x)/10000f,max(a.y,b.y)/10000f))
+            val chars = text.textPageCountChars().coerceAtMost(50000)
+            // Split on the line breaks Pdfium generates, so each line's quote holds exactly its own
+            // characters. Reading text by rectangle instead picked up glyphs of neighbouring lines.
+            fun addLine(from: Int, to: Int) {
+                if (to < from || result.size >= 1000) return
+                val quote = text.textPageGetText(from, to - from + 1).orEmpty().collapseWhitespace()
+                if (quote.isEmpty()) return
+                var left = Float.MAX_VALUE; var top = -Float.MAX_VALUE; var right = -Float.MAX_VALUE; var bottom = Float.MAX_VALUE
+                val rects = JSONArray()
+                for (i in 0 until text.textPageCountRects(from, to - from + 1)) text.textPageGetRect(i)?.let { r ->
+                    rects.put(JSONArray(listOf(r.left, r.top, r.right, r.bottom)))
+                    left = min(left, r.left); right = max(right, r.right); top = max(top, r.top); bottom = min(bottom, r.bottom)
                 }
+                if (rects.length() == 0) return
+                val a = p.mapPageCoordsToDevice(0,0,10000,10000,0,left.toDouble(),top.toDouble())
+                val b = p.mapPageCoordsToDevice(0,0,10000,10000,0,right.toDouble(),bottom.toDouble())
+                val anchor = JSONObject().put("page", page).put("rects", rects).toString()
+                result += PdfTextLine(PdfSelection(anchor,quote),RectF(min(a.x,b.x)/10000f,min(a.y,b.y)/10000f,max(a.x,b.x)/10000f,max(a.y,b.y)/10000f))
             }
+            var lineStart = 0
+            for (i in 0 until chars) {
+                val c = text.textPageGetUnicode(i)
+                if (c == '\n' || c == '\r') { addLine(lineStart, i - 1); lineStart = i + 1 }
+            }
+            addLine(lineStart, chars - 1)
             result
         } }
     }
@@ -148,9 +167,13 @@ internal class PdfReaderSession(file: File, password: String? = null) : Closeabl
                     val index = find.getSchResultIndex(); val count = find.getSchCount()
                     val rects = JSONArray()
                     for (r in 0 until text.textPageCountRects(index, count)) text.textPageGetRect(r)?.let { rects.put(JSONArray(listOf(it.left, it.top, it.right, it.bottom))) }
-                    val start = (index - 40).coerceAtLeast(0)
-                    val snippet = text.textPageGetText(start, min(count + 100, text.textPageCountChars() - start)).orEmpty()
-                    results += ReaderSearchResult("Page ${page + 1} · $snippet", JSONObject().put("page", page).put("rects", rects).toString())
+                    val start = (index - 50).coerceAtLeast(0)
+                    val raw = text.textPageGetText(start, min(index - start + count + 70, text.textPageCountChars() - start)).orEmpty()
+                    // One readable line, cut at word boundaries around the match.
+                    var snippet = raw.collapseWhitespace()
+                    if (start > 0) snippet = "…" + snippet.substringAfter(' ', snippet)
+                    if (start + raw.length < text.textPageCountChars()) snippet = snippet.substringBeforeLast(' ', snippet) + "…"
+                    results += ReaderSearchResult("Page ${page + 1} · $snippet", JSONObject().put("page", page).put("rects", rects).toString(), text.textPageGetText(index, count).orEmpty())
                 }
             }
             results
@@ -202,7 +225,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         val page = bounds();val r = textLines[index].bounds
         return Rect((page.left+r.left*page.width()).toInt(),(page.top+r.top*page.height()).toInt(),(page.left+r.right*page.width()).toInt().coerceAtLeast(1),(page.top+r.bottom*page.height()).toInt().coerceAtLeast(1))
     }
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var renderJob: Job? = null
     private var projectionJob: Job? = null
     private var bitmap: Bitmap? = null
@@ -227,7 +250,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     }
     private fun eraseAt(x: Float, y: Float) {
         val point = normalize(x, y)
-        val tolerance = 16f * resources.displayMetrics.density / bounds().width()
+        val tolerance = dp(16f) / bounds().width()
         projections.filter { it.annotation.kind == AnnotationKind.INK && it.annotation.id !in erasedInGesture }.forEach { projection ->
             val hit = projection.groups.any { points ->
                 points.zipWithNext().any { (a, b) ->
@@ -250,7 +273,14 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     private var drawing = false
     private val stroke = mutableListOf<PointF>()
     private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
-        override fun onScale(detector: ScaleGestureDetector): Boolean { zoom = (zoom * detector.scaleFactor).coerceIn(1f, 4f); invalidate(); return true }
+        override fun onScale(detector: ScaleGestureDetector): Boolean {
+            // Zoom around the fingers: the page point under the focus stays under it.
+            val next = (zoom * detector.scaleFactor).coerceIn(1f, 4f)
+            val ratio = next / zoom
+            val fx = detector.focusX - width / 2f; val fy = detector.focusY - height / 2f
+            panX = fx - (fx - panX) * ratio; panY = fy - (fy - panY) * ratio
+            zoom = next; clampPan(); invalidate(); return true
+        }
         override fun onScaleEnd(detector: ScaleGestureDetector) { scheduleRender() }
     })
     init {
@@ -266,13 +296,22 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         if (this.annotations != annotations) { this.annotations = annotations; updateProjections() }
     }
     private fun bounds(): RectF {
-        val inset = 24f + displayMargin * resources.displayMetrics.density
+        val inset = 24f + dp(displayMargin)
         val w = min(width.toFloat() - inset, (height - inset) * aspect).coerceAtLeast(1f) * zoom
         val h = w / aspect
         return pageBounds.apply { set((width - w) / 2 + panX, (height - h) / 2 + panY, (width + w) / 2 + panX, (height + h) / 2 + panY) }
     }
+    /** Keeps a zoomed page covering the view: it can be panned to its edges, never off screen. */
+    private fun clampPan() {
+        val saved = zoom; val pannedX = panX; val pannedY = panY
+        panX = 0f; panY = 0f
+        val b = bounds()
+        val limitX = ((b.width() - width) / 2f).coerceAtLeast(0f)
+        val limitY = ((b.height() - height) / 2f).coerceAtLeast(0f)
+        zoom = saved; panX = pannedX.coerceIn(-limitX, limitX); panY = pannedY.coerceIn(-limitY, limitY)
+    }
     private fun normalize(x: Float, y: Float): PointF { val b = bounds(); return PointF(((x - b.left) / b.width()).coerceIn(0f, 1f), ((y - b.top) / b.height()).coerceIn(0f, 1f)) }
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { scheduleRender() }
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) { clampPan(); scheduleRender() }
     private fun scheduleRender() {
         val current = session ?: return
         if (width <= 0 || height <= 0) return
@@ -282,7 +321,8 @@ internal class PdfPageReaderView(context: Context) : View(context) {
             try {
                 val ratio = withContext(Dispatchers.IO) { current.aspect(index) }
                 aspect = ratio
-                val rendered = withContext(Dispatchers.IO) { current.render(index, (bounds().width()).toInt()) }
+                val target = bounds().width().toInt()
+                val rendered = withContext(Dispatchers.IO) { current.render(index, target) }
                 ensureActive(); bitmap = rendered; invalidate(); updateProjections()
                 textLines = withContext(Dispatchers.IO) { current.textLines(index) }
                 contentDescription = "PDF page ${index+1}. ${if(textLines.isEmpty()) "Scanned page. Use Recognize text to enable highlighting." else "${textLines.size} text passages. Select a passage to annotate."}"
@@ -320,7 +360,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
             } else if (annotation.kind == AnnotationKind.HIGHLIGHT || annotation.kind == AnnotationKind.UNDERLINE) groups.forEach { points ->
                 val a=points[0];val z=points[1]
                 annotationBounds.set(b.left+min(a.x,z.x)*b.width(), b.top+min(a.y,z.y)*b.height(), b.left+max(a.x,z.x)*b.width(), b.top+max(a.y,z.y)*b.height())
-                if (annotation.kind == AnnotationKind.UNDERLINE) { paint.strokeWidth = 2f * resources.displayMetrics.density; canvas.drawLine(annotationBounds.left,annotationBounds.bottom,annotationBounds.right,annotationBounds.bottom,paint) }
+                if (annotation.kind == AnnotationKind.UNDERLINE) { paint.strokeWidth = dp(2f); canvas.drawLine(annotationBounds.left,annotationBounds.bottom,annotationBounds.right,annotationBounds.bottom,paint) }
                 else { paint.alpha = 90; canvas.drawRect(annotationBounds, paint); paint.alpha = 255 }
             }
         }
@@ -337,8 +377,8 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         // those edge bands on ACTION_DOWN so the controls receive the gesture instead
         // of the page reader consuming it underneath.
         if (event.actionMasked == MotionEvent.ACTION_DOWN && chromeVisible) {
-            val topControls = 88f * resources.displayMetrics.density
-            val bottomControls = 176f * resources.displayMetrics.density
+            val topControls = dp(ReaderChromeBands.TOP_DP)
+            val bottomControls = dp(ReaderChromeBands.BOTTOM_DP)
             if (event.y < topControls || event.y > height - bottomControls) return false
         }
         if (tool == "Read") scaleDetector.onTouchEvent(event)
@@ -348,7 +388,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
             MotionEvent.ACTION_MOVE -> {
                 if (event.pointerCount == 1 && !scaleDetector.isInProgress) {
                     if (tool == "Eraser" && drawing) eraseAt(event.x, event.y)
-                    if (tool == "Read" && zoom > 1f) { panX = (panX + event.x - previous.x).coerceIn(-width * zoom / 2, width * zoom / 2); panY = (panY + event.y - previous.y).coerceIn(-height * zoom / 2,height * zoom / 2) }
+                    if (tool == "Read" && zoom > 1f) { panX += event.x - previous.x; panY += event.y - previous.y; clampPan() }
                     if (tool == "Pen" && drawing && stroke.size < 10000) {
                         for (i in 0 until event.historySize) stroke += normalize(event.getHistoricalX(i),event.getHistoricalY(i))
                         stroke += normalize(event.x,event.y)
@@ -360,7 +400,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                 val current = session ?: return true; val index = page
                 val dx = event.x - gestureStartX
                 val dy = event.y - gestureStartY
-                val isTap = drawing && abs(dx) < 18f * resources.displayMetrics.density && abs(dy) < 18f * resources.displayMetrics.density
+                val isTap = drawing && abs(dx) < dp(18f) && abs(dy) < dp(18f)
                 val held = event.eventTime - downAt >= android.view.ViewConfiguration.getLongPressTimeout()
                 val point = normalize(event.x,event.y)
                 val touchedMark = if (held && tool != "Pen") projections.firstOrNull { projection ->
@@ -393,7 +433,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                     }) } catch (error: Exception) { if (error is CancellationException) throw error; onError(error.message ?: "Could not select text") } }
                 }
                 if (!pageTapHandled && drawing && tool == "Read" && zoom <= 1.01f) {
-                    val threshold = max(48f * resources.displayMetrics.density, width * .12f)
+                    val threshold = max(dp(48f), width * .12f)
                     if (abs(dx) >= threshold && abs(dx) > abs(dy) * 1.25f) onPageTurn(dx < 0f)
                 }
                 if (!pageTapHandled && drawing && tool == "Pen" && stroke.size > 1) {
@@ -409,5 +449,10 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         return true
     }
     override fun performClick(): Boolean { super.performClick(); return true }
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Compose can detach and re-attach the same view; a cancelled scope would leave the page blank.
+        if (!scope.isActive) { scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate); scheduleRender(); updateProjections() }
+    }
     override fun onDetachedFromWindow() { scope.cancel(); bitmap = null; super.onDetachedFromWindow() }
 }

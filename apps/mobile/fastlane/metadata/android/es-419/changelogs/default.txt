@@ -1,0 +1,1 @@
+Primera versión de Folio: notas a mano, lienzo infinito, lector de PDF y EPUB y copias de seguridad inteligentes.

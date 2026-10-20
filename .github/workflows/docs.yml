@@ -1,0 +1,54 @@
+name: Docs
+
+# Builds the Astro site in apps/docs and deploys it to Cloudflare (Workers Static Assets).
+# One environment: every push to main is live. Pull requests only build.
+on:
+  push:
+    branches: [main]
+    paths: ['apps/docs/**', 'packages/brand/**', 'package.json', 'bun.lock', '.github/workflows/docs.yml']
+  pull_request:
+    paths: ['apps/docs/**', 'packages/brand/**', 'package.json', 'bun.lock', '.github/workflows/docs.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v6
+      - name: Set up Bun
+        id: setup-bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: Install dependencies
+        id: install
+        run: bun install --frozen-lockfile
+      - name: Build docs
+        id: build
+        run: bun run build:docs
+      - name: Deploy to Cloudflare
+        id: deploy
+        if: github.event_name != 'pull_request'
+        working-directory: apps/docs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bunx wrangler deploy
+      # Posts the result of every run (success, failure or cancelled) to Slack.
+      - uses: act10ns/slack@v2.1.0
+        with:
+          status: ${{ job.status }}
+          steps: ${{ toJson(steps) }}
+          channel: '#eventos'
+        if: always()

@@ -1,0 +1,13 @@
+{
+	"$schema": "../../node_modules/wrangler/config-schema.json",
+	// Static Astro site served from Workers Static Assets. One environment only.
+	"name": "folio-docs",
+	"compatibility_date": "2026-10-01",
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "404-page",
+		"html_handling": "auto-trailing-slash"
+	},
+	"workers_dev": true,
+	"preview_urls": false
+}

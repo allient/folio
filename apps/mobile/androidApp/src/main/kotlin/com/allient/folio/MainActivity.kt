@@ -38,6 +38,7 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     private val penFilter = PenPressureFilter()
+    private lateinit var updates: PlayUpdates
 
     override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean = penFilter.dispatch(event) { super.dispatchTouchEvent(it) }
 
@@ -50,16 +51,35 @@ class MainActivity : ComponentActivity() {
         val backup = ViewModelProvider(this)[LocalBackupViewModel::class.java]
         val reader = ViewModelProvider(this)[ReaderViewModel::class.java]
         LocalBackupScheduler.observeProcess(this)
+        updates = PlayUpdates(this)
+        if (savedInstanceState == null) updates.check()
         setContent {
-            androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) { FolioApp(repository, backup, reader) }
+            androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) {
+                Box(Modifier.fillMaxSize()) {
+                    FolioApp(repository, backup, reader)
+                    UpdateReadyBar(updates)
+                }
+            }
         }
-        intent.data?.let(reader::import)
+        // Recreation (rotation, process restore) or relaunch from Recents delivers the same intent again.
+        val fromHistory = intent.flags and android.content.Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        if (savedInstanceState == null && !fromHistory && intent.action == android.content.Intent.ACTION_VIEW) intent.data?.let(reader::import)
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intent.data?.let { ViewModelProvider(this)[ReaderViewModel::class.java].import(it) }
+        if (intent.action == android.content.Intent.ACTION_VIEW) intent.data?.let { ViewModelProvider(this)[ReaderViewModel::class.java].import(it) }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updates.resume()
+    }
+
+    override fun onDestroy() {
+        updates.dispose()
+        super.onDestroy()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -111,7 +131,8 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
     var enableAfterFolderChoice by rememberSaveable { mutableStateOf(true) }
     var libraryRestoreComplete by remember { mutableStateOf<Int?>(null) }
     var backupExportMessage by remember { mutableStateOf<String?>(null) }
-    var pendingLibraryBackup by remember { mutableStateOf<java.io.File?>(null) }
+    // Saveable: the save picker can outlive this composition (rotation while it is open).
+    var pendingLibraryBackup by rememberSaveable { mutableStateOf<String?>(null) }
     val notebooks = repository.notebooks
     val libraryStateHolder = rememberSaveableStateHolder()
     val importDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -131,7 +152,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
         if (uri != null) backup.chooseFolder(uri, enableAfterFolderChoice)
     }
     val saveLibraryBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
-        val archive = pendingLibraryBackup
+        val archive = pendingLibraryBackup?.let { java.io.File(it) }
         pendingLibraryBackup = null
         if (uri == null) archive?.delete() else if (archive != null) scope.launch {
             try {
@@ -148,7 +169,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
         scope.launch {
             try {
                 val archive = withContext(Dispatchers.IO) { files.exportLibraryBackup(repository.notebooks, repository.library) }
-                pendingLibraryBackup = archive
+                pendingLibraryBackup = archive.absolutePath
                 val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
                 saveLibraryBackup.launch("Folio-Full-Library-$stamp.${FolioFormat.EXTENSION}")
             } catch (error: CancellationException) { throw error }

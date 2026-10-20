@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
@@ -110,12 +111,14 @@ fun NotebookHome(
     var drawerOpen by rememberSaveable { mutableStateOf(false) }
     var sidebarPinned by rememberSaveable { mutableStateOf(true) }
     var selecting by rememberSaveable { mutableStateOf(false) }
-    var selected by remember { mutableStateOf(setOf<String>()) }
+    var selected by rememberSaveable(saver = listSaver<MutableState<Set<String>>, String>({ it.value.toList() }, { mutableStateOf(it.toSet()) })) { mutableStateOf(setOf()) }
     var folds by remember { mutableStateOf(mapOf<String, Boolean>()) }
-    var bulkMove by remember { mutableStateOf(false) }
-    var bulkDelete by remember { mutableStateOf(false) }
-    var folderDialog by remember { mutableStateOf(false) }
-    var editedFolder by remember { mutableStateOf<NoteFolder?>(null) }
+    var bulkMove by rememberSaveable { mutableStateOf(false) }
+    var bulkDelete by rememberSaveable { mutableStateOf(false) }
+    var folderDialog by rememberSaveable { mutableStateOf(false) }
+    // Saved by id so the folder editor survives rotation; the folder itself is looked up from settings.
+    var editedFolderId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editedFolder = editedFolderId?.let { id -> settings.folders.firstOrNull { it.id == id } }
     var deleteId by rememberSaveable { mutableStateOf<String?>(null) }
     var detailsNoteId by rememberSaveable { mutableStateOf<String?>(null) }
     var detailsFolderId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -132,13 +135,15 @@ fun NotebookHome(
     var draftName by rememberSaveable { mutableStateOf("") }
     var infiniteCanvas by rememberSaveable { mutableStateOf(false) }
     var infinitePattern by rememberSaveable { mutableStateOf(InfinitePaper().template) }
+    var notice by remember { mutableStateOf<String?>(null) }
     val exitSelection = { selecting = false; selected = emptySet() }
-    DisposableEffect(screen, folderId, searchMode, tag, drawerOpen, selecting, view) {
+    DisposableEffect(screen, folderId, searchMode, tag, drawerOpen, selecting, view, dragArmedId) {
         onBackAction(when {
             drawerOpen -> ({ drawerOpen = false })
             screen == "hub-create" -> ({ screen = "create" })
             screen != "home" -> ({ screen = "home" })
             selecting -> exitSelection
+            dragArmedId != null -> ({ dragArmedId = null; notice = null })
             searchMode.isNotEmpty() || tag != null -> ({ searchMode = ""; search = ""; tag = null })
             folderId != null -> ({ folderId = null; dragArmedId = null })
             view != HomeView.Home -> ({ viewName = HomeView.Home.name })
@@ -161,7 +166,6 @@ fun NotebookHome(
     var dragId by remember { mutableStateOf<String?>(null) }
     var dragPoint by remember { mutableStateOf(Offset.Zero) }
     var rootOrigin by remember { mutableStateOf(Offset.Zero) }
-    var notice by remember { mutableStateOf<String?>(null) }
     val allTags = liveNotes.flatMap { it.tags }.distinct().sorted()
     val changeScreen: (String) -> Unit = { screen = it; notice = null }
     val query = if (searchMode == "text") search.trim() else ""
@@ -224,7 +228,7 @@ fun NotebookHome(
             view == HomeView.Recent -> "recent"; view == HomeView.Favorites -> "favorites"; else -> "home"
         }
         val sidebar: @Composable (Modifier) -> Unit = { modifier ->
-            HomeSidebar(folders, sidebarKey, trashItems.size, modifier, onCreateFolder = { drawerOpen = false; editedFolder = null; folderDialog = true }, onSelect = { key ->
+            HomeSidebar(folders, sidebarKey, trashItems.size, modifier, onCreateFolder = { drawerOpen = false; editedFolderId = null; folderDialog = true }, onSelect = { key ->
                 drawerOpen = false; exitSelection(); searchMode = ""; search = ""; tag = null; dragArmedId = null; notice = null
                 when {
                     key == "trash" || key == "preferences" || key == "about" -> changeScreen(key)
@@ -259,10 +263,14 @@ fun NotebookHome(
                     "about" -> AboutScreen(appVersion, onBack = { changeScreen("home") })
                     else -> Column(Modifier.fillMaxSize()) {
                         if (selecting) Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 8.dp).testTag("selection-bar"), verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(onClick = exitSelection, modifier = Modifier.testTag("selection-cancel")) { Text("Cancel", color = Ink) }
-                            Text("${selected.size} selected", Modifier.weight(1f).padding(start = 4.dp), fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                            // Phones get icon actions so the selected count keeps room next to five buttons.
+                            if (compactBar) Box(Modifier.testTag("selection-cancel")) { HomeIconButton(Symbol.Close, "Cancel selection", false, exitSelection) }
+                            else TextButton(onClick = exitSelection, modifier = Modifier.testTag("selection-cancel")) { Text("Cancel", color = Ink) }
+                            Text("${selected.size} selected", Modifier.weight(1f).padding(start = 4.dp), fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             val all = selectableKeys.isNotEmpty() && selected.containsAll(selectableKeys)
-                            TextButton(onClick = { selected = if (all) emptySet() else selectableKeys.toSet() }) { Text(if (all) "Clear" else "Select all", color = style.accent) }
+                            val toggleAll = { selected = if (all) emptySet() else selectableKeys.toSet() }
+                            if (compactBar) HomeIconButton(Symbol.Select, if (all) "Clear selection" else "Select all", all, toggleAll)
+                            else TextButton(onClick = toggleAll) { Text(if (all) "Clear" else "Select all", color = style.accent) }
                             HomeIconButton(Symbol.Folder, "Move selected", false, { if (ids("note").isNotEmpty() || ids("book").isNotEmpty()) bulkMove = true else notice = "Select notebooks or books to move" })
                             HomeIconButton(Symbol.Star, "Favorite selected", false, {
                                 val notes = ids("note"); val picked = ids("book")
@@ -440,7 +448,7 @@ fun NotebookHome(
                                 DropdownMenu(fabMenu, { fabMenu = false }, modifier = Modifier.penPressureFilter()) {
                                     DropdownMenuItem(text = { Text("New notebook") }, modifier = Modifier.testTag("home-new-notebook"), leadingIcon = { HomeSymbol(Symbol.Notes, Modifier.size(20.dp)) }, onClick = { fabMenu = false; newNote(false) })
                                     DropdownMenuItem(text = { Text("New infinite canvas") }, modifier = Modifier.testTag("home-new-canvas"), leadingIcon = { HomeSymbol(Symbol.All, Modifier.size(20.dp)) }, onClick = { fabMenu = false; newNote(true) })
-                                    DropdownMenuItem(text = { Text("New folder") }, modifier = Modifier.testTag("home-new-folder"), leadingIcon = { HomeSymbol(Symbol.Folder, Modifier.size(20.dp)) }, onClick = { fabMenu = false; editedFolder = null; folderDialog = true })
+                                    DropdownMenuItem(text = { Text("New folder") }, modifier = Modifier.testTag("home-new-folder"), leadingIcon = { HomeSymbol(Symbol.Folder, Modifier.size(20.dp)) }, onClick = { fabMenu = false; editedFolderId = null; folderDialog = true })
                                     HorizontalDivider(color = HomeHairline)
                                     DropdownMenuItem(text = { Text("Import PDF or EPUB book") }, modifier = Modifier.testTag("home-import-book"), leadingIcon = { HomeSymbol(Symbol.Book, Modifier.size(20.dp)) }, onClick = { fabMenu = false; onImportBook(currentFolder?.id) })
                                     DropdownMenuItem(text = { Text("Import notebook or backup") }, modifier = Modifier.testTag("home-import"), leadingIcon = { HomeSymbol(Symbol.Download, Modifier.size(20.dp)) }, onClick = { fabMenu = false; onImport() })
@@ -492,7 +500,7 @@ fun NotebookHome(
             preview = { modifier -> Box(modifier, contentAlignment = Alignment.Center) { FolderArtwork(folder.color, folder.style, Modifier.size(100.dp, 76.dp)) } },
             onDismiss = { detailsFolderId = null }, actions = listOf(
                 DetailAction(Symbol.Open, "Open") { detailsFolderId = null; screen = "home"; viewName = HomeView.Home.name; folderId = id },
-                DetailAction(Symbol.Rename, "Edit folder") { detailsFolderId = null; editedFolder = folder; folderDialog = true },
+                DetailAction(Symbol.Rename, "Edit folder") { detailsFolderId = null; editedFolderId = folder.id; folderDialog = true },
                 DetailAction(Symbol.Trash, "Delete") { detailsFolderId = null; deleteFolderId = id },
             ))
     } }
@@ -599,7 +607,8 @@ private fun InfinitePaperSection(template: String, onTemplate: (String) -> Unit)
     val paper = remember(template) { InfinitePaper.parse(template) ?: InfinitePaper() }
     var colorMenu by remember { mutableStateOf(false) }
     var spacingMenu by remember { mutableStateOf(false) }
-    Column(Modifier.fillMaxSize()) {
+    // Scrolls so the pattern and colour controls stay reachable on a phone in landscape.
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
         Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Canvas(Modifier.width(96.dp).aspectRatio(.75f).clip(RoundedCornerShape(10.dp)).border(2.dp, Ink, RoundedCornerShape(10.dp)).testTag("infinite-paper-preview")) { drawInfinitePaper(paper, 1.6f) }
             Column(Modifier.weight(1f).padding(start = 14.dp)) {

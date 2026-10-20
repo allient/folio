@@ -106,14 +106,15 @@ import androidx.compose.ui.unit.sp
         HorizontalDivider()
         Text("Colors", Modifier.padding(vertical = 16.dp), style = MaterialTheme.typography.titleSmall)
         val colors = listOf(0xFF242424, 0xFF666666, 0xFF999999, 0xFFFFFFFF, 0xFFB63838, 0xFF16866F, 0xFF315CBB, 0xFFE9C54A)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            colors.forEach { value ->
+        // Two rows of four so the swatches fit a 360 dp phone without clipping.
+        colors.chunked(4).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            row.forEach { value ->
                 Box(Modifier.size(44.dp).semantics { contentDescription = "Pen color ${value.toString(16)}"; selected = color == value.toInt() }
                     .clickable(role = Role.Button) { onColor(value.toInt()) }.padding(5.dp)
                     .border(if (color == value.toInt()) 2.dp else 1.dp, MaterialTheme.colorScheme.onSurface, CircleShape).padding(3.dp)
                     .background(Color(value), CircleShape))
             }
-        }
+        } }
         Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Line width", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
             Text("${(width * 1000).toInt()}")

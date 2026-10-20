@@ -8,6 +8,8 @@ plugins {
 }
 
 kotlin {
+    // Android ships today. The iOS targets stay so commonMain can't drift onto Android-only APIs;
+    // Android builds don't compile them. Check with :shared:compileKotlinIosSimulatorArm64.
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -17,7 +19,7 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     android {
        namespace = "com.allient.folio.shared"
        compileSdk = libs.versions.android.compileSdk.get().toInt()
