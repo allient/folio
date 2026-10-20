@@ -17,6 +17,12 @@ TRACKS = %w[internal alpha beta production].freeze
 platform :android do
   desc "Next version code: one above the highest code on any Play track"
   private_lane :next_version_code do
+    # Before the Play API key exists (first manual upload), there is nothing to ask: start at 1.
+    key = File.expand_path(ENV.fetch("PLAY_JSON_KEY", "play-service-account.json"), File.expand_path("..", __dir__))
+    unless File.exist?(key)
+      UI.message("No Play service account key yet (#{key}); using version code 1")
+      next 1
+    end
     codes = TRACKS.flat_map do |track|
       google_play_track_version_codes(track: track)
     rescue StandardError

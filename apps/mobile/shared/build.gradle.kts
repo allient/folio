@@ -44,7 +44,6 @@ kotlin {
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
-            implementation(libs.compose.uiTooling)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -62,6 +61,5 @@ kotlin {
     }
 }
 
-dependencies {
-    androidRuntimeClasspath(libs.compose.uiTooling)
-}
+// Compose UI tooling (preview rendering) is a debug-only dependency of androidApp; it must not
+// ship in release, where it adds exported PreviewActivity entries to the manifest.

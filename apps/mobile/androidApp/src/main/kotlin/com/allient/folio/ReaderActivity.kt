@@ -84,6 +84,8 @@ class ReaderActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         PenSettings.init(this)
+        AppAnalytics.init(this)
+        AppAnalytics.screen("reader")
         // Native navigators are rebuilt from persisted locators, never restored without a Publication.
         super.onCreate(null)
         enableEdgeToEdge()
@@ -271,6 +273,7 @@ class ReaderActivity : AppCompatActivity() {
             noteAnchor = anchor; noteQuote = quote; noteDraft = existing?.note.orEmpty(); editingId = existing?.id
         }
         fun export(kind: String) {
+            AppAnalytics.event("book_exported", "format" to kind)
             if (doc == null || exporting) return
             exporting = true
             val notes = model.annotations.toList(); val markdown = model.exportNotes()
@@ -288,6 +291,7 @@ class ReaderActivity : AppCompatActivity() {
             }
         }
         fun recognizeScannedPage() {
+            AppAnalytics.event("ocr_run")
             val session = pdf ?: return
             val index = page
             recognizing = true

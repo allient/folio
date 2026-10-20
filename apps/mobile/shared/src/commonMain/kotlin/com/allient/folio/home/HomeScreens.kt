@@ -193,6 +193,16 @@ internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreference
                             }
                         }
                     }
+                    PreferenceSection("Privacy") {
+                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.item)).clickable { onChange(value.copy(shareUsageStats = !value.shareUsageStats)) }.padding(vertical = 4.dp).testTag("pref-usage-stats"),
+                            verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(value.shareUsageStats, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = style.accent))
+                            Column(Modifier.padding(start = 12.dp)) {
+                                Text("Share usage statistics and crash reports", fontSize = 14.sp, color = HomeInk)
+                                Text("Anonymous usage and crash reports through Google Analytics and Crashlytics. Never the content, titles or names of your notes and books.", fontSize = 12.sp, lineHeight = 17.sp, color = HomeMuted)
+                            }
+                        }
+                    }
                     PreferenceSection("Trash", "Deleted items are kept in Trash for this long, then deleted when Folio starts.") {
                         TrashRules.retentionOptions.forEach { (days, label) -> ChoiceRow(label, value.trashRetentionDays == days, "retention-$days") { onChange(value.copy(trashRetentionDays = days)) } }
                     }
@@ -224,7 +234,7 @@ internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreference
     }
     if (confirmReset) AlertDialog(onDismissRequest = { confirmReset = false }, title = { Text("Reset preferences?") },
         text = { Text("Accent colour, corners, view, sort, fullscreen and Trash retention return to their defaults. Your notebooks and books are not changed.") },
-        confirmButton = { TextButton(onClick = { onChange(HomePreferences()); confirmReset = false }, modifier = Modifier.testTag("pref-confirm-reset")) { Text("Reset") } },
+        confirmButton = { TextButton(onClick = { onChange(HomePreferences(shareUsageStats = value.shareUsageStats)); confirmReset = false }, modifier = Modifier.testTag("pref-confirm-reset")) { Text("Reset") } },
         dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Cancel") } })
 }
 

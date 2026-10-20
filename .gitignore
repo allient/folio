@@ -72,3 +72,6 @@ dist/
 # Screenshots of other apps stay local
 apps/mobile/artifacts/reader-design/boox-*.png
 __pycache__/
+
+# Firebase config for the maintainer's project (not a secret, but forks must use their own)
+apps/mobile/androidApp/google-services.json

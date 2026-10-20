@@ -505,6 +505,7 @@ internal fun NotebookEditor(
                 val output = withContext(Dispatchers.IO) { when (kind) {
                     "pdf" -> files.exportPdf(snapshot); "png" -> files.exportPng(snapshot, exportedPage); else -> files.exportBackup(snapshot)
                 } }
+                AppAnalytics.event("notebook_exported", "format" to kind)
                 if (share) files.shareFile(output, when(kind) { "pdf" -> "application/pdf"; "png" -> "image/png"; else -> "application/octet-stream" })
                 else { pendingExportPath = output.absolutePath; saveDocument.launch(output.name) }
             } catch (error: Exception) { message = error.message ?: "Could not export the notebook." }

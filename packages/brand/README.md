@@ -1,6 +1,6 @@
 # Folio brand kit
 
-Version 1.0, October 2026. The full guide is in Spanish: [`docs/GUIA_DE_MARCA.md`](docs/GUIA_DE_MARCA.md) and [`docs/Folio_Guia_de_Marca.pdf`](docs/Folio_Guia_de_Marca.pdf). An English summary is on the docs site ([Brand](../../apps/docs/src/content/docs/brand.md)).
+Version 1.0, October 2026. The full guide is in Spanish: [`docs/GUIA_DE_MARCA.md`](docs/GUIA_DE_MARCA.md) and [`docs/Folio_Guia_de_Marca.pdf`](docs/Folio_Guia_de_Marca.pdf). An English summary is on the docs site ([Brand](../../docs/brand.md)).
 
 ![Variants](preview/Folio_Brand_Preview.png)
 
@@ -15,7 +15,7 @@ Version 1.0, October 2026. The full guide is in Spanish: [`docs/GUIA_DE_MARCA.md
 
 ## Decision: store icon
 
-The primary icon (sage F on cream with the folded corner) is the one to publish. Use `png/folio-store-primary-512.png` for Google Play and `png/folio-store-primary-1024.png` for the App Store (both full bleed and opaque; the stores apply their own mask). Source: `svg/folio-store-primary-full-bleed.svg`. The kit's `folio-play-store-512.png` is the flat variant and is not used. Details: [Brand](../../apps/docs/src/content/docs/brand.md#decision-the-primary-icon-is-folios-icon).
+The primary icon (sage F on cream with the folded corner) is the one to publish. Use `png/folio-store-primary-512.png` for Google Play and `png/folio-store-primary-1024.png` for the App Store (both full bleed and opaque; the stores apply their own mask). Source: `svg/folio-store-primary-full-bleed.svg`. The kit's `folio-play-store-512.png` is the flat variant and is not used. Details: [Brand](../../docs/brand.md#decision-the-primary-icon-is-folios-icon).
 
 ## Where the app uses it
 

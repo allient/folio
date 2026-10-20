@@ -1,4 +1,4 @@
-Folio es un cuaderno tranquilo y enfocado para tu lápiz óptico. Escribe a mano, dibuja en un lienzo infinito y lee PDF y EPUB con el lápiz en la mano. Todo se queda en tu dispositivo: sin cuenta, sin anuncios, sin rastreo y sin permiso de internet.
+Folio es un cuaderno tranquilo y enfocado para tu lápiz óptico. Escribe a mano, dibuja en un lienzo infinito y lee PDF y EPUB con el lápiz en la mano. Tus notas y libros se quedan en tu dispositivo: sin cuenta, sin anuncios y todo funciona sin conexión.
 
 <b>Tinta que se comporta como tinta</b>
 • Doce pinceles: bolígrafo, rotulador fino, gel, marcador, pluma estilográfica, pincel, caligrafía, resaltador, lápices 2H–6B, tiza, aerosol y pincel de cerdas
@@ -27,6 +27,6 @@ Folio es un cuaderno tranquilo y enfocado para tu lápiz óptico. Escribe a mano
 • Exporta páginas como PDF o PNG, o un cuaderno como archivo .folio editable
 
 <b>Privado por diseño</b>
-Folio funciona sin conexión. Tus notas y libros nunca salen de tu dispositivo a menos que tú los exportes o compartas. El único permiso es el micrófono, y solo cuando grabas una nota de voz.
+Folio funciona sin conexión. Tus notas y libros nunca salen de tu dispositivo a menos que tú los exportes o compartas. Folio comparte estadísticas de uso anónimas (qué pantallas y funciones se usan) para mejorar la app; puedes desactivarlo en Preferencias. El micrófono solo se usa cuando grabas una nota de voz.
 
 Hecho para tabletas Android y pantallas con lápiz, y también funciona en teléfonos.

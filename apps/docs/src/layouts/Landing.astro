@@ -8,6 +8,8 @@ interface Props {
 }
 const { title, description } = Astro.props;
 const github = 'https://github.com/allient/folio';
+// Cloudflare Web Analytics (cookieless). Set at build time; without it no beacon is added.
+const beaconToken = import.meta.env.PUBLIC_CF_BEACON_TOKEN;
 ---
 
 <!doctype html>
@@ -18,6 +20,7 @@ const github = 'https://github.com/allient/folio';
 		<title>{title}</title>
 		<meta name="description" content={description} />
 		<meta name="theme-color" content="#2F7A68" />
+		{beaconToken && <script defer is:inline src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: beaconToken })}></script>}
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -50,7 +53,6 @@ const github = 'https://github.com/allient/folio';
 					<Stack gap={1} class="site-footer__about">
 						<strong>Folio</strong>
 						<p>Handwritten notes and eReader for Android tablets. Free and open source under the Apache 2.0 license.</p>
-						<p class="site-footer__credit">Inspired by BOOX Notes, XPPen Notes and Infinite Painter. Not affiliated with them.</p>
 					</Stack>
 					<Stack as="ul" gap={1} class="site-footer__links">
 						<li><a href={github}>Source code</a></li>
@@ -164,9 +166,6 @@ const github = 'https://github.com/allient/folio';
 			}
 			.site-footer__about {
 				max-width: 34rem;
-			}
-			.site-footer__credit {
-				font-size: var(--text-sm);
 			}
 			.site-footer__links {
 				margin: 0;

@@ -5,9 +5,9 @@ name: Docs
 on:
   push:
     branches: [main]
-    paths: ['apps/docs/**', 'packages/brand/**', 'package.json', 'bun.lock', '.github/workflows/docs.yml']
+    paths: ['apps/docs/**', 'docs/**', 'packages/brand/**', 'package.json', 'bun.lock', '.github/workflows/docs.yml']
   pull_request:
-    paths: ['apps/docs/**', 'packages/brand/**', 'package.json', 'bun.lock', '.github/workflows/docs.yml']
+    paths: ['apps/docs/**', 'docs/**', 'packages/brand/**', 'package.json', 'bun.lock', '.github/workflows/docs.yml']
   workflow_dispatch:
 
 concurrency:
@@ -36,6 +36,9 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Build docs
         id: build
+        env:
+          # Cloudflare Web Analytics beacon token (public; set as a repository variable). Optional.
+          PUBLIC_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
         run: bun run build:docs
       - name: Deploy to Cloudflare
         id: deploy

@@ -6,6 +6,14 @@ plugins {
     alias(libs.plugins.composeCompiler)
 }
 
+// Firebase (Google Analytics, Crashlytics). google-services.json comes from the Firebase console and
+// is git-ignored; the plugins apply only when it is present, so builds without it still work and
+// Firebase stays inactive. Crashlytics uploads the R8 mapping file with release builds.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_11
@@ -33,6 +41,9 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.11.2")
     // Google Play in-app updates (talks to the Play Store app over IPC; no network permission).
     implementation("com.google.android.play:app-update-ktx:2.1.0")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
     // Already on the classpath through WorkManager/Compose; declared because backups observe app background.
     implementation("androidx.lifecycle:lifecycle-process:2.11.0")
 

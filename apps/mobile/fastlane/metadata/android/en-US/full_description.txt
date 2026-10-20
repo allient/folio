@@ -1,4 +1,4 @@
-Folio is a calm, focused notebook for your stylus. Write by hand, sketch on an infinite canvas and read PDFs and EPUBs with a pen in hand. Everything stays on your device: no account, no ads, no tracking and no internet permission.
+Folio is a calm, focused notebook for your stylus. Write by hand, sketch on an infinite canvas and read PDFs and EPUBs with a pen in hand. Your notes and books stay on your device: no account, no ads, and everything works offline.
 
 <b>Ink that behaves like ink</b>
 • Twelve brushes: ballpoint, fineliner, gel pen, marker, fountain pen, brush pen, calligraphy, highlighter, 2H–6B pencils, chalk, spray and a bristle paint brush
@@ -27,6 +27,6 @@ Folio is a calm, focused notebook for your stylus. Write by hand, sketch on an i
 • Export pages as PDF or PNG, or a notebook as an editable .folio file
 
 <b>Private by design</b>
-Folio works fully offline. Your notes and books never leave your device unless you export or share them yourself. The only permission is the microphone, and only when you record a voice note.
+Folio works fully offline. Your notes and books never leave your device unless you export or share them yourself. Folio shares anonymous usage statistics (which screens and features are used) to improve the app; you can turn this off in Preferences. The microphone is used only when you record a voice note.
 
 Made for Android tablets and pen displays, and works on phones too.

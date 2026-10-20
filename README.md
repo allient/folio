@@ -4,18 +4,18 @@
 
 <h1 align="center">Folio</h1>
 
-<p align="center"><strong>Handwritten Notes &amp; eReader for Android tablets</strong></p>
+<p align="center"><strong>Handwritten notes and a PDF &amp; EPUB reader for Android</strong></p>
 
 <p align="center">
-  Write with pressure-sensitive brushes, sketch on an infinite canvas and annotate PDFs and EPUBs.<br>
-  No account, no cloud, no internet permission: your notes stay on your tablet.
+  Write with pressure-sensitive brushes, sketch on an infinite canvas and annotate your books.<br>
+  No account and no ads. Your notes stay on your device.
 </p>
 
 <table>
   <tr>
-    <td width="33%"><img src="apps/docs/src/assets/screenshots/library.png" alt="Library"></td>
-    <td width="33%"><img src="apps/docs/src/assets/screenshots/editor.png" alt="Notebook page"></td>
-    <td width="33%"><img src="apps/docs/src/assets/screenshots/reader.png" alt="PDF reader"></td>
+    <td width="33%"><img src="apps/docs/src/assets/screenshots/library.png" alt="The Folio library"></td>
+    <td width="33%"><img src="apps/docs/src/assets/screenshots/editor.png" alt="A notebook page"></td>
+    <td width="33%"><img src="apps/docs/src/assets/screenshots/reader.png" alt="The PDF reader"></td>
   </tr>
   <tr>
     <td align="center">Library</td>
@@ -24,334 +24,86 @@
   </tr>
 </table>
 
-## At a glance
+## Why Folio
 
-| | |
-|---|---|
-| **App** | Kotlin Multiplatform. Ships on **Android only**; the `shared` module keeps compiling for iOS (see [Platforms](#platforms)) |
-| **Application ID** | `com.allient.folio` (Kotlin packages use the same name) |
-| **Store title** | Folio: Notes & PDF Reader (Google Play limit: 30 characters) |
-| **Privacy** | Local first. The only runtime permission is `RECORD_AUDIO`, for voice notes |
-| **Website** | Landing page, privacy policy and developer notes in `apps/docs` (Astro, Bun), deployed to Cloudflare; see [Website](#website) |
-| **Brand** | Brand kit v1.0 in [`packages/brand`](packages/brand) |
-| **Tested on** | Android tablet emulator (API 36, 1200×1920) and an XPPen MagicNotePad MNP1095 (Android 14) |
+Folio is made for people who think with a pen. It feels like paper, opens instantly and keeps everything on your tablet or phone. You don't sign up, nothing syncs behind your back, and your notes are saved in an open format you can always take with you.
 
 ## Features
 
-### Library
+**Write naturally**
+- Twelve brushes: ballpoint, fineliner, gel pen, marker, fountain pen, brush pen, calligraphy, highlighter, 2H–6B pencils, chalk, spray and a bristle paint brush.
+- Low-latency ink with pressure and tilt, and pressure curves you can shape yourself.
+- A pressure threshold that ignores a hovering or worn pen tip.
 
-- One home for notebooks and books. A tab control filters **All**, **Notes** (paged notebooks), **Canvas** (infinite canvases) and **Books** (PDF and EPUB from the reader).
-- Content is grouped in **Folders**, **Notes**, **Canvas** and **Books** sections; long sections fold to one row with **Unfold (n)** / **Fold**.
-- Grid or list view, and sort by last edit, date created, file type or name. Both are remembered.
-- Sidebar (a drawer on phones and portrait tablets, a side panel from 720 dp): Notes, Folders (create and open), Recent, Favorites, Trash bin, Preferences and About.
-- The **+** button creates a notebook or infinite canvas, a folder, or imports a book or a notebook backup.
-- **Select** mode: move, favorite or delete several items at once.
-- Search across names, typed text, tags and outlines, plus book titles and authors. Tag search is in the ⋮ menu.
-- Notebook details (▾ or long press): open, rename, copy, delete, move, favorite, share (PDF, PNG or backup). Books: open, move, favorite, delete.
-- Folders with 6 colors (sage, blue, lavender, rose, peach, sand) and 4 styles (Classic, With papers, Tabbed, Open). Folders are one level deep.
-- **Trash:** deleted notebooks, folders and books go to the Trash bin, where they can be restored or deleted permanently. Items are deleted automatically after 7 or 30 days (or never), checked when the app starts. A deleted folder keeps its contents in the library, unfiled, until it is restored. See [local storage](apps/docs/src/content/docs/architecture/local-storage.md#trash).
-- **Preferences:** accent colour (Sage, Morning, Evening, Sea, Forest, Lavender, Desert, Graphite), corners (Sharp, Rounded, Soft), default view and sort, start notebooks in focus mode, Trash retention, and a link to backup settings. The accent and corners apply to the library screens only; the editor keeps its own colours. There is no dark theme, because the editor uses fixed light colours.
-- 35 page templates in General, Planning, Work, Study, Creative and Custom, such as lined, grid, dots, Cornell, Kanban, music staff and habit tracker.
+**Pages, or no edges at all**
+- 35 page templates, from lined and Cornell to planners, Kanban and music staff.
+- An infinite canvas with pins and a minimap.
+- Layers, lasso, shapes, fill, text, tables, stickers, sticky notes, images, a ruler, a zoom window and voice notes.
 
-### Canvas
+**Read with a pen in hand**
+- Open PDF and EPUB books, from the library or from other apps.
+- Highlight, underline, write in the margins, add notes and bookmarks.
+- Search, jump to any page and recognize text in scanned pages, all on the device.
+- Study view: a book and a notebook side by side.
+- Export the annotated PDF, or your reading notes as Markdown.
 
-- **Pages:** fixed 600×960 document units, shown as single pages or a continuous scroll.
-- **Infinite canvas:** chosen when the notebook is created and fixed after that. Includes pins, a minimap with the viewport, tap-to-jump and "Back to content".
-- Zoom, pan and focus mode.
-- Up to 6 layers.
-- Undo and redo up to 80 steps (in memory only).
+**A tidy library**
+- Folders with colours and styles, favourites, recent items and search across names, typed text, tags and book titles.
+- A Trash that keeps deleted items for 7 or 30 days.
+- Smart backups to a folder you choose, with daily, weekly and monthly versions.
+- Export pages as PDF or PNG, or a notebook as an editable `.folio` file.
 
-### Brushes and pressure
+## Privacy
 
-| Brushes | Renderer |
-|---|---|
-| Pen, Fineliner, Gel pen, Marker, Fountain pen, Brush pen, Calligraphy, Highlighter | [Jetpack Ink](https://developer.android.com/jetpack/androidx/releases/ink) (`JetpackInkEngine`), with low-latency wet ink through `InProgressStrokesView` |
-| Pencil (2H–6B), Chalk, Spray, Paint brush | `NaturalMediaRenderer`, paper grain anchored to the document |
+Folio works offline and your notes and books never leave your device. There is no account and no advertising. Folio shares anonymous usage statistics (which screens and features are used, never your content) through Google Analytics; you can turn this off in Preferences, and users in the EU, UK and Switzerland are asked first. The microphone is used only when you record a voice note. Read the full [privacy policy](apps/docs/src/pages/privacy.astro).
 
-- Presets in `BrushCatalog.kt`, such as Pencil HB, Ballpoint Fine, Calligraphy Italic 35° and Highlighter Wide.
-- Pressure profiles Soft, Balanced and Firm, or a custom curve with an activation threshold and two Bézier control points (`DrawingProfiles.kt`). Pressure below the threshold ends the stroke segment; this filters hovering and worn stylus tips.
-- Brush widths can be shown in millimetres, based on the screen's DPI.
+## Get Folio
 
-### Editing tools
+Folio is coming to Google Play for Android phones and tablets. Until then you can build it from source.
 
-- Erasers: partial (vector cut), whole stroke and lasso, with size and layer scope. The pen's hardware eraser end works too.
-- Lasso (freeform or rectangle): move, copy, paste, duplicate, cut, recolor, rotate, resize, flip, tag and delete.
-- 10 shapes, and fill for closed paths.
-- Text boxes, timestamps, links to notes and web links.
-- Images, attachments and audio recording.
-- Tags and page outlines.
-- A floating toolbox with customizable tool sets: Default, Meeting, Sketching, Journaling, or your own.
+### Build from source
 
-### Saving, export and backup
-
-- Autosave: a background queue saves the latest state. A retry button appears only if a save fails.
-- Export all pages as PDF, or the current page as PNG (1200×1920).
-- `.folio` backups of one notebook or the whole library, editable after import. Older `.knotes` backups still import.
-- Smart backups (optional) to a folder you pick: a library backup about 2 minutes after you close a note, close a book or leave the app, and at most every 15 minutes during long sessions. Nothing is written when nothing changed. Each copy is verified before older ones are removed. Folio keeps the 5 most recent backups plus the newest of each of the last 7 days, 4 weeks and 6 months (at most 22 files), skips a backup when free space is low, and leaves other files in the folder alone. PDF and EPUB originals are not copied; their titles, positions, highlights and notes are. Settings lists the kept versions; restoring one merges it into the library and never erases anything.
-- Import PDF pages into a notebook as page backgrounds (1–200 pages).
-
-### Reader
-
-- **PDF** (PDFium): swipe pages, jump to a page, zoom up to 4×, select text, highlight, underline, draw, add notes and bookmarks, search, run on-device OCR (ML Kit, Latin script), and export the annotated PDF (PDFBox).
-- **EPUB** (Readium): highlights, notes, bookmarks, font size, line spacing, paged or continuous mode, and light, sepia or dark themes. Books with DRM are rejected.
-- Study split view: a book and a notebook side by side.
-- Export reading notes as Markdown.
-- Opens PDF and EPUB files from other apps ("Open with").
-
-Details: [reader.md](apps/docs/src/content/docs/architecture/reader.md).
-
-## Repository structure
-
-A monorepo managed with [Bun](https://bun.sh) workspaces and [Turborepo](https://turborepo.com), laid out like [Better-T-Stack](https://better-t-stack.dev): apps in `apps/`, shared packages in `packages/`.
-
-```
-folio/
-├── apps/
-│   ├── mobile/                     Kotlin Multiplatform app (Gradle project root)
-│   │   ├── androidApp/             Android app: almost all app logic
-│   │   │   └── src/main/kotlin/com/allient/folio/
-│   │   │       ├── MainActivity.kt         Launcher; handles PDF/EPUB "Open with"
-│   │   │       ├── ReaderActivity.kt       PDF/EPUB reader
-│   │   │       ├── NotebookEditor.kt       Notebook editor UI
-│   │   │       ├── NotebookViewModel.kt    Editor state, autosave queue
-│   │   │       ├── InkCanvasView.kt        Drawing canvas, input, erasers, lasso
-│   │   │       ├── JetpackInkEngine.kt     Jetpack Ink geometry and rendering
-│   │   │       ├── FrontBufferedInkController.kt  Low-latency wet ink
-│   │   │       ├── NaturalMediaRenderer.kt Pencil, Chalk, Spray, Paint brush
-│   │   │       ├── NotebookStorage.kt      SQLite storage
-│   │   │       ├── NotebookFiles.kt, LocalBackup.kt  Export, import, backup
-│   │   │       └── PdfReaderEngine.kt, EpubReaderEngine.kt, ReaderStore.kt
-│   │   ├── shared/                 Kotlin Multiplatform library: Compose Multiplatform home,
-│   │   │                           folder editor, backup settings, templates, reader models
-│   │   ├── iosApp/                 Xcode shell (placeholder screen; Android ships first)
-│   │   └── fastlane/               Google Play lanes and store listing (text, icon, screenshots)
-│   │   └── artifacts/              Demo PDF/EPUB files, reader captures, local builds
-│   └── docs/                       Website: landing page + developer notes (Astro, Starlight, Bun)
-│       ├── src/pages/index.astro   Landing page
-│       ├── src/components/ui/      Box, Stack, Grid, Container, Tablet primitives
-│       └── src/content/docs/       Developer notes: architecture, features, investigations, roadmap, testing
-├── packages/
-│   └── brand/                      Brand kit v1.0: logo, icons, Android launcher resources, guide
-├── .argent/flows/                  Recorded UI automation flows
-├── package.json, turbo.json        Workspace and task pipeline
-└── bun.lock
-```
-
-## Website
-
-`apps/docs` is an Astro site that runs on Bun. For now it is a single landing page that presents the app; the engineering notes are still built by Starlight under `/architecture/`, `/features/` and so on, linked from the footer.
+You need [Bun](https://bun.sh) 1.4 or later, JDK 21 and the Android SDK (or Android Studio).
 
 ```bash
-bun run dev:docs      # http://localhost:4321
-bun run build:docs    # static site in apps/docs/dist
-just deploy-docs      # deploy from this machine (after `bunx wrangler login`)
+git clone https://github.com/allient/folio.git
+cd folio
+bun install
+
+just install-debug      # build and install on a connected device or emulator
+just docs               # run the website locally at http://localhost:4321
 ```
 
-**Deploy:** `.github/workflows/docs.yml` builds the site and runs `wrangler deploy` (Workers Static Assets, config in `apps/docs/wrangler.jsonc`) on every push to `main` that touches `apps/docs` or `packages/brand`. Pull requests only build. There is one environment. The workflow needs three repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `SLACK_WEBHOOK_URL` (each run posts its result to #eventos). App builds never run on GitHub; they run locally with fastlane.
+Run `just` to list every task. To work on the app, open `apps/mobile` in Android Studio.
 
-The privacy policy used by the Play listing is `/privacy/` (`src/pages/privacy.astro`).
+## Project layout
 
-The page is built from small layout primitives in `apps/docs/src/components/ui`, modelled on MUI:
-
-| Primitive | What it does |
+| Folder | What's inside |
 |---|---|
-| `Box` | Spacing (`p`, `px`, `py`), surface colour, radius and border |
-| `Stack` | Flexbox row or column with `direction`, `gap`, `align`, `justify`, `wrap` |
-| `Grid` | CSS grid with fixed `columns` or fluid columns of a `min` width |
-| `Container` | Centred column with responsive side gutters |
-| `Tablet` | A screenshot in a pen-tablet frame, portrait or landscape, with an optional stylus |
+| [`apps/mobile`](apps/mobile) | The app: Kotlin Multiplatform with Jetpack Compose. Android ships today; the shared code is ready for a future iPad version. |
+| [`apps/docs`](apps/docs) | The website: landing page, privacy policy and developer documentation (Astro). |
+| [`packages/brand`](packages/brand) | The Folio brand kit: logo, icons, colours and guide. |
 
-Every spacing and layout prop takes a single value or a responsive object, for example `direction={{ base: 'column', md: 'row' }}` or `gap={{ base: 2, md: 4 }}` (1 unit = 8 px). Breakpoints: `sm` 600 px, `md` 900 px, `lg` 1200 px. Colours, type scale and radii are CSS variables in `src/styles/tokens.css`, taken from the brand kit (sage `#2F7A68`, ink `#1E2B28`, cream `#F6F1E6`, Geist).
+## Contributing
 
-## Tech stack
+Bug reports and ideas are welcome in [Issues](https://github.com/allient/folio/issues). Before you send code, read [AGENTS.md](AGENTS.md). It has the architecture, coding standards, test commands and release process. The developer documentation is in [`docs/`](docs), including the [Google Play publishing guide](docs/publishing/google-play.md).
 
-| Item | Version |
-|---|---|
-| Kotlin | 2.4.20 |
-| Android Gradle Plugin | 9.1.1 |
-| Gradle | 9.5.1 (JDK 21 toolchain) |
-| Compose Multiplatform | 1.12.1 |
-| Android SDK | minSdk 25, targetSdk and compileSdk 37 |
-| Jetpack Ink | 1.1.0-alpha09 (authoring, brush, strokes, rendering) |
-| PDF | pdfium-android 2.0.3, pdfbox-android 2.0.27.0 |
-| EPUB | Readium 3.4.0 |
-| OCR | ML Kit text recognition 16.0.1 |
-| Other | zstd-jni, WorkManager, ExifInterface |
+## Roadmap
 
-Storage uses plain `SQLiteOpenHelper` and `org.json`, with no Room or SQLDelight.
+- Release on Google Play
+- Dark theme and more appearance options
+- Spanish and other languages
+- Handwriting recognition and search inside handwritten notes
+- Nested folders
+- Encrypted backups and optional sync
+- An iPad version
 
-## Data and file formats
+## Credits
 
-- `knotes.db`: tables `notebooks`, `pages` and `settings`, schema v1, with notebooks stored as JSON (version 2).
-- `knotes-reader.db`: reader documents and annotations (WAL, foreign keys).
-- Media is stored in the app's private `files/media/` folder. Android's cloud backup is off (`allowBackup="false"`), and nothing is encrypted yet.
-- `.folio` files are ZIP archives with a `manifest.json` and Zstandard-compressed JSON. Stroke engines are versioned (`jetpack-ink-v1`, `jetpack-ink-v2`, `shape-v1`, `fill-cut-v1`), so old ink still renders the same way.
+Folio is an independent project and isn't affiliated with the apps that inspired it: [BOOX](https://www.boox.com) Notes and NeoReader, [XPPen Notes](https://www.xp-pen.com) and [Infinite Painter](https://www.infinitestudio.art). Thank you to their teams. Folio's code, icons and artwork are its own.
 
-Details: [local storage](apps/docs/src/content/docs/architecture/local-storage.md), [portable format](apps/docs/src/content/docs/architecture/portable-format.md), [SQLite migrations](apps/docs/src/content/docs/architecture/sqlite-migrations.md), and the [JSON schemas](apps/docs/public/schemas).
+Built with [Jetpack Ink](https://developer.android.com/jetpack/androidx/releases/ink), [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/), [Readium](https://readium.org), [PdfiumAndroid](https://github.com/barteksc/PdfiumAndroid), [PdfBox-Android](https://github.com/TomRoush/PdfBox-Android), [ML Kit](https://developers.google.com/ml-kit) and [zstd-jni](https://github.com/luben/zstd-jni). The typeface is [Geist](https://vercel.com/font).
 
-## Build and run
+## License
 
-Requires Bun 1.4+, plus Android Studio or the Android SDK and JDK 21. Open `apps/mobile` in Android Studio.
-
-```bash
-bun install              # once, at the repository root
-
-bun run dev:docs         # docs site at http://localhost:4321
-bun run build:docs       # static site in apps/docs/dist
-bun run build:android    # debug APK (runs Gradle in apps/mobile)
-bun run test:android     # shared module host tests
-bun run build            # everything
-```
-
-A [`justfile`](justfile) wraps the common tasks (`just` lists them):
-
-```bash
-just docs                     # docs dev server
-just install-debug            # build + install debug APK on emulator-5554
-just install-release <serial> # build, sign (local debug key) and install release APK
-just crashlog <serial>        # error and crash log
-just vibe                     # zellij session with the vibe layout
-```
-
-Set `FOLIO_TABLET=<adb serial>` in your shell to make the tablet the default for `install-release` and `crashlog`.
-
-Gradle can also be run directly from `apps/mobile`:
-
-```bash
-cd apps/mobile
-# Debug build
-./gradlew :androidApp:assembleDebug
-
-# Install on a connected device or emulator
-./gradlew :androidApp:installDebug
-
-# Release build (R8 minified; signed when keystore.properties exists, see Publishing)
-./gradlew :androidApp:assembleRelease
-
-# Lint
-./gradlew :androidApp:lintDebug
-```
-
-With more than one device connected, pass the serial to adb: `adb -s <serial> install -r <apk>`.
-
-## Tests
-
-```bash
-# Instrumented tests (needs a device or emulator)
-./gradlew :androidApp:connectedDebugAndroidTest
-```
-
-| Test class | What it covers |
-|---|---|
-| `InkCanvasViewTest` | Drawing, pressure, erasers, lasso, shapes, zoom |
-| `NotebookStorageTest` | SQLite storage and migrations |
-| `NotebookFilesTest` | Export, import, backups |
-| `LocalBackupTest` | Smart backups: version retention, pruning only the app's own files, archive verification, unchanged-library skip, low free space, no reader originals |
-| `ReaderTest` | PDF and EPUB reader |
-| `NaturalBrushTest` | Pencil, Chalk, Spray |
-| `TrashTest` | Trash: soft delete, restore, permanent delete, retention purge, folders, backups; home preferences |
-
-`gradle.properties` keeps test APKs installed after a run, so data on the device isn't wiped. The `shared` module's common tests (`TextUtilsTest`) run with `:shared:testAndroidHostTest`; `:shared:compileKotlinIosSimulatorArm64` checks that common code stays free of Android APIs. Results and UI flow replays are in [validation.md](apps/docs/src/content/docs/testing/validation.md).
-
-### Mirror the tablet while testing
-
-To see and control the tablet from the Mac, mirror it with [scrcpy](https://github.com/Genymobile/scrcpy) (`brew install scrcpy`):
-
-```bash
-scrcpy -d              # -d = the only physical device connected over USB
-just mirror            # same thing
-```
-
-Use `-d` when an emulator is also running; otherwise scrcpy refuses to pick between several devices. See [Mirroring](apps/docs/src/content/docs/testing/mirroring.md).
-
-## Platforms
-
-Folio ships on Android (phones and tablets) only. The project stays Kotlin Multiplatform: the iOS targets in `shared` keep compiling so common code can't drift onto Android APIs, and `iosApp` shows a placeholder screen. Module rules, performance notes and the order for an iPad port are in [modules.md](apps/docs/src/content/docs/architecture/modules.md).
-
-## Inspiration and credits
-
-Folio is an independent project and is not affiliated with these companies or apps. They inspired parts of its design, and we thank their teams:
-
-- **[BOOX](https://www.boox.com) Notes and NeoReader** (Onyx International): the compact top toolbar, the vertical tool rail, the white writing surface and the split view for reading next to a notebook.
-- **[XPPen Notes](https://www.xp-pen.com)** (XPPen): the library home with All / Notes / Canvas / Books, the sidebar and the preferences layout.
-- **[Infinite Painter](https://www.infinitestudio.art)** (Infinite Studio): the pressure, velocity and tilt response curves and their presets.
-
-Folio's code, icons and artwork are its own. No screenshots, assets or code from these apps are included in this repository.
-
-Built with open-source libraries, among them [Jetpack Ink](https://developer.android.com/jetpack/androidx/releases/ink), [Compose Multiplatform](https://www.jetbrains.com/compose-multiplatform/), [Readium](https://readium.org), [PdfiumAndroid](https://github.com/barteksc/PdfiumAndroid), [PdfBox-Android](https://github.com/TomRoush/PdfBox-Android), [ML Kit](https://developers.google.com/ml-kit) and [zstd-jni](https://github.com/luben/zstd-jni). The docs site uses [Astro Starlight](https://starlight.astro.build); the monorepo uses [Bun](https://bun.sh) and [Turborepo](https://turborepo.com). The interface typeface is [Geist](https://vercel.com/font) (SIL Open Font License).
-
-## Known issues and limits
-
-- **Jetpack Ink mesh crash on Android 14:** Ink's default mesh rendering crashed on the MNP1095 tablet. Finished strokes are now forced to path rendering; keep `forcePathRendering = true` when upgrading Ink. Wet ink still uses mesh on API 34+. See [mnp1095-mesh-crash.md](apps/docs/src/content/docs/investigations/mnp1095-mesh-crash.md).
-- Jetpack Ink is an alpha dependency.
-- Undo history is lost when the app restarts.
-- Unused media files are never cleaned up.
-- Exports are fixed at 1200×1920.
-- PDF pages imported into a notebook become images.
-- Audio is not synced with ink, and recording stops in the background.
-- Backups are not encrypted.
-- Not implemented: handwriting recognition, shape recognition, nested folders, cloud sync, and importing BOOX `.note` files. See [To do](#to-do).
-- Reader limits (password-protected PDFs, OCR scripts, PDF outline and more): see [reader.md](apps/docs/src/content/docs/architecture/reader.md).
-
-## To do
-
-**App**
-- [ ] Dark, light and OLED themes, plus colour mode, contrast and style options ([plan](apps/docs/src/content/docs/roadmap/planned-preferences.md))
-- [ ] Multi-language UI, starting with Spanish ([plan](apps/docs/src/content/docs/roadmap/planned-preferences.md#multi-language-pending))
-- [ ] iOS app, following the [port order](apps/docs/src/content/docs/architecture/modules.md#order-for-an-ios-port)
-- [ ] Load notebook pages on open instead of at startup ([hot spots](apps/docs/src/content/docs/architecture/modules.md#performance-notes))
-- [ ] Handwriting recognition (search inside handwritten notes) and shape recognition
-- [ ] Nested folders
-- [ ] Encrypted backups and optional cloud sync
-- [ ] Keep undo history after the app restarts
-- [ ] Clean up unused media files
-- [ ] Export at other resolutions than 1200×1920; keep imported PDF pages as vectors
-- [ ] Sync audio recordings with ink; keep recording in the background
-- [ ] Filter accidental micro-taps from worn styluses
-- [ ] Polish the layout in landscape and on phones: library grid and folder cards, editor tool rail ([details](apps/docs/src/content/docs/roadmap/responsive-improvements.md))
-
-**Release**
-- [ ] Create the upload key and Play Console app, then the first internal release ([guide](apps/docs/src/content/docs/publishing/google-play.md))
-- [x] Play Store listing: text (English, Spanish), icon, feature graphic, phone and tablet screenshots, privacy policy
-- [x] Docs site deploy to Cloudflare
-- [ ] Refresh the screenshots in the README and docs with the new home design
-
-**Upstream**
-- [ ] Report the Jetpack Ink mesh crash on Android 14 to Google ([analysis](apps/docs/src/content/docs/investigations/mnp1095-mesh-crash.md))
-
-## Publishing
-
-Google Play only. Everything for the store is in the repo, and releases run locally with fastlane:
-
-| | |
-|---|---|
-| Store listing (en-US, es-419), icon, feature graphic, screenshots | `apps/mobile/fastlane/metadata/android/` |
-| Lanes | `just aab`, `just play-internal`, `just play-beta`, `just play-production`, `just play-promote`, `just play-metadata` |
-| Upload signing | `apps/mobile/keystore.properties` (git-ignored) or `FOLIO_UPLOAD_*` variables |
-| In-app updates | `AppUpdates.kt`: flexible update with a Restart bar; immediate for priority 4–5 or versions older than 30 days |
-| Privacy policy | `/privacy/` on the docs site |
-
-Step-by-step first setup (upload key, Play Console forms, data safety answers, service account for fastlane, first upload): [google-play.md](apps/docs/src/content/docs/publishing/google-play.md).
-
-Test builds from before 2026-10-19 used the starter ID `com.example.knotes` and install as a separate app; export a `.knotes` backup from them if needed (Folio still imports that legacy format), import it into Folio, then uninstall them.
-
-Backups and exports use the Folio format: `.folio` files with the format ID `application/vnd.folio.archive+zip`. Legacy `.knotes` archives (`application/vnd.knotes.archive+zip`) and `Knotes-Backup-*.knotes` files in the backup folder are still recognised and imported. The private database file names (`knotes.db`, `knotes-reader.db`) stay unchanged on purpose: they never leave the device, and renaming a live database risks the library.
-
-## Documentation
-
-The documentation lives in the Starlight site (`apps/docs`); run `bun run dev:docs` to browse it.
-
-| Document | Topic |
-|---|---|
-| [boox-feature-coverage.md](apps/docs/src/content/docs/features/boox-feature-coverage.md) | Feature comparison with BOOX Notes (partly out of date: brushes and infinite canvas have since been added) |
-| [canvas-tools-review.md](apps/docs/src/content/docs/features/canvas-tools-review.md) | Erasers, lasso, shapes and fill review |
-| [ink-rendering-research.md](apps/docs/src/content/docs/architecture/ink-rendering-research.md) | Rendering performance research and the Jetpack Ink plan |
-| [jetpack-ink-implementation.md](apps/docs/src/content/docs/architecture/jetpack-ink-implementation.md) | Jetpack Ink integration notes |
-| [mnp1095-mesh-crash.md](apps/docs/src/content/docs/investigations/mnp1095-mesh-crash.md) | Android 14 mesh rendering crash: analysis and fix |
-| [local-storage.md](apps/docs/src/content/docs/architecture/local-storage.md) | On-device storage, backup and import limits |
-| [portable-format.md](apps/docs/src/content/docs/architecture/portable-format.md) | `.folio` archive format (and legacy `.knotes`) |
-| [sqlite-migrations.md](apps/docs/src/content/docs/architecture/sqlite-migrations.md) | Database migration rules |
-| [reader.md](apps/docs/src/content/docs/architecture/reader.md) | PDF and EPUB reader |
-| [validation.md](apps/docs/src/content/docs/testing/validation.md) | Test results and UI flow replays |
-| [planned-preferences.md](apps/docs/src/content/docs/roadmap/planned-preferences.md) | Pending: dark/light theme, colour options, multi-language |
-| [brand.md](apps/docs/src/content/docs/brand.md) | Brand kit: logo system, colours, type and where the app uses them |
+Apache License 2.0. See [LICENSE](LICENSE).

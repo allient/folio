@@ -53,16 +53,22 @@ devices:
 install-debug serial="emulator-5554": build-android
     adb -s {{ serial }} install -r {{ APK_DEBUG }}
 
-# Build a release APK signed with the local debug key
+# Build a release APK: signed with the upload key when apps/mobile/keystore.properties exists,
+# otherwise signed here with the local debug key
 release:
     #!/usr/bin/env bash
     set -euo pipefail
     cd {{ MOBILE }} && ./gradlew :androidApp:assembleRelease -q && cd - >/dev/null
-    BT=$(ls -d "${ANDROID_HOME:-$HOME/Library/Android/sdk}"/build-tools/* | sort -V | tail -1)
     mkdir -p {{ RELEASE_DIR }}
-    "$BT/zipalign" -f -p 4 {{ APK_UNSIGNED }} {{ RELEASE_DIR }}/aligned.apk
-    "$BT/apksigner" sign --ks ~/.android/debug.keystore --ks-pass pass:android --key-pass pass:android \
-        --ks-key-alias androiddebugkey --out {{ RELEASE_DIR }}/Folio-release.apk {{ RELEASE_DIR }}/aligned.apk
+    OUT={{ MOBILE }}/androidApp/build/outputs/apk/release
+    if [ -f "$OUT/androidApp-release.apk" ]; then
+        cp "$OUT/androidApp-release.apk" {{ RELEASE_DIR }}/Folio-release.apk
+    else
+        BT=$(ls -d "${ANDROID_HOME:-$HOME/Library/Android/sdk}"/build-tools/* | sort -V | tail -1)
+        "$BT/zipalign" -f -p 4 {{ APK_UNSIGNED }} {{ RELEASE_DIR }}/aligned.apk
+        "$BT/apksigner" sign --ks ~/.android/debug.keystore --ks-pass pass:android --key-pass pass:android \
+            --ks-key-alias androiddebugkey --out {{ RELEASE_DIR }}/Folio-release.apk {{ RELEASE_DIR }}/aligned.apk
+    fi
     echo "{{ RELEASE_DIR }}/Folio-release.apk"
 
 # Build and install the signed release APK on one device (default: $FOLIO_TABLET)

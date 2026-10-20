@@ -20,7 +20,7 @@ Run again with `argent flow run boox-editor-navigation --platform android --devi
 
 The recorder initially selected duplicated child labels in two tool-rail buttons. Their stable resource IDs were verified with `editor-selector-check.yaml`, then used in the final flow. No coordinate taps remain in the saved navigation flow. A stale Android devtools snapshot during live authoring was recovered by restarting only the emulator's Argent services; the final replay completed without manual intervention or warnings.
 
-The app was reopened after the replay and retained the created notebooks/pages in SQLite. Final screenshots: [library](../../../assets/screenshots/library.png) and [editor](../../../assets/screenshots/editor.png). System bars are hidden; the writing page remains blank white by default.
+The app was reopened after the replay and retained the created notebooks/pages in SQLite. Final screenshots: [library](../../apps/docs/src/assets/screenshots/library.png) and [editor](../../apps/docs/src/assets/screenshots/editor.png). System bars are hidden; the writing page remains blank white by default.
 
 ## Remaining validation
 

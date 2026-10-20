@@ -5,7 +5,7 @@ description: Folio logo, colours, type and how the app uses them.
 
 Brand kit v1.0 (October 2026). Source files and the full Spanish guide are in [`packages/brand`](https://github.com/allient/folio/tree/main/packages/brand).
 
-![Primary, dark and simplified icons](../../assets/brand/folio-brand-preview.png)
+![Primary, dark and simplified icons](../apps/docs/src/assets/brand/folio-brand-preview.png)
 
 ## Concept
 

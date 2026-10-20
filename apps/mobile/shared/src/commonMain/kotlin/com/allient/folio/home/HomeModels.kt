@@ -31,6 +31,8 @@ object HomeSort { const val Edited = "edited"; const val Created = "created"; co
 data class HomePreferences(
     val accent: String = "sage", val corners: String = "rounded", val viewMode: String = "grid",
     val sort: String = HomeSort.Edited, val startFullscreen: Boolean = false, val trashRetentionDays: Int = 30,
+    /** Anonymous usage statistics (Google Analytics). Stored by the platform analytics layer, not in home preferences. */
+    val shareUsageStats: Boolean = true,
 )
 
 @Immutable data class AccentPreset(val id: String, val name: String, val primary: Color, val soft: Color)

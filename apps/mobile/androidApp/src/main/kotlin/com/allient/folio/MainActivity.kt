@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         PenSettings.init(this)
+        AppAnalytics.init(this)
         enableEdgeToEdge()
         hideSystemBars()
         val repository = ViewModelProvider(this)[NotebookViewModel::class.java]
@@ -58,6 +59,7 @@ class MainActivity : ComponentActivity() {
                 Box(Modifier.fillMaxSize()) {
                     FolioApp(repository, backup, reader)
                     UpdateReadyBar(updates)
+                    UsageStatsPrompt()
                 }
             }
         }
@@ -180,6 +182,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
     // Leaving a notebook (back to home, or to another notebook) schedules a backup two minutes later when something changed.
     var previousNotebookId by remember { mutableStateOf(openNotebookId) }
     LaunchedEffect(openNotebookId) {
+        AppAnalytics.screen(if (openNotebookId == null) "library" else "notebook")
         if (previousNotebookId != null && previousNotebookId != openNotebookId) LocalBackupScheduler.soon(context)
         previousNotebookId = openNotebookId
     }
@@ -333,8 +336,12 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                             reader.deleteForever(reader.documents.filter { it.deletedAt > 0 }.map { it.id })
                             reader.purgeTrash(System.currentTimeMillis(), 0, folderIds)
                         },
-                        preferences = homePreferences,
-                        onPreferencesChange = { homePreferences = it; homeStore.write(it) },
+                        // The usage-statistics choice lives in AppAnalytics (the first-run prompt can change it).
+                        preferences = homePreferences.copy(shareUsageStats = AppAnalytics.collecting),
+                        onPreferencesChange = {
+                            if (it.shareUsageStats != AppAnalytics.collecting) AppAnalytics.setEnabled(it.shareUsageStats)
+                            homePreferences = it; homeStore.write(it)
+                        },
                         now = System::currentTimeMillis,
                         formatDate = { dateFormat.format(java.util.Date(it)) },
                         appVersion = appVersion,
@@ -350,6 +357,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                         onCreate = { name, template, folder, infiniteCanvas ->
                             val created = Notebook(title = name, pages = listOf(NotebookPage(template = if (infiniteCanvas && !template.startsWith("inf-")) "blank" else template)), folderId = folder, openedAt = System.currentTimeMillis(), infiniteCanvas = infiniteCanvas)
                             repository.saveNotes(listOf(created) + notebooks)
+                            AppAnalytics.event("notebook_created", "kind" to if (infiniteCanvas) "canvas" else "pages")
                             openNotebookId = created.id
                         },
                         onFavorite = { id -> repository.saveNotes(repository.notebooks.map { if (it.id == id) it.copy(favorite = !it.favorite) else it }) },

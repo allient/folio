@@ -2,6 +2,9 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+// Cloudflare Web Analytics (cookieless) for the developer docs too; see src/layouts/Landing.astro.
+const beaconToken = process.env.PUBLIC_CF_BEACON_TOKEN;
+
 // https://astro.build/config
 export default defineConfig({
 	integrations: [
@@ -10,6 +13,9 @@ export default defineConfig({
 			description: 'Handwritten notes and eReader for Android.',
 			logo: { src: './src/assets/brand/folio-icon-primary.svg' },
 			customCss: ['./src/styles/brand.css'],
+			head: beaconToken
+				? [{ tag: 'script', attrs: { defer: true, src: 'https://static.cloudflareinsights.com/beacon.min.js', 'data-cf-beacon': JSON.stringify({ token: beaconToken }) } }]
+				: [],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/allient/folio' }],
 			editLink: { baseUrl: 'https://github.com/allient/folio/edit/main/apps/docs/' },
 			sidebar: [
