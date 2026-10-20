@@ -1,5 +1,6 @@
 ---
 title: "Validation — 2026-10-16"
+description: "Test results for Folio on the Android tablet emulator: builds, instrumented tests and UI flows."
 ---
 
 Validated on the isolated `Knotes_Tablet` Android API 36 emulator, configured at 1200 × 1920. The XPPen tablet was disconnected during this work.

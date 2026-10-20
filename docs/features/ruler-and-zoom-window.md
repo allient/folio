@@ -1,5 +1,6 @@
 ---
 title: "Ruler and zoom window"
+description: "Folio’s ruler for straight lines and angles, and the zoom window for writing small details with the pen."
 ---
 
 Two page tools added to the notebook editor. Both are screen-space helpers: neither adds model, storage or format state.

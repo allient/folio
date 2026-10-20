@@ -1,6 +1,6 @@
 steps:
   - echo: Open the local library and create a notebook. This flow creates one notebook on each run.
-  - launch: com.allient.folio
+  - launch: com.allient.folio.dev
   - await: { visible: { text: New notebook } }
   - await: { idle: true }
   - tap: { text: New notebook }

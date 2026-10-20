@@ -1,5 +1,6 @@
 ---
 title: "MNP1095 writing crash: Jetpack Ink mesh rendering"
+description: "Why writing crashed Folio on an Android 14 pen tablet (Jetpack Ink mesh rendering) and how path rendering fixed it."
 ---
 
 2026-10-18

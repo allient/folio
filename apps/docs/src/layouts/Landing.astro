@@ -1,13 +1,18 @@
 ---
 import '../styles/tokens.css';
 import { Container, Stack } from '../components/ui';
+import { GITHUB, KEYWORDS, NAME, OG_IMAGE, SITE } from '../site';
 
 interface Props {
 	title: string;
 	description: string;
+	/** schema.org structured data for this page (one object or a list). */
+	jsonLd?: object | object[];
 }
-const { title, description } = Astro.props;
-const github = 'https://github.com/allient/folio';
+const { title, description, jsonLd } = Astro.props;
+const github = GITHUB;
+const canonical = new URL(Astro.url.pathname, SITE).href;
+const markdown = `${Astro.url.pathname.replace(/\/?$/, '/')}index.md`;
 // Cloudflare Web Analytics (cookieless). Set at build time; without it no beacon is added.
 // Accepts the bare token or the whole snippet Cloudflare shows; the token is the 32-hex-digit value.
 const beaconToken = import.meta.env.PUBLIC_CF_BEACON_TOKEN?.match(/[0-9a-f]{32}/i)?.[0];
@@ -20,10 +25,31 @@ const beaconToken = import.meta.env.PUBLIC_CF_BEACON_TOKEN?.match(/[0-9a-f]{32}/
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>{title}</title>
 		<meta name="description" content={description} />
+		<meta name="keywords" content={KEYWORDS.join(', ')} />
+		<meta name="robots" content="index, follow, max-image-preview:large" />
+		<link rel="canonical" href={canonical} />
+		<link rel="alternate" type="text/markdown" href={markdown} title="This page as Markdown" />
+		<link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+		<link rel="ai-catalog" href="/.well-known/ai-catalog.json" />
+		<link rel="sitemap" type="application/xml" href="/sitemap.xml" />
 		<meta name="theme-color" content="#2F7A68" />
 		{beaconToken && <script defer is:inline src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: beaconToken })}></script>}
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content={NAME} />
+		<meta property="og:locale" content="en_US" />
+		<meta property="og:url" content={canonical} />
 		<meta property="og:title" content={title} />
 		<meta property="og:description" content={description} />
+		<meta property="og:image" content={OG_IMAGE} />
+		<meta property="og:image:width" content="1024" />
+		<meta property="og:image:height" content="500" />
+		<meta property="og:image:alt" content="Folio: handwritten notes and eReader on an Android tablet" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={title} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={OG_IMAGE} />
+		{jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+		<script is:inline src="/webmcp.js" defer></script>
 		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 		<link rel="preload" href="/fonts/GeistVF.ttf" as="font" type="font/ttf" crossorigin />
 	</head>

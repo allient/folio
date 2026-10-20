@@ -1,5 +1,6 @@
 ---
 title: "SQLite schema migrations"
+description: "Rules for changing Folio’s on-device SQLite databases safely, without risking a user’s library."
 ---
 
 Folio uses Android `SQLiteOpenHelper` and a private local SQLite database (`knotes.db`) as its source of truth. SQLite stores notebook metadata and page JSON payloads; attachment bytes live in the app-private `files/media/` directory. This is local-first storage: edits are committed on-device without requiring an account or network.

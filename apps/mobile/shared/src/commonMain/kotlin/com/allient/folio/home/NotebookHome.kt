@@ -92,6 +92,13 @@ fun NotebookHome(
     books: List<HomeBook> = emptyList(),
     bookCover: @Composable (String, Modifier) -> Unit = { _, _ -> },
     onOpenBook: (String) -> Unit = {}, onImportBook: (String?) -> Unit = {},
+    /** Live boards (the Live tab). The tab is hidden when [onOpenBoard] is null. */
+    boards: List<HomeBoard> = emptyList(),
+    boardPreview: @Composable (String, Modifier) -> Unit = { _, _ -> },
+    onOpenBoard: ((String) -> Unit)? = null,
+    onNewBoard: (String) -> Unit = {},
+    onRenameBoard: (String, String) -> Unit = { _, _ -> },
+    onDeleteBoard: (String) -> Unit = {},
     onMoveBook: (String, String?) -> Unit = { _, _ -> }, onFavoriteBook: (String, Boolean) -> Unit = { _, _ -> },
     onRestore: (String, String) -> Unit = { _, _ -> }, onDeleteForever: (String, Set<String>) -> Unit = { _, _ -> }, onEmptyTrash: () -> Unit = {},
     preferences: HomePreferences = HomePreferences(), onPreferencesChange: (HomePreferences) -> Unit = {},
@@ -108,6 +115,7 @@ fun NotebookHome(
     var menu by remember { mutableStateOf(false) }
     var sortMenu by remember { mutableStateOf(false) }
     var fabMenu by remember { mutableStateOf(false) }
+    var newBoard by remember { mutableStateOf(false) }
     var drawerOpen by rememberSaveable { mutableStateOf(false) }
     var sidebarPinned by rememberSaveable { mutableStateOf(true) }
     var selecting by rememberSaveable { mutableStateOf(false) }
@@ -219,6 +227,7 @@ fun NotebookHome(
     CompositionLocalProvider(LocalHomeStyle provides style) {
     BoxWithConstraints(Modifier.fillMaxSize().background(HomeBackground).onGloballyPositioned { rootOrigin = it.boundsInRoot().topLeft }) {
         val wide = maxWidth >= 720.dp
+        val screenWidth = maxWidth
         val sidebarShown = wide && sidebarPinned && screen in setOf("home", "trash", "preferences", "about")
         val compactBar = (if (sidebarShown) maxWidth - 265.dp else maxWidth) < 560.dp
         LaunchedEffect(wide) { if (wide) drawerOpen = false }
@@ -283,7 +292,10 @@ fun NotebookHome(
                             })
                             HomeIconButton(Symbol.Trash, "Delete selected", false, { if (selected.isNotEmpty()) bulkDelete = true })
                         } else {
-                            val pill: @Composable (Modifier) -> Unit = { modifier -> SegmentPill(segments, segment, compactBar, { segment = it; notice = null }, modifier) }
+                            val tabs = if (onOpenBoard != null) segments + ("boards" to "Live") else segments
+                            // Five tabs need the compact padding below ~760 dp, or the pill runs into the search button.
+                            val tightTabs = compactBar || (tabs.size > 4 && screenWidth < 760.dp)
+                            val pill: @Composable (Modifier) -> Unit = { modifier -> SegmentPill(tabs, segment, tightTabs, { segment = it; notice = null }, modifier) }
                             Box(Modifier.fillMaxWidth().height(68.dp).padding(horizontal = 8.dp)) {
                                 Box(Modifier.align(Alignment.CenterStart)) { HomeIconButton(Symbol.Sidebar, "Toggle sidebar", wide && sidebarPinned, { if (wide) sidebarPinned = !sidebarPinned else drawerOpen = true }) }
                                 if (!compactBar) pill(Modifier.align(Alignment.Center))
@@ -348,7 +360,9 @@ fun NotebookHome(
                             val cell = if (compact) 100.dp else 112.dp
                             val columns = if (grid) ((maxWidth - pad * 2 + gap) / (cell + gap)).toInt().coerceAtLeast(2) else if (maxWidth >= 720.dp) 2 else 1
                             val itemSections = sections.count { it.key != "folders" && it.key != "parent" }
-                            LazyVerticalGrid(columns = GridCells.Fixed(columns), modifier = Modifier.fillMaxSize().testTag("notebook-grid"), contentPadding = PaddingValues(start = pad, end = pad, top = 4.dp, bottom = 112.dp),
+                            if (segment == "boards" && onOpenBoard != null) BoardsGrid(boards.filter { query.isEmpty() || it.title.contains(query, true) },
+                                grid, columns, pad, gap, boardPreview, formatDate, onOpenBoard, onRenameBoard, onDeleteBoard)
+                            else LazyVerticalGrid(columns = GridCells.Fixed(columns), modifier = Modifier.fillMaxSize().testTag("notebook-grid"), contentPadding = PaddingValues(start = pad, end = pad, top = 4.dp, bottom = 112.dp),
                                 horizontalArrangement = Arrangement.spacedBy(gap), verticalArrangement = Arrangement.spacedBy(if (grid) 16.dp else 8.dp)) {
                                 sections.forEach { section ->
                                     val limit = if (grid) columns else columns * 4
@@ -441,7 +455,7 @@ fun NotebookHome(
                                 }
                             }
                             if (!selecting) Box(Modifier.align(Alignment.BottomEnd).padding(end = 24.dp, bottom = 24.dp)) {
-                                Surface(onClick = { fabMenu = true }, shape = CircleShape, color = style.accent, shadowElevation = 6.dp,
+                                Surface(onClick = { if (segment == "boards" && onOpenBoard != null) newBoard = true else fabMenu = true }, shape = CircleShape, color = style.accent, shadowElevation = 6.dp,
                                     modifier = Modifier.size(60.dp).testTag("create-notebook").semantics { contentDescription = "Create" }) {
                                     Box(contentAlignment = Alignment.Center) { HomeSymbol(Symbol.Plus, Modifier.size(24.dp), tint = Color.White) }
                                 }
@@ -454,6 +468,7 @@ fun NotebookHome(
                                     DropdownMenuItem(text = { Text("Import notebook or backup") }, modifier = Modifier.testTag("home-import"), leadingIcon = { HomeSymbol(Symbol.Download, Modifier.size(20.dp)) }, onClick = { fabMenu = false; onImport() })
                                 }
                             }
+                            if (newBoard) BoardNameDialog("New board", "", "Create", onDismiss = { newBoard = false }) { newBoard = false; onNewBoard(it) }
                         }
                         if (isSaving) Text("Saving to this device…", Modifier.padding(horizontal = 24.dp, vertical = 4.dp), fontSize = 10.sp, lineHeight = 14.sp, color = Muted)
                     }

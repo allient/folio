@@ -1,5 +1,6 @@
 ---
 title: "Tables, stickers and sticky notes"
+description: "Tables, stickers and sticky notes on Folio pages: how they work and how they are stored."
 ---
 
 Three page objects added to the notebook editor (rail buttons **Table**, **Stickers**, **Sticky**; also under **Insert**).

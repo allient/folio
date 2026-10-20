@@ -1116,8 +1116,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             lastEraserPoint = null; eraserCursor = null; resizingSelection = false; rotatingSelection = false; stretchAxis = 0
             return
         }
-        val normalizedPressure = ((raw.coerceIn(0f, 1f) - threshold) / max(.0001f, 1f - threshold)).coerceIn(0f, 1f)
-        var filteredPressure = if (pressureCurveEnabled) pressureCurve.value(normalizedPressure) else normalizedPressure
+        var filteredPressure = penPressure(raw, threshold, if (pressureCurveEnabled) pressureCurve else null)
         val elapsed = (eventTime - lastSampleTime).coerceAtLeast(1L).toFloat()
         val distance = hypot((point.x - lastPosition.x) * width, (point.y - lastPosition.y) * width)
         val speed = (distance / elapsed / 1.5f).coerceIn(0f, 1f) // normalize around 1500 px/s

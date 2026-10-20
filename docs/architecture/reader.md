@@ -1,5 +1,6 @@
 ---
-title: "Knotes document reader"
+title: "PDF and EPUB reader"
+description: "How Folio’s PDF and EPUB reader works: rendering, highlights and margin notes, search, OCR, bookmarks and export."
 ---
 
 Android now has a Library for books and PDFs alongside notebooks. Books can be organized in the

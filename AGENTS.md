@@ -8,7 +8,7 @@ Engineering guide for Folio, for human contributors and coding agents. Read it b
 |---|---|
 | App | Folio: handwritten notes, infinite canvas, PDF and EPUB reader |
 | Platforms | **Android only** (phones and tablets). iOS is planned; shared code must stay iOS-compatible |
-| Application ID / package | `com.allient.folio` |
+| Application ID / package | `com.allient.folio` (release). Debug builds are **`com.allient.folio.dev`**, named "Folio Dev", and install next to the store app |
 | Store title | `Folio: Notes & PDF Reader` (Google Play allows 30 characters) |
 | Privacy | Content never leaves the device. No account or ads. Anonymous usage statistics via Google Analytics (`AppAnalytics`), on by default with an off switch; consent first in EU/EEA, UK and CH. Only runtime permission: `RECORD_AUDIO` |
 | Reference devices | Android tablet emulator (API 36, 1200×1920), XPPen MagicNotePad MNP1095 (Android 14), phone-size emulator (~411 dp wide) |
@@ -44,6 +44,8 @@ Key Android files (`apps/mobile/androidApp/src/main/kotlin/com/allient/folio/`):
 | `NotebookFiles.kt`, `LocalBackup.kt` | Export, import, `.folio` archives, smart backups |
 | `ReaderActivity.kt`, `PdfReaderEngine.kt`, `EpubReaderEngine.kt`, `ReaderStore.kt`, `ReaderExport.kt` | PDF/EPUB reader, annotations, OCR, export |
 | `AppUpdates.kt` | Google Play in-app updates |
+| `HandwritingRecognizer.kt` | ML Kit Digital Ink: lasso → Convert to text, language choice, model download on first use |
+| `LiveBoardActivity.kt`, `PressureFilteringWebView.kt`, `PenPressureMapper.kt`, `LiveBoardStore.kt` | Live boards: Excalidraw in a WebView with Folio's pen filter, boards on disk (see `docs/features/live-boards.md`) |
 | `ViewUtils.kt` | Android view helpers (`dp()`, `ReaderChromeBands`) |
 
 ## Commands
@@ -104,6 +106,7 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 - Stroke engines are versioned (`jetpack-ink-v1`, `jetpack-ink-v2`, `shape-v1`, `fill-cut-v1`, …). Old ink must render unchanged; add a new version rather than changing an old one.
 - `.folio` archives: ZIP with `manifest.json` and Zstandard-compressed JSON, format ID `application/vnd.folio.archive+zip`. Legacy `.knotes` archives and `Knotes-Backup-*.knotes` files must keep importing. JSON schemas are in `apps/docs/public/schemas`.
 - Imports must reject unsafe archive paths (zip-slip) and must never erase existing data.
+- Live boards live in `files/liveboards/` (`index.json`, `<id>.json` with Excalidraw's own `elements`/`appState` strings, `<id>.jpg` preview). Keep Excalidraw's JSON untouched so boards stay openable in Excalidraw.
 - Android cloud backup stays off (`allowBackup="false"`).
 - Schema changes follow `docs/architecture/sqlite-migrations.md`.
 
@@ -112,10 +115,12 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 - **Jetpack Ink mesh crash (Android 14, MNP1095):** keep `CanvasStrokeRenderer.create(forcePathRendering = true)` in `JetpackInkEngine.kt` when upgrading Ink. See `investigations/mnp1095-mesh-crash.md`.
 - **R8:** release builds are minified. Keep rules for JNI and reflection libraries (Pdfium, zstd, Ink, PDFBox, Readium, ML Kit) are in `androidApp/proguard-rules.pro`. After adding or upgrading a library, test the release build: OCR silently broke until ML Kit's rules were added.
 - **Analytics rules:** log through `AppAnalytics` only. Event parameters are short identifiers (`kind=pdf`), never user text: no note or book content, titles, file names or search text. The advertising ID and Privacy Sandbox ad permissions are removed in the manifest; keep it that way. Any new kind of collected data needs the privacy policy and the Play Data safety form updated first.
+- **Two apps on one device:** debug = `com.allient.folio.dev` (`applicationIdSuffix`, name in `src/debug/res`), release = `com.allient.folio`. Different IDs mean different signing keys never clash. Dev builds never use Firebase (no Analytics or Crashlytics), whatever `google-services.json` contains. Code that needs the ID uses `context.packageName` / `${applicationId}`, never a hard-coded string.
 - **Firebase config:** `androidApp/google-services.json` comes from the Firebase console and is git-ignored. The Google Services and Crashlytics plugins are applied only when it exists, so builds without it work and Firebase stays inactive. Analytics and Crashlytics share one user switch (`AppAnalytics`); report handled errors with `AppAnalytics.recordError(error, where)` (no user text).
 - **Website analytics:** Cloudflare Web Analytics (cookieless), enabled when `PUBLIC_CF_BEACON_TOKEN` is set at build time (repository variable or secret `CF_BEACON_TOKEN`; the bare token or the whole snippet both work).
 - **Permissions:** after adding a dependency, check the merged release manifest (`build/intermediates/merged_manifest/release/`) for new permissions or exported components.
 - **Stale Gradle outputs** from the project's old folder name can break dex merging. `./gradlew clean` fixes it.
+- **Live boards (WebView + Excalidraw):** give the WebView `MATCH_PARENT` (Compose's default `WRAP_CONTENT` collapses the page); keep `currentItemStrokeVariability = "variable"` or Excalidraw ignores pen pressure; every pen down sent to the page needs an up/cancel or later strokes become pinch-zoom; capture previews with `PixelCopy` (`View.draw` can't see the GPU canvas). Details in `docs/features/live-boards.md`.
 
 ## Testing
 
@@ -142,6 +147,7 @@ Builds and uploads run on the maintainer's machine with fastlane. **Don't add ap
 
 - `apps/docs` is deployed to Cloudflare Workers Static Assets (`apps/docs/wrangler.jsonc`, one environment, observability on) by `.github/workflows/docs.yml` on pushes to `main`. Pull requests only build. Each run posts to Slack `#eventos`.
 - Repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SLACK_WEBHOOK_URL`.
+- **SEO and agent discovery:** shared facts (keywords, FAQ, crawler policy) live in `apps/docs/src/site.ts`. The build writes `robots.txt` (with Content Signals and AI crawler groups), `sitemap.xml`, `/.well-known/ai-catalog.json`, and, in `scripts/agent-files.mjs`, a Markdown copy of every page, `llms.txt`, `llms-full.txt` and the agent skills index (with SHA-256 digests). `worker/index.ts` runs in front of the assets: it returns the Markdown for `Accept: text/markdown`, adds Link headers and allows cross-origin reads of the agent files. `public/webmcp.js` registers WebMCP tools. Give every doc a `description` in its frontmatter (it becomes the meta description and the llms.txt line). Agent skills go in `public/.well-known/agent-skills/<name>/SKILL.md`.
 - The privacy policy at `/privacy/` (`src/pages/privacy.astro`) is linked from the Play listing. Update it whenever permissions or data handling change.
 - Landing page layout primitives live in `apps/docs/src/components/ui` (`Box`, `Stack`, `Grid`, `Container`, `Tablet`); design tokens in `src/styles/tokens.css`.
 
@@ -159,6 +165,7 @@ Sources: [`docs/`](docs). Each file needs a `title` in its frontmatter; the webs
 | `architecture/jetpack-ink-implementation.md` | Jetpack Ink integration |
 | `architecture/ink-rendering-research.md` | Rendering performance research |
 | `investigations/mnp1095-mesh-crash.md` | Android 14 mesh crash: analysis and fix |
+| `features/live-boards.md` | Live boards: Excalidraw with Folio's pen filter, storage, pitfalls, limits |
 | `features/*.md` | Feature reviews (BOOX coverage, canvas tools, ruler and zoom window, tables and stickers) |
 | `roadmap/*.md` | Planned preferences (themes, languages), responsive improvements |
 | `testing/validation.md`, `testing/mirroring.md` | Test results, UI flow replays, device mirroring |

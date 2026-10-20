@@ -662,7 +662,7 @@ internal fun NotebookEditor(
 
     val dialog = sheet
     if (dialog != null && dialog !in listOf("pressure", "image", "pdf", "attachment")) {
-        ToolDialog(when(dialog) { "edit text" -> "Text box"; "tags" -> "Tags"; "outline" -> "Page outline"; else -> dialog.replaceFirstChar { it.uppercase() } }, { sheet = null },
+        ToolDialog(when(dialog) { "edit text" -> "Text box"; "to text" -> "Convert to text"; "tags" -> "Tags"; "outline" -> "Page outline"; else -> dialog.replaceFirstChar { it.uppercase() } }, { sheet = null },
             expanded = dialog == "shapes",
             footer = if (dialog == "shapes") { {
                 Button(onClick = { canvas?.flushInput(); mode = CanvasMode.Shape; if (selectedBrush.eraser) selectedBrush = previousPen; selectedIds = emptySet(); sheet = null }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) { Text("Draw shape") }
@@ -824,6 +824,7 @@ internal fun NotebookEditor(
                 }
                 "selection" -> {
                     // Only what the bar beside the selection does not already show.
+                    ToolAction(InkIcon.Text, "Convert to text", "Read the selected handwriting and turn it into a text box") { canvas?.flushInput(); sheet = "to text" }
                     ToolAction(InkIcon.Cut, "Cut", "Remove the selection and keep it to paste") { canvas?.flushInput(); clipboard = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }; deleteSelection(); sheet = null }
                     ToolAction(InkIcon.Hand, "Move selection", "Drag anywhere on the canvas to move the selected ink") { canvas?.flushInput(); mode = CanvasMode.MoveSelection; sheet = null }
                     ToolAction(InkIcon.Add, "Larger 10%") { transformSelection(scale = 1.1f); sheet = null }
@@ -852,6 +853,31 @@ internal fun NotebookEditor(
                     TableStructureControls(block, cellSelection, { changed -> updateBlock { changed } }, { cellSelection = it; if (it == null) cellAnchor = null })
                 }
                 "table style" -> page.blocks.firstOrNull { it.id == selectedBlockId }?.let { block -> TableStyleControls(block) { changed -> updateBlock { changed } } }
+                "to text" -> {
+                    val strokes = page.strokes.filter { it.id in selectedIds && editableLayer(it.layerId) }
+                    /** A text box over the handwriting: same left edge, first baseline near its top, size from the line height. */
+                    fun textBox(text: String, below: Boolean): InkText {
+                        val points = strokes.flatMap { it.points }
+                        val left = points.minOf { it.x }; val right = points.maxOf { it.x }
+                        val top = points.minOf { it.y }; val bottom = points.maxOf { it.y }
+                        val lines = text.lines().size.coerceAtLeast(1)
+                        val size = ((bottom - top) * 960f / lines * .8f).coerceIn(12f, 96f)
+                        val baseline = (if (below) bottom + .01f else top) + size * .85f / 960f
+                        return InkText(text = text, x = left, y = baseline, size = size, layerId = strokes.first().layerId,
+                            color = strokes.first().color, boxWidth = (right - left).coerceIn(.15f, .9f))
+                    }
+                    ConvertToTextPanel(strokes,
+                        onReplace = { text ->
+                            canvas?.flushInput()
+                            applyPage(page.copy(strokes = page.strokes.filterNot { stroke -> strokes.any { it.id == stroke.id } }, texts = page.texts + textBox(text, below = false)))
+                            selectedIds = emptySet(); sheet = null
+                        },
+                        onAdd = { text -> canvas?.flushInput(); applyPage(page.copy(texts = page.texts + textBox(text, below = true))); sheet = null },
+                        onCopy = { text ->
+                            context.getSystemService(android.content.ClipboardManager::class.java)?.setPrimaryClip(android.content.ClipData.newPlainText("Handwriting", text))
+                            sheet = null
+                        })
+                }
                 "selection layer" -> LayerControls(page, activeLayer, { activeLayer = it }, ::applyPage,
                     onChooseDestination = { updated, destination ->
                         canvas?.flushInput()

@@ -9,9 +9,13 @@ plugins {
 // Firebase (Google Analytics, Crashlytics). google-services.json comes from the Firebase console and
 // is git-ignored; the plugins apply only when it is present, so builds without it still work and
 // Firebase stays inactive. Crashlytics uploads the R8 mapping file with release builds.
-if (file("google-services.json").exists()) {
+val googleServices = file("google-services.json")
+if (googleServices.exists()) {
     apply(plugin = "com.google.gms.google-services")
     apply(plugin = "com.google.firebase.crashlytics")
+    // Dev builds (com.allient.folio.dev) never ship: no Firebase config is generated for them, so
+    // Analytics and Crashlytics stay off and testing never reaches the real statistics.
+    tasks.matching { it.name == "processDebugGoogleServices" }.configureEach { enabled = false }
 }
 
 kotlin {
@@ -21,12 +25,16 @@ kotlin {
 }
 dependencies {
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // Handwriting to text (lasso → Convert to text). Language models download on first use.
+    implementation("com.google.mlkit:digital-ink-recognition:19.0.0")
     implementation("io.legere:pdfiumandroid:2.0.3")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     implementation("org.readium.kotlin-toolkit:readium-shared:3.4.0")
     implementation("org.readium.kotlin-toolkit:readium-streamer:3.4.0")
     implementation("org.readium.kotlin-toolkit:readium-navigator:3.4.0")
     implementation("androidx.fragment:fragment-ktx:1.8.9")
+    // Live board: inject the saved board into the Excalidraw page before its scripts run.
+    implementation("androidx.webkit:webkit:1.17.1")
     implementation(libs.androidx.appcompat)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     androidTestImplementation(libs.androidx.testExt.junit)
@@ -94,6 +102,11 @@ android {
         }
     }
     buildTypes {
+        // Debug builds install next to the store app: own ID, name "Folio Dev" (src/debug/res).
+        debug {
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
         release {
             signingConfig = signingConfigs.findByName("upload")
             // R8: smaller download and faster startup. Keep rules for JNI/reflective libraries are in proguard-rules.pro.

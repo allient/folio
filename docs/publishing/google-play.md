@@ -72,7 +72,7 @@ Folio sends anonymous usage statistics through Google Analytics for Firebase (`A
 3. Download `google-services.json` and save it as `apps/mobile/androidApp/google-services.json`. It's git-ignored: it isn't a secret, but forks of this open-source repository must not send data to your project. Keep a copy in your password manager.
 4. In Google Analytics (Admin → Data collection and modification → **Data retention**), set event data retention to **14 months**, as the privacy policy says. Leave **Google signals off**.
 5. In Firebase → **Crashlytics**, click **Enable**. Release builds upload their R8 mapping file automatically, so stack traces are readable.
-6. Run `just install-debug`. In Firebase → Analytics → **DebugView**, events appear after `adb shell setprop debug.firebase.analytics.app com.allient.folio`.
+6. Check events in Firebase → Analytics → **DebugView**: install a release build (`just install-release <serial>`), then run `adb shell setprop debug.firebase.analytics.app com.allient.folio`. Dev builds (`com.allient.folio.dev`) never use Firebase.
 
 ### Step 3: Publish the website
 

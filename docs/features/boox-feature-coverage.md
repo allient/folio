@@ -1,5 +1,6 @@
 ---
 title: "BOOX-inspired notes: implementation coverage"
+description: "Which handwritten-notes workflows Folio covers: toolbar, tool rail, notebooks, page navigation and more."
 ---
 
 Knotes follows the requested [BOOX Handwritten Notes reference](https://help.boox.com/fa5fa/4d151/f57ec) in its compact top toolbar, vertical tool rail, white writing surface, notebook library, and page navigation. This document describes the current source implementation; it is not a claim of complete BOOX feature parity or a hardware validation report.
