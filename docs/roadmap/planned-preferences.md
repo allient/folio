@@ -1,5 +1,6 @@
 ---
 title: "Planned preferences and languages (not implemented)"
+description: "Preferences and app languages planned for Folio but not built yet, and why they wait."
 ---
 
 2026-10-18

@@ -1,5 +1,6 @@
 ---
 title: "Jetpack Ink implementation and code review"
+description: "How Folio uses Jetpack Ink for low-latency, pressure-sensitive handwriting on Android, with a code review of the integration."
 ---
 
 2026-10-16

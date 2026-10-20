@@ -1,5 +1,6 @@
 ---
 title: "Local storage and portable backups"
+description: "Where Folio keeps notebooks and books on the device, how Trash and smart backups work, and the limits on importing files."
 ---
 
 Folio stores notes on the Android device. It has no application account, sync service, network storage, or Internet permission. The manifest sets `android:allowBackup="false"` to disable Android's ordinary automatic app backup; manual `.folio` exports provide the portable backup workflow. Device transfer behavior can also depend on the Android version and manufacturer.

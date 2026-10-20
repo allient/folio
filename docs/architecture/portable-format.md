@@ -1,5 +1,6 @@
 ---
 title: "Folio portable format"
+description: "The open .folio notebook format: a ZIP archive with Zstandard-compressed JSON, its schemas, assets and legacy .knotes support."
 ---
 
 `.folio` is a ZIP archive using the standard ZIP container and the `.folio` extension. Its manifest format ID is `application/vnd.folio.archive+zip`. The package deliberately keeps portable data separate from SQLite's internal schema.

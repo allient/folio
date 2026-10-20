@@ -1,5 +1,6 @@
 ---
 title: "Canvas tools review — 2026-10-16"
+description: "Review of Folio’s canvas tools: pens, erasers, lasso, shapes, fill, layers and zoom, with what was fixed."
 ---
 
 Reference: [BOOX Handwritten Notes](https://help.boox.com/hc/en-us/articles/8569373888788-Handwritten-Notes). This is app-local functionality, with no root, driver changes, cloud services, or changes to the existing pressure activation curve.

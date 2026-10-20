@@ -147,6 +147,7 @@ Builds and uploads run on the maintainer's machine with fastlane. **Don't add ap
 
 - `apps/docs` is deployed to Cloudflare Workers Static Assets (`apps/docs/wrangler.jsonc`, one environment, observability on) by `.github/workflows/docs.yml` on pushes to `main`. Pull requests only build. Each run posts to Slack `#eventos`.
 - Repository secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SLACK_WEBHOOK_URL`.
+- **SEO and agent discovery:** shared facts (keywords, FAQ, crawler policy) live in `apps/docs/src/site.ts`. The build writes `robots.txt` (with Content Signals and AI crawler groups), `sitemap.xml`, `/.well-known/ai-catalog.json`, and, in `scripts/agent-files.mjs`, a Markdown copy of every page, `llms.txt`, `llms-full.txt` and the agent skills index (with SHA-256 digests). `worker/index.ts` runs in front of the assets: it returns the Markdown for `Accept: text/markdown`, adds Link headers and allows cross-origin reads of the agent files. `public/webmcp.js` registers WebMCP tools. Give every doc a `description` in its frontmatter (it becomes the meta description and the llms.txt line). Agent skills go in `public/.well-known/agent-skills/<name>/SKILL.md`.
 - The privacy policy at `/privacy/` (`src/pages/privacy.astro`) is linked from the Play listing. Update it whenever permissions or data handling change.
 - Landing page layout primitives live in `apps/docs/src/components/ui` (`Box`, `Stack`, `Grid`, `Container`, `Tablet`); design tokens in `src/styles/tokens.css`.
 

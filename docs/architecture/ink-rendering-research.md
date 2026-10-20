@@ -1,5 +1,6 @@
 ---
-title: "Knotes ink rendering research"
+title: "Ink rendering research"
+description: "How Folio renders handwriting on Android: Jetpack Ink, front-buffered wet ink and the options reviewed for low-latency stylus drawing."
 ---
 
 Reviewed 2026-10-16. This is a source/code review, not a performance measurement or renderer migration.

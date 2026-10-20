@@ -3,8 +3,9 @@ import type { ImageMetadata } from 'astro';
 import Landing from '../layouts/Landing.astro';
 import InkMark from '../components/landing/InkMark.astro';
 import { Box, Container, Grid, Stack, Tablet } from '../components/ui';
+import { DESCRIPTION, FAQ, GITHUB, NAME, OG_IMAGE, SITE } from '../site';
 
-const github = 'https://github.com/allient/folio';
+const github = GITHUB;
 const shots = import.meta.glob<{ default: ImageMetadata }>('../assets/screenshots/*.png', { eager: true });
 const shot = (name: string) => (shots[`../assets/screenshots/${name}.png`] ?? shots['../assets/screenshots/editor.png']).default;
 
@@ -42,6 +43,43 @@ const details = [
 	{ title: 'Find anything', body: 'Search notebook names, typed text, tags, outlines, book titles and authors.' },
 	{ title: 'Share what you made', body: 'Export pages as PDF or PNG, or a whole notebook as an editable .folio file.' },
 	{ title: 'Your layout', body: 'Pick an accent colour, corner style, grid or list, and the toolbox set you use most.' },
+	{ title: 'Handwriting to text', body: 'Lasso your handwriting and turn it into typed text, on the device, in more than 300 languages.' },
+	{ title: 'Live boards for calls', body: 'Whiteboards built on Excalidraw, written with your pen. Share a link and people in your call draw along from any browser.' },
+];
+
+// schema.org data: Google rich results and AI assistants read the app facts and the FAQ from here.
+const jsonLd = [
+	{
+		'@context': 'https://schema.org',
+		'@type': 'SoftwareApplication',
+		name: NAME,
+		alternateName: 'Folio: Notes & PDF Reader',
+		description: DESCRIPTION,
+		url: SITE,
+		image: OG_IMAGE,
+		applicationCategory: 'ProductivityApplication',
+		applicationSubCategory: 'Note taking',
+		operatingSystem: 'Android',
+		isAccessibleForFree: true,
+		license: 'https://www.apache.org/licenses/LICENSE-2.0',
+		offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+		featureList: [
+			'Handwriting with twelve pressure-sensitive brushes',
+			'35 page templates and an infinite canvas',
+			'PDF and EPUB reader with highlights, margin notes and OCR',
+			'Handwriting to text in 300+ languages',
+			'Live whiteboards for video calls (Excalidraw)',
+			'Smart backups and open .folio file format',
+			'Works offline, no account, no ads',
+		],
+		codeRepository: github,
+		publisher: { '@type': 'Organization', name: 'Allient', url: 'https://allient.io' },
+	},
+	{
+		'@context': 'https://schema.org',
+		'@type': 'FAQPage',
+		mainEntity: FAQ.map(({ q, a }) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
+	},
 ];
 
 const gallery = [
@@ -53,8 +91,9 @@ const gallery = [
 ---
 
 <Landing
-	title="Folio: Handwritten Notes & eReader for Android tablets"
-	description="Write with pressure-sensitive brushes, sketch on an infinite canvas and annotate PDFs and EPUBs. Free, open source, and your notes stay on your device."
+	title="Folio: Handwriting Notes & PDF Annotation App for Android Tablets"
+	description="Free, open source note-taking app for Android tablets and pens. Write by hand with pressure-sensitive brushes, annotate PDFs and EPUBs, convert handwriting to text. Offline, no account."
+	jsonLd={jsonLd}
 >
 	<Box as="section" class="hero" py={{ base: 6, md: 10 }}>
 		<Container>
@@ -63,7 +102,7 @@ const gallery = [
 					<InkMark class="hero__mark" />
 					<h1>Handwritten notes and books, on one tablet.</h1>
 					<p class="hero__lede">
-						Folio is a notebook and eReader for pen tablets. Write with brushes that answer to pressure, sketch on an infinite canvas, and mark up your PDFs and EPUBs. Everything stays on your device.
+						Folio is a free handwriting notes app and eReader for Android tablets and pens. Write with brushes that answer to pressure, sketch on an infinite canvas, annotate your PDFs and EPUBs, and turn handwriting into text. Everything stays on your device.
 					</p>
 					<Stack direction={{ base: 'column', sm: 'row' }} gap={1.5} align={{ base: 'stretch', sm: 'center' }} class="hero__actions">
 						<a class="button" href={github}>Get the source on GitHub</a>
@@ -155,6 +194,22 @@ const gallery = [
 		</Container>
 	</Box>
 
+	<Box as="section" id="faq" surface="cream" py={{ base: 8, md: 12 }} aria-labelledby="faq-title">
+		<Container size="sm">
+			<Stack gap={{ base: 3, md: 4 }}>
+				<h2 id="faq-title" class="section-title">Questions</h2>
+				<div class="faq">
+					{FAQ.map(({ q, a }) => (
+						<details>
+							<summary><h3>{q}</h3></summary>
+							<p>{a}</p>
+						</details>
+					))}
+				</div>
+			</Stack>
+		</Container>
+	</Box>
+
 	<Box as="section" py={{ base: 8, md: 12 }} class="closing">
 		<Container size="sm">
 			<Stack gap={3} align="center">
@@ -167,6 +222,38 @@ const gallery = [
 </Landing>
 
 <style>
+	.faq details {
+		border-bottom: 1px solid color-mix(in srgb, var(--folio-ink) 14%, transparent);
+		padding: 0.25rem 0;
+	}
+	.faq summary {
+		cursor: pointer;
+		list-style: none;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+		min-height: 3rem;
+	}
+	.faq summary::-webkit-details-marker {
+		display: none;
+	}
+	.faq summary::after {
+		content: '+';
+		font-size: 1.4rem;
+		color: var(--folio-sage);
+	}
+	.faq details[open] summary::after {
+		content: '−';
+	}
+	.faq h3 {
+		font-size: 1.05rem;
+		margin: 0;
+	}
+	.faq p {
+		margin: 0 0 1rem;
+		max-width: 60ch;
+	}
 	.hero__copy {
 		flex: 1 1 0;
 		max-width: 36rem;
