@@ -25,6 +25,8 @@ kotlin {
 }
 dependencies {
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // Handwriting to text (lasso → Convert to text). Language models download on first use.
+    implementation("com.google.mlkit:digital-ink-recognition:19.0.0")
     implementation("io.legere:pdfiumandroid:2.0.3")
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     implementation("org.readium.kotlin-toolkit:readium-shared:3.4.0")

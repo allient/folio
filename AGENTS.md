@@ -44,6 +44,7 @@ Key Android files (`apps/mobile/androidApp/src/main/kotlin/com/allient/folio/`):
 | `NotebookFiles.kt`, `LocalBackup.kt` | Export, import, `.folio` archives, smart backups |
 | `ReaderActivity.kt`, `PdfReaderEngine.kt`, `EpubReaderEngine.kt`, `ReaderStore.kt`, `ReaderExport.kt` | PDF/EPUB reader, annotations, OCR, export |
 | `AppUpdates.kt` | Google Play in-app updates |
+| `HandwritingRecognizer.kt` | ML Kit Digital Ink: lasso → Convert to text, language choice, model download on first use |
 | `LiveBoardActivity.kt`, `PressureFilteringWebView.kt`, `PenPressureMapper.kt`, `LiveBoardStore.kt` | Live boards: Excalidraw in a WebView with Folio's pen filter, boards on disk (see `docs/features/live-boards.md`) |
 | `ViewUtils.kt` | Android view helpers (`dp()`, `ReaderChromeBands`) |
 
