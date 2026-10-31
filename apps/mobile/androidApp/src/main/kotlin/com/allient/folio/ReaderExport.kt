@@ -38,7 +38,10 @@ internal object ReaderExport {
                                 quads.addAll(listOf(x1,y2,x2,y2,x1,y1,x2,y1))
                             }
                             if(quads.isEmpty())return@forEach
-                            PDAnnotationTextMarkup(if(a.kind==AnnotationKind.UNDERLINE)PDAnnotationTextMarkup.SUB_TYPE_UNDERLINE else PDAnnotationTextMarkup.SUB_TYPE_HIGHLIGHT).apply {
+                            PDAnnotationTextMarkup(if(a.kind==AnnotationKind.UNDERLINE)(if(anchor.optString("underlineStyle") == "wavy") PDAnnotationTextMarkup.SUB_TYPE_SQUIGGLY else PDAnnotationTextMarkup.SUB_TYPE_UNDERLINE) else PDAnnotationTextMarkup.SUB_TYPE_HIGHLIGHT).apply {
+                                if (a.kind == AnnotationKind.UNDERLINE && anchor.optString("underlineStyle") == "dashed") {
+                                    borderStyle = PDBorderStyleDictionary().apply { width = 1.5f; style = PDBorderStyleDictionary.STYLE_DASHED; setDashStyle(com.tom_roush.pdfbox.cos.COSArray().apply { add(com.tom_roush.pdfbox.cos.COSFloat(5f)); add(com.tom_roush.pdfbox.cos.COSFloat(3f)) }) }
+                                }
                                 quadPoints=quads.toFloatArray();rectangle=PDRectangle(left,bottom,right-left,top-bottom)
                             }
                         }

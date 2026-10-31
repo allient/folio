@@ -1,6 +1,8 @@
 @file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class, androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 package com.allient.folio
 
+import android.content.Intent
+
 import android.os.Bundle
 import android.view.*
 import androidx.activity.compose.setContent
@@ -14,6 +16,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -37,6 +42,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -67,6 +73,7 @@ class ReaderActivity : AppCompatActivity() {
     private lateinit var model: ReaderViewModel
     private lateinit var notebookRepository: NotebookViewModel
     private var pdf: PdfReaderSession? by mutableStateOf(null)
+    private var pdfContents by mutableStateOf<List<ReaderContentsEntry>>(emptyList())
     private var publication: Publication? by mutableStateOf(null)
     private var navigator: EpubNavigatorFragment? by mutableStateOf(null)
     private var selected: PdfSelection? by mutableStateOf(null)
@@ -88,12 +95,14 @@ class ReaderActivity : AppCompatActivity() {
         AppAnalytics.screen("reader")
         // Native navigators are rebuilt from persisted locators, never restored without a Publication.
         super.onCreate(null)
+        selected = savedInstanceState?.getString("selectionAnchor")?.let { PdfSelection(it, savedInstanceState.getString("selectionText").orEmpty()) }
         enableEdgeToEdge()
         setReaderImmersive()
         fontScale = settings.getFloat("fontScale", 1f).toDouble()
         themeName = settings.getString("theme", "Light") ?: "Light"
         scroll = settings.getBoolean("scroll", false)
         lineHeight = settings.getFloat("lineHeight", 1.5f).toDouble()
+        requestedOrientation = readerOrientation(settings.getInt("readerLandscape", 0))
         model = ViewModelProvider(this)[ReaderViewModel::class.java]
         notebookRepository = ViewModelProvider(this)[NotebookViewModel::class.java]
         lifecycleScope.launch {
@@ -103,6 +112,11 @@ class ReaderActivity : AppCompatActivity() {
                 check(File(document.path).isFile) { "The original file is not on this device. Re-import the same PDF or EPUB to continue; your saved notes and reading position will reconnect automatically." }
                 if (document.format == "pdf") {
                     pdf = withContext(Dispatchers.IO) { PdfReaderSession(File(document.path)) }
+                    pdfContents = withContext(Dispatchers.IO) {
+                        try { pdf!!.contents() }
+                        catch (cancelled: CancellationException) { throw cancelled }
+                        catch (error: Exception) { AppAnalytics.recordError(error, "pdf_contents"); emptyList() }
+                    }
                     page = document.locator.takeIf { it.isNotBlank() }?.let { JSONObject(it).optInt("page") }?.coerceIn(0, pdf!!.pageCount - 1) ?: 0
                 } else publication = withContext(Dispatchers.IO) { EpubReaderEngine.open(this@ReaderActivity, File(document.path)) }
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -111,15 +125,25 @@ class ReaderActivity : AppCompatActivity() {
         }
         setContent { MaterialTheme(colorScheme = if (themeName == "Dark") darkColorScheme(primary = Color.White, onPrimary = Color.Black, secondary = Color.LightGray, secondaryContainer = Color.DarkGray) else lightColorScheme(primary = FolioBrand.Ink, secondary = FolioBrand.Muted, secondaryContainer = FolioBrand.SageSoft, onSecondaryContainer = FolioBrand.Ink, tertiary = FolioBrand.Sage, surface = Color.White, onSurface = FolioBrand.Ink, surfaceContainerLow = Color.White), typography = folioTypography()) { androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) { ReaderContent() } } }
     }
+    // API 36+ displays may ignore app orientation requests even at phone-sized
+    // window widths (for example a resized tablet). Follow the display to avoid letterboxing.
+    private fun supportsLandscapeLock() = android.os.Build.VERSION.SDK_INT < 36
+    private fun readerOrientation(direction: Int): Int = when {
+        !supportsLandscapeLock() -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        direction == 1 -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        direction == 2 -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+        else -> android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    }
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) setReaderImmersive()
     }
     private fun setReaderImmersive() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.setDecorFitsSystemWindows(window, !settings.getBoolean("gestureSystemBars", true))
         WindowInsetsControllerCompat(window, window.decorView).apply {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            hide(WindowInsetsCompat.Type.systemBars())
+            if (settings.getBoolean("gestureSystemBars", true)) hide(WindowInsetsCompat.Type.systemBars())
+            else show(WindowInsetsCompat.Type.systemBars())
         }
     }
     private fun preferences() = EpubPreferences(fontSize = fontScale, theme = when (themeName) { "Dark" -> Theme.DARK; "Sepia" -> Theme.SEPIA; else -> Theme.LIGHT }, scroll = scroll, lineHeight = lineHeight)
@@ -134,33 +158,89 @@ class ReaderActivity : AppCompatActivity() {
         if (pdf != null) { page = JSONObject(anchor).getInt("page").coerceIn(0,pdf!!.pageCount - 1); if (searchQuote != null && JSONObject(anchor).has("rects")) selected = PdfSelection(anchor, searchQuote) }
         else Locator.fromJSON(JSONObject(anchor))?.let { navigator?.go(it) }
     }
-    private fun saveSelection(kind: AnnotationKind, color: Int, note: String = "") {
+    private fun saveSelection(kind: AnnotationKind, color: Int, note: String = "", underlineStyle: String = "solid") {
         val selection = selected ?: return
-        model.annotate(kind, selection.anchor, selection.text, note, color)
+        model.annotate(kind, if (kind == AnnotationKind.UNDERLINE) JSONObject(selection.anchor).put("underlineStyle", underlineStyle).toString() else selection.anchor, selection.text, note, color)
         selected = null; navigator?.clearSelection()
     }
     @Composable private fun ReaderContent() {
         val scope = rememberCoroutineScope()
         val doc = model.current
         var panel by rememberSaveable { mutableStateOf<String?>(null) }
-        var chromeVisible by rememberSaveable { mutableStateOf(false) }
+        var chromeVisible by rememberSaveable { mutableStateOf(intent.getBooleanExtra("showReaderControls", false)) }
         var showProgress by rememberSaveable { mutableStateOf(true) }
+        var showBookTabs by remember { mutableStateOf(settings.getBoolean("showBookTabs", true)) }
         var readerTab by rememberSaveable { mutableStateOf("Progress") }
         var penSettings by remember { mutableStateOf(false) }
         if (penSettings) GlobalPenSettingsDialog { penSettings = false }
+        var gestures by remember { mutableStateOf(ReaderGesturePreferences.read(settings)) }
+        LaunchedEffect(gestures) { gestures.save(settings); setReaderImmersive() }
+        BackHandler(enabled = !gestures.back) { chromeVisible = true; panel = "Gestures" }
+        var openTabIds by remember {
+            val ids = runCatching { org.json.JSONArray(settings.getString("openBookTabs", "[]")) }.getOrElse { org.json.JSONArray() }
+            mutableStateOf((List(ids.length()) { ids.optString(it) }.filter { it.isNotBlank() } + listOfNotNull(intent.getStringExtra("documentId"))).distinct().takeLast(12))
+        }
+        LaunchedEffect(openTabIds) { settings.edit().putString("openBookTabs", org.json.JSONArray(openTabIds).toString()).apply() }
+        val openBooks = openTabIds.mapNotNull { id -> (model.documents + listOfNotNull(doc)).firstOrNull { it.id == id && it.deletedAt == 0L } }
+        fun switchBook(id: String) {
+            if (id == doc?.id) return
+            saveReadingPosition()
+            panel = null
+            intent.putExtra("documentId", id).putExtra("showReaderControls", true)
+            recreate()
+        }
         var contentsTab by rememberSaveable { mutableStateOf("TOC") }
+        var expandedContents by rememberSaveable { mutableStateOf(arrayListOf<String>()) }
+        val epubContents = remember(publication) {
+            val targets = mutableMapOf<String, Link>()
+            fun convert(links: List<Link>, parent: String = "epub"): List<ReaderContentsEntry> = links.mapIndexed { index, link ->
+                val id = "$parent-$index"
+                targets[id] = link
+                ReaderContentsEntry(id, link.title?.takeIf { it.isNotBlank() } ?: "Chapter ${index + 1}", children = convert(link.children, id))
+            }
+            convert(publication?.tableOfContents.orEmpty().ifEmpty { publication?.readingOrder.orEmpty() }) to targets
+        }
+        val outline = if (pdf != null) pdfContents else epubContents.first
+        val activeChapter = if (pdf != null) currentReaderChapter(pdfContents, page) else null
         var drawingToolbar by rememberSaveable { mutableStateOf(false) }
         var drawingPopup by rememberSaveable { mutableStateOf<String?>(null) }
-        var splitHorizontal by rememberSaveable { mutableStateOf(true) }
-        var pdfZoom by rememberSaveable { mutableFloatStateOf(1f) }
-        var pdfMargin by rememberSaveable { mutableFloatStateOf(0f) }
-        var pdfContrast by rememberSaveable { mutableFloatStateOf(1f) }
-        var pdfBrightness by rememberSaveable { mutableFloatStateOf(0f) }
+        var splitHorizontal by rememberSaveable { mutableStateOf(settings.getBoolean("splitHorizontal", true)) }
+        var pdfZoom by rememberSaveable { mutableFloatStateOf(settings.getFloat("pdfZoom", 1f)) }
+        var pdfMargin by rememberSaveable { mutableFloatStateOf(settings.getFloat("pdfMargin", 0f).coerceIn(0f, 16f)) }
+        var pdfContrast by rememberSaveable { mutableFloatStateOf(settings.getFloat("pdfContrast", 1f)) }
+        var pdfBrightness by rememberSaveable { mutableFloatStateOf(settings.getFloat("pdfBrightness", 0f)) }
+        var pdfEmbolden by rememberSaveable { mutableIntStateOf(settings.getInt("pdfEmbolden", 0).coerceIn(0, 5)) }
+        var pdfSharpen by rememberSaveable { mutableIntStateOf(settings.getInt("pdfSharpen", 0).coerceIn(0, 5)) }
+        var pdfBleach by rememberSaveable { mutableIntStateOf(settings.getInt("pdfBleach", 0).coerceIn(0, 100)) }
+        var pdfDarken by rememberSaveable { mutableIntStateOf(settings.getInt("pdfDarken", 0).coerceIn(0, 100)) }
+        var pdfSmoothing by rememberSaveable { mutableStateOf(settings.getBoolean("pdfSmoothing", true)) }
+        val imageAdjustments = ReaderImageAdjustments(pdfEmbolden, pdfSharpen, pdfBleach, pdfDarken, pdfSmoothing)
+        LaunchedEffect(imageAdjustments) {
+            settings.edit().putInt("pdfEmbolden", pdfEmbolden).putInt("pdfSharpen", pdfSharpen)
+                .putInt("pdfBleach", pdfBleach).putInt("pdfDarken", pdfDarken).putBoolean("pdfSmoothing", pdfSmoothing).apply()
+        }
+        var pdfScroll by rememberSaveable { mutableStateOf(settings.getBoolean("pdfScroll", false)) }
+        var pdfSpread by rememberSaveable { mutableStateOf(settings.getBoolean("pdfSpread", false)) }
+        var pdfRtl by rememberSaveable { mutableStateOf(settings.getBoolean("pdfRtl", false)) }
+        var pdfContentFit by rememberSaveable { mutableStateOf(settings.getBoolean("pdfContentFit", false)) }
+        var pdfFitWidth by rememberSaveable { mutableStateOf(settings.getBoolean("pdfFitWidth", false)) }
+        var pdfEnhancement by rememberSaveable { mutableFloatStateOf(settings.getFloat("pdfEnhancement", 0f).coerceIn(0f, 17f)) }
+        var pdfCrop by rememberSaveable { mutableStateOf(settings.getString("pdfCrop", "") ?: "") }
+        var pendingCrop by rememberSaveable { mutableStateOf("") }
+        val cropRect = remember(pdfCrop) { pdfCrop.split(",").mapNotNull { it.toFloatOrNull() }.takeIf { it.size == 4 }?.let { android.graphics.RectF(it[0], it[1], it[2], it[3]) } }
+        LaunchedEffect(pdfZoom, pdfMargin, pdfContrast, pdfBrightness, pdfScroll, pdfSpread, pdfRtl, pdfFitWidth, pdfContentFit, pdfEnhancement, pdfCrop, splitHorizontal) {
+            settings.edit().putFloat("pdfZoom", pdfZoom).putFloat("pdfMargin", pdfMargin)
+                .putFloat("pdfContrast", pdfContrast).putFloat("pdfBrightness", pdfBrightness)
+                .putBoolean("pdfScroll", pdfScroll).putBoolean("pdfSpread", pdfSpread).putBoolean("pdfRtl", pdfRtl)
+                .putBoolean("pdfContentFit", pdfContentFit).putBoolean("pdfFitWidth", pdfFitWidth).putFloat("pdfEnhancement", pdfEnhancement)
+                .putString("pdfCrop", pdfCrop).putBoolean("splitHorizontal", splitHorizontal).apply()
+        }
         val redoInk = remember { mutableStateListOf<ReaderAnnotation>() }
         var bottomChromeHeight by remember { mutableIntStateOf(0) }
         var topChromeHeight by remember { mutableIntStateOf(0) }
         // Where the selection popup sits, so page taps and swipes underneath it are left to the popup.
         var selectionBounds by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
+        var selectionTextBounds by remember { mutableStateOf<Pair<String, androidx.compose.ui.geometry.Rect>?>(null) }
         var tool by rememberSaveable { mutableStateOf("Read") }
         var color by rememberSaveable { mutableIntStateOf(0xFFFFD85A.toInt()) }
         var penColor by rememberSaveable { mutableIntStateOf(0xFF303030.toInt()) }
@@ -181,14 +261,27 @@ class ReaderActivity : AppCompatActivity() {
         var exporting by remember { mutableStateOf(false) }
         var recognizing by remember { mutableStateOf(false) }
         var readerNotice by remember { mutableStateOf<String?>(null) }
-        var studyMode by rememberSaveable { mutableStateOf(false) }
-        var studyNotebookId by rememberSaveable { mutableStateOf<String?>(null) }
+        var splitContent by rememberSaveable { mutableStateOf(settings.getString("splitContent", "Handwritten Notes") ?: "Handwritten Notes") }
+        var splitDocumentId by rememberSaveable { mutableStateOf(settings.getString("splitDocumentId", null)) }
+        var splitStartPage by rememberSaveable { mutableIntStateOf(settings.getInt("splitStartPage", 0)) }
+        var landscapeDirection by rememberSaveable { mutableIntStateOf(if (supportsLandscapeLock()) settings.getInt("readerLandscape", 0) else 0) }
+        var splitNoteDraft by rememberSaveable(doc?.id) { mutableStateOf(settings.getString("split-note-draft.${doc?.id}", "") ?: "") }
+        var studyMode by rememberSaveable { mutableStateOf(settings.getBoolean("splitActive", false) && settings.getString("splitOwner", null) == intent.getStringExtra("documentId")) }
+        var studyNotebookId by rememberSaveable { mutableStateOf(settings.getString("splitNotebookId", null)) }
+        LaunchedEffect(studyMode, splitContent, splitDocumentId, splitStartPage, studyNotebookId) {
+            settings.edit().putBoolean("splitActive", studyMode).putString("splitOwner", intent.getStringExtra("documentId"))
+                .putString("splitContent", splitContent).putString("splitDocumentId", splitDocumentId)
+                .putInt("splitStartPage", splitStartPage).putString("splitNotebookId", studyNotebookId).apply()
+        }
         val nav = navigator
         val currentLocator by produceState<Locator?>(null, nav) { nav?.currentLocator?.collect { value = it } }
         val studyNotebook = studyNotebookId?.let { id -> notebookRepository.notebooks.firstOrNull { it.id == id && it.deletedAt == 0L } }
+        BackHandler(enabled = tool == "MarqueeCrop") { pendingCrop = ""; tool = "Read"; chromeVisible = true }
+        BackHandler(enabled = selected != null) { selected = null; navigator?.clearSelection() }
         BackHandler(enabled=studyMode) { studyMode=false }
         BackHandler(enabled = drawingToolbar && !studyMode) { drawingToolbar = false; drawingPopup = null; tool = "Read" }
         fun handlePageTap(x: Float, y: Float, width: Float, height: Float): Boolean {
+            if (selected != null) { selected = null; navigator?.clearSelection(); return true }
             if (drawingToolbar) return false
             if (chromeVisible) {
                 // The native PDF/EPUB view fills the screen beneath the Compose controls.
@@ -204,9 +297,16 @@ class ReaderActivity : AppCompatActivity() {
                 chromeVisible = true
                 return true
             }
+            if (gestures.sides && gestures.clickLongPress && (x < width * .2f || x > width * .8f)) {
+                val forward = (x > width * .8f) != pdfRtl
+                if (pdf != null) page = (page + if (forward) 1 else -1).coerceIn(0, pdf!!.pageCount - 1)
+                else if (forward) nav?.goForward(true) else nav?.goBackward(true)
+                return true
+            }
             return false
         }
         fun openStudyMode() {
+            splitContent = "Handwritten Notes"
             val source = doc ?: return
             scope.launch {
                 snapshotFlow { notebookRepository.loading }.first { !it }
@@ -309,7 +409,9 @@ class ReaderActivity : AppCompatActivity() {
         Surface(Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }) { BoxWithConstraints(Modifier.fillMaxSize()) {
             val readerHeight = maxHeight
             val readerWidth = maxWidth
-            @Composable fun ReaderPane(modifier: Modifier) { Box(modifier) {
+            @Composable fun ReaderPane(modifier: Modifier) { BoxWithConstraints(modifier) {
+            val paneWidth = maxWidth
+            val paneHeight = maxHeight
             Box(Modifier.fillMaxSize()) {
             when {
                     engineLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
@@ -317,9 +419,25 @@ class ReaderActivity : AppCompatActivity() {
                     pdf != null -> {
                         val session = pdf!!
                         val records = model.annotations + listOfNotNull(selected?.let { ReaderAnnotation("selection",doc!!.id,AnnotationKind.HIGHLIGHT,it.anchor,color=0xFF76B9EF.toInt(),createdAt=0) })
+                        @Composable fun PdfPage(index: Int, modifier: Modifier) {
+                        val fittedContent by produceState<android.graphics.RectF?>(null, session, index, pdfContentFit) {
+                            value = null
+                            if (pdfContentFit) {
+                                try { value = withContext(Dispatchers.IO) { session.contentBounds(index) } }
+                                catch (cancelled: CancellationException) { throw cancelled }
+                                catch (error: Exception) { model.error = error.message ?: "Could not fit page content" }
+                            }
+                        }
                         AndroidView(factory={PdfPageReaderView(it)},update={ view ->
-                            view.show(session,page,records); view.tool=tool; view.chromeVisible=chromeVisible; view.inkColor=penColor; view.inkWidth=penWidth
+                            view.show(session,index,records); view.tool=tool; view.chromeVisible=chromeVisible; view.inkColor=penColor; view.inkWidth=penWidth
+                            view.setLayout(pdfContentFit && pdfFitWidth, cropRect ?: fittedContent, pdfEnhancement, pdfScroll || pdfSpread, pdfRtl, alignTop = pdfContentFit && cropRect == null)
                             view.setDisplay(pdfZoom, pdfMargin, pdfContrast, pdfBrightness)
+                            view.setImageAdjustments(imageAdjustments)
+                            view.gestures = gestures; view.onShowControls = { chromeVisible = true }
+                            view.onZoomChange = { pdfZoom = it }
+                            view.setCropSelection(pendingCrop.split(",").mapNotNull { it.toFloatOrNull() }.takeIf { it.size == 4 }?.let { android.graphics.RectF(it[0], it[1], it[2], it[3]) })
+                            view.onCrop = { rect -> pendingCrop = "${rect.left},${rect.top},${rect.right},${rect.bottom}" }
+                            view.onMarqueeZoom = { pdfZoom = it; tool = "Read" }
                             view.onErase = { mark -> model.remove(mark); redoInk.clear() }
                             view.onPageTurn = { forward ->
                                 if (forward) page = (page + 1).coerceAtMost(session.pageCount - 1)
@@ -327,25 +445,69 @@ class ReaderActivity : AppCompatActivity() {
                                 selected = null
                             }
                             view.onPageTap = { x, y, width, height -> handlePageTap(x, y, width, height) }
-                            view.onAnnotationLongPress = { mark -> editingMark=mark; markKind=mark.kind; color=mark.color; chromeVisible=true }
-                            view.onSelection={selection -> selected=selection; if(selection==null) model.error="No selectable text here. This may be a scanned page; OCR is required for text highlights."}
+                            view.onAnnotationLongPress = { mark -> selected=null; editingMark=mark; markKind=mark.kind; color=mark.color; chromeVisible=true }
+                            view.onSelectionBounds = { anchor, rect ->
+                                if (selected?.anchor == anchor) selectionTextBounds = anchor to androidx.compose.ui.geometry.Rect(rect.left, rect.top, rect.right, rect.bottom)
+                            }
+                            view.onSelection={selection -> selected=selection; if(selection != null) chromeVisible=false; if(selection==null) model.error="No selectable text here. This may be a scanned page; OCR is required for text highlights."}
                             view.onInk={model.annotate(AnnotationKind.INK,it,color=penColor); redoInk.clear()}; view.onError={model.error=it}
-                        },modifier=Modifier.fillMaxSize().clipToBounds())
+                        },modifier=modifier.clipToBounds())
+                        }
+                        if (pdfSpread && tool == "Read") {
+                            val pager = rememberPagerState(initialPage = page / 2, pageCount = { (session.pageCount + 1) / 2 })
+                            LaunchedEffect(pager) { snapshotFlow { pager.currentPage }.collect { page = it * 2 } }
+                            LaunchedEffect(page) { if (pager.currentPage != page / 2) pager.scrollToPage(page / 2) }
+                            HorizontalPager(pager, Modifier.fillMaxSize(), reverseLayout = pdfRtl, userScrollEnabled = gestures.slide) { spread ->
+                                Row(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.outlineVariant), horizontalArrangement = Arrangement.spacedBy(1.dp)) {
+                                    val pair = listOf(spread * 2, spread * 2 + 1).let { if (pdfRtl) it.reversed() else it }
+                                    pair.forEach { index ->
+                                        if (index < session.pageCount) PdfPage(index, Modifier.weight(1f).fillMaxHeight())
+                                        else Spacer(Modifier.weight(1f).fillMaxHeight())
+                                    }
+                                }
+                            }
+                        } else if (pdfScroll && tool == "Read") {
+                            val listState = rememberLazyListState(initialFirstVisibleItemIndex = page)
+                            fun mostVisiblePage(): Int {
+                                val layout = listState.layoutInfo
+                                return layout.visibleItemsInfo.maxByOrNull { item ->
+                                    (minOf(item.offset + item.size, layout.viewportEndOffset) - maxOf(item.offset, layout.viewportStartOffset)).coerceAtLeast(0)
+                                }?.index ?: listState.firstVisibleItemIndex
+                            }
+                            LaunchedEffect(listState) {
+                                snapshotFlow { mostVisiblePage() }.collect { page = it }
+                            }
+                            LaunchedEffect(page) {
+                                if (page != mostVisiblePage()) listState.scrollToItem(page)
+                            }
+                            LazyColumn(Modifier.fillMaxSize(), state = listState, userScrollEnabled = gestures.slide) {
+                                items(session.pageCount) { index ->
+                                    var ratio by remember(session, index) { mutableFloatStateOf(.707f) }
+                                    LaunchedEffect(session, index) { ratio = withContext(Dispatchers.IO) { session.aspect(index) } }
+                                    PdfPage(index, Modifier.fillMaxWidth().height(paneWidth / ratio))
+                                }
+                            }
+                        } else PdfPage(page, Modifier.fillMaxSize())
                     }
                     publication != null -> AndroidView(factory={ context ->
                         FragmentContainerView(context).apply {
                             id = READER_CONTAINER_ID
                             val callback = object : ActionMode.Callback {
                                 override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
-                                    menu.add(0,1,1,"Highlight"); menu.add(0,2,2,"Add note"); return true
+                                    menu.add(0,1,1,"Highlight"); menu.add(0,2,2,"Add note"); menu.add(0,3,3,"Underline"); return true
                                 }
                                 override fun onPrepareActionMode(mode: ActionMode,menu: Menu)=false
                                 override fun onDestroyActionMode(mode: ActionMode) {}
                                 override fun onActionItemClicked(mode: ActionMode,item: MenuItem): Boolean {
-                                    if(item.itemId !in 1..2) return false
+                                    if(item.itemId !in 1..3) return false
                                     scope.launch {
                                         navigator?.currentSelection()?.let { selection ->
                                             selected=PdfSelection(selection.locator.toJSON().toString(),selection.locator.text.highlight.orEmpty())
+                                            val location = IntArray(2)
+                                            val view = navigator?.view
+                                            view?.getLocationInWindow(location)
+                                            val rect = selection.rect ?: android.graphics.RectF(0f, (view?.height ?: 0) * .4f, (view?.width ?: 0).toFloat(), (view?.height ?: 0) * .45f)
+                                            selectionTextBounds = selected!!.anchor to androidx.compose.ui.geometry.Rect(rect.left + location[0], rect.top + location[1], rect.right + location[0], rect.bottom + location[1])
                                             if(item.itemId==2) editNote(selected!!.anchor,selected!!.text)
                                         }
                                         mode.finish()
@@ -370,7 +532,7 @@ class ReaderActivity : AppCompatActivity() {
                                 }
                             }
                         }
-                    },modifier=Modifier.fillMaxSize().clipToBounds().pointerInput(scroll,nav,chromeVisible) {
+                    },modifier=Modifier.fillMaxSize().clipToBounds().pointerInput(scroll,nav,chromeVisible,gestures) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
                             var handled = false
@@ -381,7 +543,10 @@ class ReaderActivity : AppCompatActivity() {
                                 val delta = change.position - down.position
                                 val horizontal = kotlin.math.abs(delta.x)
                                 val vertical = kotlin.math.abs(delta.y)
-                                if (!scroll && horizontal >= maxOf(48.dp.toPx(), size.width * .12f) && horizontal > vertical * 1.25f) {
+                                if (!gestures.slide && (horizontal > 18.dp.toPx() || vertical > 18.dp.toPx())) change.consume()
+                                if (gestures.bottom && !change.pressed && down.position.y > size.height - 48.dp.toPx() && delta.y < -48.dp.toPx() && vertical > horizontal) {
+                                    chromeVisible = true; change.consume(); handled = true
+                                } else if (gestures.slide && !scroll && horizontal >= maxOf(48.dp.toPx(), size.width * .12f) && horizontal > vertical * 1.25f) {
                                     change.consume()
                                     if (delta.x < 0) nav?.goForward(true) else nav?.goBackward(true)
                                     turnedPage = true
@@ -397,12 +562,24 @@ class ReaderActivity : AppCompatActivity() {
                     })
                 }
             }
-            if (!chromeVisible && showProgress && selected == null) {
-                Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 16.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (model.pendingWrites > 0) "Saving…" else "${(if (pdf != null) doc?.progress ?: 0.0 else epubProgress).times(100).toInt()}%", fontSize = 11.sp)
-                    Text(doc?.title.orEmpty(), Modifier.weight(1f).padding(horizontal = 20.dp), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 11.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    Text(if (pdf != null) "${page + 1}/${pdf!!.pageCount}" else "${(epubProgress * 100).toInt()}%", fontSize = 11.sp)
+            if (tool == "MarqueeCrop") Surface(Modifier.align(Alignment.TopCenter).fillMaxWidth().zIndex(4f), shadowElevation = 3.dp) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Text("Drag to select an area. Drag its corners to adjust.", style = MaterialTheme.typography.bodySmall)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Marquee Crop", Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                        TextButton(onClick = { pendingCrop = ""; tool = "Read"; chromeVisible = true }) { Text("Cancel") }
+                        TextButton(enabled = pendingCrop.isNotBlank(), onClick = { pdfCrop = pendingCrop; pdfContentFit = false; pdfZoom = 1f; pdfFitWidth = false; pendingCrop = ""; tool = "Read" }) {
+                            InkSymbol(InkIcon.Saved, Modifier.size(24.dp)); Text("Apply crop")
+                        }
+                    }
                 }
+            }
+            if (!chromeVisible && showProgress && selected == null) {
+                ReaderStatusLine(
+                    position = if (pdf != null) "${page + 1}/${pdf!!.pageCount}" else "${(epubProgress * 100).toInt()}%",
+                    chapter = if (model.pendingWrites > 0) "Saving…" else (activeChapter?.title ?: currentLocator?.title).orEmpty().takeUnless { it == doc?.title }.orEmpty(),
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
             if (drawingToolbar && !chromeVisible && pdf != null) {
                 val pageInk = model.annotations.filter { it.kind == AnnotationKind.INK && JSONObject(it.anchor).optInt("page", -1) == page }
@@ -441,7 +618,42 @@ class ReaderActivity : AppCompatActivity() {
                     }
                 }
             }
-            if (panel == null && (chromeVisible || selected != null)) Dialog(
+            selected?.let { selection ->
+                val overlapping = remember(selection, model.annotations) { if (pdf != null) overlappingPdfMarks(selection, model.annotations) else emptyList() }
+                val textBounds = selectionTextBounds?.takeIf { it.first == selection.anchor }?.second
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val margin = with(density) { 12.dp.roundToPx() }
+                val gap = with(density) { 12.dp.roundToPx() }
+                val positionProvider = remember(textBounds, margin, gap) {
+                    object : androidx.compose.ui.window.PopupPositionProvider {
+                        override fun calculatePosition(anchorBounds: androidx.compose.ui.unit.IntRect, windowSize: androidx.compose.ui.unit.IntSize, layoutDirection: androidx.compose.ui.unit.LayoutDirection, popupContentSize: androidx.compose.ui.unit.IntSize): androidx.compose.ui.unit.IntOffset =
+                            selectionToolbarPosition(textBounds ?: androidx.compose.ui.geometry.Rect.Zero, windowSize, popupContentSize, margin, gap)
+                    }
+                }
+                if (textBounds != null) androidx.compose.ui.window.Popup(popupPositionProvider = positionProvider) {
+                    Surface(Modifier.width((readerWidth - 24.dp).coerceAtMost(560.dp).coerceAtLeast(1.dp)).zIndex(2f),
+                        shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), shadowElevation = 6.dp) {
+                        ReaderSelectionToolbar(color, pdf != null, overlapping.isNotEmpty(),
+                            onColor = { color = it }, onHighlight = { saveSelection(AnnotationKind.HIGHLIGHT, color) },
+                            onUnderline = { style -> saveSelection(AnnotationKind.UNDERLINE, color, underlineStyle = style) },
+                            onCopy = {
+                                getSystemService(android.content.ClipboardManager::class.java).setPrimaryClip(android.content.ClipData.newPlainText("Passage", selection.text))
+                                selected = null; navigator?.clearSelection()
+                            },
+                            onNote = { editNote(selection.anchor, selection.text) },
+                            onSearch = { search = selection.text.take(200); selected = null; navigator?.clearSelection(); panel = "Search" },
+                            onShare = {
+                                val intent = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, selection.text)
+                                startActivity(Intent.createChooser(intent, "Share passage"))
+                            },
+                            onRemove = { overlapping.forEach(model::remove); selected = null },
+                            onDismiss = { selected = null; navigator?.clearSelection() },
+                        )
+                    }
+                }
+            }
+
+            if (panel == null && chromeVisible && selected == null) Dialog(
                 onDismissRequest = { chromeVisible = false; selected = null },
                 properties = DialogProperties(usePlatformDefaultWidth = false),
             ) {
@@ -460,8 +672,8 @@ class ReaderActivity : AppCompatActivity() {
                                     val dy = change.position.y - down.position.y
                                     val onPopup = selected != null && selectionBounds?.contains(down.position) == true
                                     val onPage = !onPopup && readerTab != "Contents" && down.position.y >= topChromeHeight && down.position.y <= size.height - bottomChromeHeight
-                                    if (onPage && kotlin.math.abs(dx) > maxOf(48.dp.toPx(), size.width * .12f) && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.25f) {
-                                        if (pdf != null) page = (page + if (dx < 0f) 1 else -1).coerceIn(0, pdf!!.pageCount - 1)
+                                    if (gestures.slide && onPage && kotlin.math.abs(dx) > maxOf(48.dp.toPx(), size.width * .12f) && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.25f) {
+                                        if (pdf != null) page = (page + if ((dx < 0f) != pdfRtl) 1 else -1).coerceIn(0, pdf!!.pageCount - 1)
                                         else if (dx < 0f) nav?.goForward(true) else nav?.goBackward(true)
                                         change.consume()
                                     } else if (onPage && kotlin.math.abs(dx) < 18.dp.toPx() && kotlin.math.abs(dy) < 18.dp.toPx()) {
@@ -475,6 +687,23 @@ class ReaderActivity : AppCompatActivity() {
                     },
                 ) {
             if (chromeVisible) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().onSizeChanged { topChromeHeight = it.height }.background(MaterialTheme.colorScheme.surface).zIndex(1f)) {
+            if (showBookTabs) DocumentTabs(openBooks.map { DocumentTab(it.id, it.title, it.format.uppercase()) }, doc?.id,
+                listTitle = "Open books", tagPrefix = "reader-book", listButtonTag = "reader-open-books-list", closeTagPrefix = "reader-close-tab",
+                onHideTabs = { showBookTabs = false; settings.edit().putBoolean("showBookTabs", false).apply() },
+                onCloseOthers = {
+                    val remaining = listOfNotNull(doc?.id)
+                    openTabIds = remaining
+                    settings.edit().putString("openBookTabs", org.json.JSONArray(remaining).toString()).apply()
+                },
+                onSelect = ::switchBook, onClose = { id ->
+                val remaining = openTabIds - id
+                openTabIds = remaining
+                settings.edit().putString("openBookTabs", org.json.JSONArray(remaining).toString()).apply()
+                if (id == doc?.id) {
+                    val next = openBooks.lastOrNull { it.id != id }
+                    if (next == null) finish() else switchBook(next.id)
+                }
+            })
             Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically) {
                 InkToolButton(InkIcon.Previous, "Back to library", { finish() }, buttonSize = 48.dp, tint = MaterialTheme.colorScheme.onSurface)
                 ReaderAction(InkIcon.Library, "Doc", Modifier.width(52.dp)) { panel = "Document" }
@@ -489,7 +718,7 @@ class ReaderActivity : AppCompatActivity() {
                     if (!compactActions) secondary()
                     ReaderAction(InkIcon.Search, "Search", Modifier.width(60.dp)) { panel = "Search" }
                     ReaderAction(InkIcon.Pen, "Notes", Modifier.width(60.dp)) { if (pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false } else panel = "Annotations" }
-                    ReaderAction(InkIcon.Save, "Bookmark", Modifier.width(68.dp), active = bookmark != null, enabled = currentAnchor() != null) { toggleBookmark() }
+                    ReaderAction(InkIcon.ReaderBookmark, "Bookmark", Modifier.width(68.dp), active = bookmark != null, enabled = currentAnchor() != null) { toggleBookmark() }
                     ReaderAction(InkIcon.More, "More", Modifier.width(56.dp)) { panel = "More" }
                     if (compactActions) secondary()
                 }
@@ -499,27 +728,14 @@ class ReaderActivity : AppCompatActivity() {
             if (chromeVisible && tool == "Pen" && pdf != null) Text("Write directly on the page. Switch to Read to pan or zoom.",Modifier.padding(horizontal=16.dp,vertical=4.dp),style=MaterialTheme.typography.bodySmall)
             if (chromeVisible) readerNotice?.let { notice -> Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) { Text(notice,Modifier.weight(1f),style=MaterialTheme.typography.bodySmall);TextButton(onClick={readerNotice=null}){Text("Dismiss")} } }
             }
-            selected?.let { selection ->
-                Surface(Modifier.align(Alignment.Center).widthIn(max = 620.dp).padding(24.dp).zIndex(2f).onGloballyPositioned { selectionBounds = it.boundsInParent() },shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), shadowElevation=3.dp) { Column(Modifier.padding(12.dp)) {
-                    Text(selection.text.ifBlank { "Selected passage" },maxLines=2,overflow=TextOverflow.Ellipsis,style=MaterialTheme.typography.bodySmall)
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),verticalAlignment=Alignment.CenterVertically) {
-                        ReaderColors(color) { color=it }
-                        TextButton(onClick={saveSelection(AnnotationKind.HIGHLIGHT,color)}) { Text("Highlight") }
-                        TextButton(onClick={saveSelection(AnnotationKind.UNDERLINE,color)}) { Text("Underline") }
-                        TextButton(onClick={editNote(selection.anchor,selection.text)}) { Text("Note") }
-                        TextButton(onClick={val clip=getSystemService(android.content.ClipboardManager::class.java);clip.setPrimaryClip(android.content.ClipData.newPlainText("Passage",selection.text))}) { Text("Copy") }
-                        TextButton(onClick={selected=null;navigator?.clearSelection()}) { Text("Dismiss") }
-                    }
-                } }
-            }
-            if (chromeVisible && selected == null && readerTab != "Contents") Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().heightIn(max = readerHeight * .65f).onSizeChanged { bottomChromeHeight = it.height }.background(MaterialTheme.colorScheme.surface).zIndex(1f)) {
+            if (chromeVisible && selected == null && readerTab != "Contents") Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().heightIn(max = paneHeight * .65f).onSizeChanged { bottomChromeHeight = it.height }.background(MaterialTheme.colorScheme.surface).zIndex(1f)) {
             HorizontalDivider()
             Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
             if (readerTab == "Progress") {
             Text(doc?.title.orEmpty(), Modifier.padding(start = 24.dp, end = 24.dp, top = 18.dp), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(if (pdf != null) "Page ${page + 1} of ${pdf!!.pageCount}" else currentLocator?.title.orEmpty(), Modifier.padding(horizontal = 24.dp, vertical = 4.dp), fontSize = 13.sp)
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp).heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { selected = null; if (pdf != null) page = (page - 1).coerceAtLeast(0) else nav?.goBackward(true) },
+                TextButton(onClick = { selected = null; if (pdf != null) page = (page - if (pdfSpread) 2 else 1).coerceAtLeast(0) else nav?.goBackward(true) },
                     enabled = if (pdf != null) page > 0 else nav != null, modifier = Modifier.widthIn(min = 48.dp).semantics { contentDescription = "Previous page" }) { Text("‹", fontSize = 28.sp) }
                 Column(Modifier.weight(1f).padding(horizontal = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (pdf != null) {
@@ -534,27 +750,41 @@ class ReaderActivity : AppCompatActivity() {
                         Text("${(epubProgress * 100).toInt()}% read", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
                     }
                 }
-                TextButton(onClick = { selected = null; if (pdf != null) page = (page + 1).coerceAtMost(pdf!!.pageCount - 1) else nav?.goForward(true) },
+                TextButton(onClick = { selected = null; if (pdf != null) page = (page + if (pdfSpread) 2 else 1).coerceAtMost(pdf!!.pageCount - 1) else nav?.goForward(true) },
                     enabled = if (pdf != null) page < pdf!!.pageCount - 1 else nav != null, modifier = Modifier.widthIn(min = 48.dp).semantics { contentDescription = "Next page" }) { Text("›", fontSize = 28.sp) }
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
                 ReaderAction(InkIcon.Pages, "Contents", Modifier.weight(1f)) { readerTab = "Contents" }
                 ReaderAction(InkIcon.Text, "Select", Modifier.weight(1f), active = tool == "Select", enabled = pdf != null) { tool = "Select"; chromeVisible = false }
-                ReaderAction(InkIcon.Pen, "Handwriting", Modifier.weight(1f), enabled = pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false }
+                ReaderAction(InkIcon.ReaderHandwriting, "Handwriting", Modifier.weight(1f), enabled = pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false }
                 ReaderAction(InkIcon.Share, "Export notes", Modifier.weight(1f), enabled = !exporting && model.pendingWrites == 0) { export("notes") }
             }
             }
             when (readerTab) {
                 "Format" -> {
                     if (pdf != null) {
-                        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Page display", Modifier.weight(1f), fontSize = 14.sp)
-                            ReaderAction(InkIcon.Paper, "Single page", Modifier.weight(1f), active = true) { pdfZoom = 1f }
-                            ReaderAction(InkIcon.Expand, "Fit screen", Modifier.weight(1f)) { pdfZoom = 1f; pdfMargin = 0f }
+                        ReaderFormatRow("Page Display") {
+                            ReaderAction(InkIcon.Paper, "Single-page", Modifier.width(90.dp), active = !pdfScroll && !pdfSpread) { pdfScroll = false; pdfSpread = false }
+                            ReaderAction(InkIcon.ReaderScroll, "Scrolling View", Modifier.width(100.dp), active = pdfScroll) { pdfScroll = true; pdfSpread = false; pdfZoom = 1f }
+                            ReaderAction(InkIcon.ReaderLtr, "LTR", Modifier.width(72.dp), active = pdfSpread && !pdfRtl) { pdfRtl = false; pdfSpread = true; pdfScroll = false; pdfZoom = 1f }
+                            ReaderAction(InkIcon.ReaderRtl, "RTL", Modifier.width(72.dp), active = pdfSpread && pdfRtl) { pdfRtl = true; pdfSpread = true; pdfScroll = false; pdfZoom = 1f }
                         }
-                        HorizontalDivider(Modifier.padding(horizontal = 20.dp))
-                        ReaderSettingRow("Zoom", pdfZoom * 100f, 100f..400f) { pdfZoom = it / 100f }
-                        ReaderSettingRow("Margin", pdfMargin, 0f..80f) { pdfMargin = it }
+                        ReaderFormatRow("Zoom") {
+                            ReaderAction(InkIcon.ZoomIn, "Zoom In", Modifier.width(90.dp)) { pdfZoom = (pdfZoom + .25f).coerceAtMost(4f) }
+                            ReaderAction(InkIcon.ZoomOut, "Zoom Out", Modifier.width(90.dp)) { pdfZoom = (pdfZoom - .25f).coerceAtLeast(1f) }
+                            ReaderAction(InkIcon.MarqueeZoom, "Marquee Zoom", Modifier.width(110.dp)) { tool = "MarqueeZoom"; chromeVisible = false; readerNotice = "Drag a rectangle to zoom into that area." }
+                            if (pdfZoom != 1f) ReaderAction(InkIcon.Rotate, "Reset Zoom", Modifier.width(90.dp)) { pdfZoom = 1f }
+                        }
+                        ReaderFormatRow("Crop") {
+                            if (cropRect == null) {
+                                ReaderAction(InkIcon.Expand, "Fit Screen", Modifier.width(90.dp), active = pdfContentFit && !pdfFitWidth) { pdfContentFit = true; pdfFitWidth = false; pdfZoom = 1f }
+                                ReaderAction(InkIcon.FitWidth, "Fit Width", Modifier.width(90.dp), active = pdfContentFit && pdfFitWidth) { pdfContentFit = true; pdfFitWidth = true; pdfZoom = 1f }
+                            }
+                            ReaderAction(InkIcon.Crop, "Marquee Crop", Modifier.width(110.dp)) { pendingCrop = ""; tool = "MarqueeCrop"; pdfScroll = false; chromeVisible = false }
+                            ReaderAction(InkIcon.Rotate, "Reset", Modifier.width(72.dp)) { pdfCrop = ""; pdfContentFit = false; pdfFitWidth = false; pdfZoom = 1f; pdfMargin = 0f }
+                        }
+                        ReaderSettingRow("Margin", pdfMargin, 0f..16f) { pdfMargin = it.roundToInt().toFloat() }
+                        ReaderSettingRow("Text Enhancement", pdfEnhancement, 0f..17f) { pdfEnhancement = it.roundToInt().toFloat() }
                     } else {
                         ReaderSettingRow("Text size", (fontScale * 100).toFloat(), 70f..200f) { fontScale = it / 100.0; applyPreferences() }
                         ReaderSettingRow("Line spacing", (lineHeight * 100).toFloat(), 120f..220f) { lineHeight = it / 100.0; applyPreferences() }
@@ -566,9 +796,18 @@ class ReaderActivity : AppCompatActivity() {
                 }
                 "Contrast" -> {
                     if (pdf != null) {
-                        ReaderSettingRow("Contrast", pdfContrast * 100, 50f..200f) { pdfContrast = it / 100 }
-                        ReaderSettingRow("Brightness", pdfBrightness, -60f..60f) { pdfBrightness = it }
-                        TextButton(onClick = { pdfContrast = 1f; pdfBrightness = 0f }, Modifier.align(Alignment.End).padding(end = 16.dp)) { Text("Reset") }
+                        ReaderContrastRow("Embolden", pdfEmbolden, 5, "bold") { pdfEmbolden = it }
+                        ReaderContrastRow("Sharpen Img", pdfSharpen, 5, "sharpen") { pdfSharpen = it }
+                        ReaderContrastRow("Watermark Bleaching", pdfBleach, 100, "bleach") { pdfBleach = it }
+                        ReaderContrastRow("Dark Color Enhancement", pdfDarken, 100, "dark") { pdfDarken = it }
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Image Smoothing", Modifier.weight(1f), fontSize = 14.sp)
+                            Switch(pdfSmoothing, { pdfSmoothing = it }, modifier = Modifier.testTag("reader-image-smoothing").semantics { contentDescription = "Image Smoothing" })
+                        }
+                        TextButton(onClick = {
+                            pdfEmbolden = 0; pdfSharpen = 0; pdfBleach = 0; pdfDarken = 0; pdfSmoothing = true
+                            pdfContrast = 1f; pdfBrightness = 0f; pdfEnhancement = 0f
+                        }, Modifier.align(Alignment.End).padding(end = 16.dp).testTag("reader-reset-contrast")) { Text("Reset") }
                     } else {
                         Text("Reading theme", Modifier.padding(20.dp), style = MaterialTheme.typography.titleSmall)
                         Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) { listOf("Light", "Sepia", "Dark").forEach { name -> ReaderAction(InkIcon.Flip, name, Modifier.weight(1f), active = themeName == name) { themeName = name; applyPreferences() } } }
@@ -581,23 +820,40 @@ class ReaderActivity : AppCompatActivity() {
                     ReaderAction(InkIcon.Redo, "Go to page", Modifier.weight(1f), enabled = pdf != null) { pageDraft = (page + 1).toString(); jumpDialog = true }
                 }
                 "Split View" -> {
-                    Row(Modifier.fillMaxWidth().padding(16.dp)) {
-                        ReaderAction(InkIcon.Pen, "Handwritten notes", Modifier.weight(1f), enabled = !engineLoading) { chromeVisible = false; openStudyMode() }
-                        ReaderAction(InkIcon.Text, "Text notes", Modifier.weight(1f)) { currentAnchor()?.let { editNote(it) }; chromeVisible = false }
-                        ReaderAction(InkIcon.Pressure, "Pen pressure", Modifier.weight(1f)) { penSettings = true }
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
+                        ReaderAction(InkIcon.SplitCurrent, "Current Doc", Modifier.width(100.dp), active = studyMode && splitContent == "Current Doc", enabled = doc != null && !engineLoading) {
+                            splitContent = "Current Doc"; splitDocumentId = doc?.id; splitStartPage = page; studyMode = true; chromeVisible = false
+                        }
+                        ReaderAction(InkIcon.SplitAnother, "Another Doc", Modifier.width(100.dp), active = studyMode && splitContent == "Another Doc") { panel = "Split document" }
+                        ReaderAction(InkIcon.SplitHandwriting, "Handwritten Notes", Modifier.width(130.dp), active = studyMode && splitContent == "Handwritten Notes", enabled = !engineLoading) { chromeVisible = false; openStudyMode() }
+                        ReaderAction(InkIcon.SplitText, "Text Notes", Modifier.width(100.dp), active = studyMode && splitContent == "Text Notes", enabled = doc != null) { splitContent = "Text Notes"; studyMode = true; chromeVisible = false }
                     }
-                    HorizontalDivider(Modifier.padding(horizontal = 20.dp))
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Split screen style", Modifier.weight(1f), fontSize = 14.sp)
-                        ReaderAction(InkIcon.Border, "Horizontal", Modifier.weight(1f), active = splitHorizontal) { splitHorizontal = true }
-                        ReaderAction(InkIcon.Layers, "Vertical", Modifier.weight(1f), active = !splitHorizontal) { splitHorizontal = false }
                     }
+                    ReaderFormatRow("Split screen style") {
+                        ReaderAction(InkIcon.SplitHorizontal, "Horizontal", Modifier.width(110.dp), active = splitHorizontal) { splitHorizontal = true }
+                        ReaderAction(InkIcon.SplitVertical, "Vertical", Modifier.width(110.dp), active = !splitHorizontal) { splitHorizontal = false }
+                    }
+                    ReaderFormatRow("Landscape orientation") {
+                        listOf("Auto" to 0, "Landscape left" to 1, "Landscape right" to 2).forEach { (label, value) ->
+                            ReaderAction(if (value == 2) InkIcon.LandscapeRight else InkIcon.LandscapeLeft, label, Modifier.width(110.dp), active = landscapeDirection == value, enabled = value == 0 || supportsLandscapeLock()) {
+                                landscapeDirection = value
+                                settings.edit().putInt("readerLandscape", value).apply()
+                                requestedOrientation = readerOrientation(value)
+                            }
+                        }
+                    }
+                    if (!supportsLandscapeLock()) Text("Rotate your tablet to use landscape. The reader follows the screen orientation.",
+                        Modifier.padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall)
+                    if (studyMode) TextButton(onClick = { studyMode = false }, Modifier.align(Alignment.End).padding(end = 16.dp)) { Text("Close split view") }
                 }
             }
             }
             ReaderTabBar(readerTab) { readerTab = it }
             }
             if (chromeVisible && selected == null && readerTab == "Contents") {
+                Box(Modifier.fillMaxSize().zIndex(2f).clickable { readerTab = "Progress"; chromeVisible = false }
+                    .semantics { contentDescription = "Close contents" }.testTag("reader-contents-backdrop"))
                 Surface(Modifier.align(Alignment.CenterStart).fillMaxHeight().fillMaxWidth(if (readerWidth >= 600.dp) .68f else .9f).zIndex(3f), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                     Column {
                         Row(Modifier.padding(start = 20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -607,18 +863,38 @@ class ReaderActivity : AppCompatActivity() {
                         HorizontalDivider()
                         LazyColumn(Modifier.weight(1f)) {
                             if (contentsTab == "TOC") {
-                                if (pdf != null) items(pdf!!.pageCount) { index ->
-                                    Row(Modifier.fillMaxWidth().clickable { page = index; chromeVisible = false }.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Text("Page ${index + 1}", Modifier.weight(1f), fontWeight = if (page == index) FontWeight.SemiBold else FontWeight.Normal)
-                                        Text("${index + 1}", fontSize = 13.sp)
-                                    }; HorizontalDivider(Modifier.padding(horizontal = 20.dp))
-                                } else {
-                                    fun flatten(links: List<Link>, depth: Int = 0): List<Pair<Link, Int>> = links.flatMap { listOf(it to depth) + flatten(it.children, depth + 1) }
-                                    val links = flatten(publication?.tableOfContents.orEmpty().ifEmpty { publication?.readingOrder.orEmpty() })
-                                    items(links.size) { index -> val (link, depth) = links[index]
-                                        Text(link.title ?: "Chapter ${index + 1}", Modifier.fillMaxWidth().clickable { nav?.go(link); chromeVisible = false }.padding(start = (20 + depth * 16).dp, end = 20.dp, top = 18.dp, bottom = 18.dp)); HorizontalDivider(Modifier.padding(horizontal = 20.dp))
+                                if (outline.isNotEmpty()) {
+                                    val rows = visibleReaderContents(outline, expandedContents.toSet())
+                                    items(rows, key = { it.entry.id }) { row ->
+                                        val entry = row.entry
+                                        val active = activeChapter?.id == entry.id
+                                        Row(Modifier.fillMaxWidth().background(if (active) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent)
+                                            .padding(start = (12 + row.depth.coerceAtMost(6) * 16).dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            if (entry.children.isNotEmpty()) IconButton(onClick = {
+                                                expandedContents = ArrayList(if (entry.id in expandedContents) expandedContents - entry.id else expandedContents + entry.id)
+                                            }, modifier = Modifier.testTag("reader-toc-toggle-${entry.id}").semantics { contentDescription = "${if (entry.id in expandedContents) "Collapse" else "Expand"} ${entry.title}" }) {
+                                                Text(if (entry.id in expandedContents) "⌄" else "›", fontSize = 24.sp)
+                                            } else Spacer(Modifier.width(12.dp))
+                                            Row(Modifier.weight(1f).heightIn(min = 56.dp).clickable {
+                                                if (pdf != null && entry.pageIndex != null) { page = requireNotNull(entry.pageIndex); chromeVisible = false }
+                                                else if (pdf == null) epubContents.second[entry.id]?.let { nav?.go(it); chromeVisible = false }
+                                                else expandedContents = ArrayList(if (entry.id in expandedContents) expandedContents - entry.id else expandedContents + entry.id)
+                                            }.padding(vertical = 12.dp).testTag("reader-toc-${entry.id}"), verticalAlignment = Alignment.CenterVertically) {
+                                                Text(entry.title, Modifier.weight(1f), fontWeight = if (active || entry.children.isNotEmpty()) FontWeight.SemiBold else FontWeight.Normal, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                                entry.pageIndex?.let { Text("${it + 1}", Modifier.padding(start = 12.dp), fontSize = 12.sp) }
+                                            }
+                                        }
+                                        HorizontalDivider(Modifier.padding(horizontal = 20.dp))
                                     }
-                                }
+                                } else if (pdf != null) {
+                                    item { Text("This PDF has no chapter outline. Browse by page.", Modifier.padding(20.dp), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                                    items(pdf!!.pageCount) { index ->
+                                        Row(Modifier.fillMaxWidth().clickable { page = index; chromeVisible = false }.padding(horizontal = 20.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Page ${index + 1}", Modifier.weight(1f), fontWeight = if (page == index) FontWeight.SemiBold else FontWeight.Normal)
+                                            Text("${index + 1}", fontSize = 13.sp)
+                                        }; HorizontalDivider(Modifier.padding(horizontal = 20.dp))
+                                    }
+                                } else item { Text("No table of contents available.", Modifier.padding(20.dp)) }
                             } else {
                                 val marks = model.annotations.filter { when (contentsTab) { "Bookmarks" -> it.kind == AnnotationKind.BOOKMARK; "Handwriting" -> it.kind == AnnotationKind.INK; else -> it.kind != AnnotationKind.BOOKMARK && it.kind != AnnotationKind.INK } }
                                 if (marks.isEmpty()) item { Text("No ${contentsTab.lowercase()} yet", Modifier.padding(24.dp), fontSize = 14.sp) }
@@ -631,7 +907,7 @@ class ReaderActivity : AppCompatActivity() {
                             }
                         }
                         HorizontalDivider()
-                        Row(Modifier.fillMaxWidth()) { listOf("TOC" to InkIcon.Pages, "Bookmarks" to InkIcon.Save, "Annotations" to InkIcon.More, "Handwriting" to InkIcon.Pen).forEach { (name, icon) ->
+                        Row(Modifier.fillMaxWidth()) { listOf("TOC" to InkIcon.Pages, "Bookmarks" to InkIcon.ReaderBookmark, "Annotations" to InkIcon.More, "Handwriting" to InkIcon.ReaderHandwriting).forEach { (name, icon) ->
                             ReaderAction(icon, name, Modifier.weight(1f).padding(vertical = 6.dp), active = contentsTab == name) { contentsTab = name }
                         } }
                     }
@@ -640,16 +916,52 @@ class ReaderActivity : AppCompatActivity() {
                 }
             }
             } }
-            if (studyMode && studyNotebook != null) {
+            if (studyMode && (splitContent != "Handwritten Notes" || studyNotebook != null)) {
                 val notePane: @Composable (Modifier) -> Unit = { paneModifier ->
-                    NotebookEditor(
-                        notebook=studyNotebook,
+                    Column(paneModifier) {
+                    Row(Modifier.fillMaxWidth().padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(if (splitContent in listOf("Current Doc", "Another Doc")) model.documents.firstOrNull { it.id == splitDocumentId }?.title ?: doc?.title.orEmpty() else splitContent,
+                            Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleSmall)
+                        InkToolButton(InkIcon.Close, "Close split view", { studyMode = false }, buttonSize = 48.dp, tint = MaterialTheme.colorScheme.onSurface)
+                    }
+                    HorizontalDivider()
+                    when (splitContent) {
+                        "Current Doc", "Another Doc" -> {
+                            val second = model.documents.firstOrNull { it.id == splitDocumentId } ?: doc
+                            second?.let { key(it.id) { ReaderComparisonPane(it, splitStartPage, supportFragmentManager, Modifier.weight(1f).fillMaxWidth()) } }
+                        }
+                        "Text Notes" -> Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(12.dp)) {
+                            OutlinedTextField(splitNoteDraft, onValueChange = { value ->
+                                splitNoteDraft = value.take(100_000)
+                                settings.edit().putString("split-note-draft.${doc?.id}", splitNoteDraft).apply()
+                            }, label = { Text("Write a note") }, modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp))
+                            TextButton(enabled = splitNoteDraft.isNotBlank() && currentAnchor() != null && model.pendingWrites == 0, onClick = {
+                                val anchor = currentAnchor()
+                                if (anchor != null && doc != null) {
+                                    val draft = splitNoteDraft
+                                    val id = java.util.UUID.randomUUID().toString()
+                                    model.save(ReaderAnnotation(id, doc.id, AnnotationKind.NOTE, anchor, note = draft, createdAt = System.currentTimeMillis()))
+                                    scope.launch {
+                                        snapshotFlow { model.pendingWrites }.first { it == 0 }
+                                        if (model.annotations.any { it.id == id } && splitNoteDraft == draft) {
+                                            splitNoteDraft = ""; settings.edit().remove("split-note-draft.${doc.id}").apply()
+                                        }
+                                    }
+                                }
+                            }) { Text("Save note at current location") }
+                            model.annotations.filter { it.kind == AnnotationKind.NOTE }.forEach { note ->
+                                HorizontalDivider()
+                                Text(note.note, Modifier.fillMaxWidth().clickable { jump(note.anchor) }.padding(vertical = 12.dp))
+                                TextButton(onClick = { editNote(note.anchor, note.quote, note) }) { Text("Edit note") }
+                            }
+                        }
+                        else -> NotebookEditor(
+                        notebook=studyNotebook!!,
                         repository=notebookRepository,
                         onBack={studyMode=false},
                         onNavigateNotebook={id, pageId ->
                             notebookRepository.notebooks.firstOrNull { it.id == id && it.deletedAt == 0L }?.let { target ->
-                                if (pageId != null && target.pages.any { it.id == pageId })
-                                    notebookRepository.saveNotes(notebookRepository.notebooks.map { if (it.id == id) it.copy(lastViewedPageId = pageId) else it })
+                                notebookRepository.markOpened(id, pageId)
                                 studyNotebookId = id
                             }
                         },
@@ -658,8 +970,10 @@ class ReaderActivity : AppCompatActivity() {
                         saveError=notebookRepository.saveError,
                         backLabel="Back to reading",
                     )
+                    }
+                    }
                 }
-                if (maxWidth >= 720.dp && splitHorizontal) Row(Modifier.fillMaxSize()) {
+                if (splitHorizontal) Row(Modifier.fillMaxSize()) {
                     Box(Modifier.weight(1f).fillMaxHeight()) { ReaderPane(Modifier.fillMaxSize()) }
                     VerticalDivider()
                     Box(Modifier.weight(1f).fillMaxHeight()) { notePane(Modifier.fillMaxSize()) }
@@ -670,10 +984,21 @@ class ReaderActivity : AppCompatActivity() {
                 }
             } else ReaderPane(Modifier.fillMaxSize())
         } }
-        panel?.let { active -> ModalBottomSheet(onDismissRequest={searchJob?.cancel();panel=null}) {
+        panel?.let { active -> ModalBottomSheet(onDismissRequest={searchJob?.cancel();panel=null}, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = active == "Gestures")) {
             Column(Modifier.fillMaxWidth().padding(horizontal=24.dp).padding(bottom=24.dp).heightIn(max=600.dp)) {
                 Text(active,style=MaterialTheme.typography.headlineSmall,modifier=Modifier.padding(bottom=16.dp))
                 when(active) {
+                    "Split document" -> LazyColumn {
+                        val choices = model.documents.filter { it.deletedAt == 0L && it.id != doc?.id }
+                        if (choices.isEmpty()) item { Text("Import another PDF or EPUB from the library first.", Modifier.padding(vertical = 20.dp)) }
+                        items(choices, key = { it.id }) { book ->
+                            Text(book.title, Modifier.fillMaxWidth().clickable {
+                                splitDocumentId = book.id; splitStartPage = book.locator.takeIf { it.isNotBlank() && book.format == "pdf" }?.let { JSONObject(it).optInt("page") } ?: 0
+                                splitContent = "Another Doc"; studyMode = true; panel = null; chromeVisible = false
+                            }.padding(vertical = 18.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            HorizontalDivider()
+                        }
+                    }
                     "Document" -> {
                         Text(doc?.title.orEmpty(), style = MaterialTheme.typography.titleMedium)
                         Text("${doc?.format?.uppercase().orEmpty()} · ${if (pdf != null) "${pdf!!.pageCount} pages" else "EPUB book"}", Modifier.padding(vertical = 12.dp))
@@ -681,12 +1006,21 @@ class ReaderActivity : AppCompatActivity() {
                         TextButton(onClick = { finish() }) { Text("Back to library") }
                     }
                     "Gestures" -> {
-                        Text("Tap the center of the page to show or hide reader controls. Swipe left or right to turn pages.", style = MaterialTheme.typography.bodyMedium)
-                        if (pdf != null) Text("Pinch to zoom in Read mode. Use Notes for handwriting and Select for text highlights.", Modifier.padding(top = 16.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) { Text("Show reading footer", Modifier.weight(1f)); Switch(showProgress, { showProgress = it }) }
-                        TextButton(onClick = { tool = "Read"; drawingToolbar = false; panel = null; chromeVisible = false }) { Text("Read and navigate") }
+                        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                        ReaderGestureToggle("Stylus for writing", gestures.stylusWriting, pdf != null) { gestures = gestures.copy(stylusWriting = it) }
+                        ReaderGestureToggle("Click / Long Press", gestures.clickLongPress) { gestures = gestures.copy(clickLongPress = it) }
+                        ReaderGestureToggle("Slide / Drag the page", gestures.slide) { gestures = gestures.copy(slide = it) }
+                        ReaderGestureToggle("Pinch-to-zoom", gestures.pinch, pdf != null) { gestures = gestures.copy(pinch = it) }
+                        ReaderGestureToggle("System Bar Gestures", gestures.systemBars) { gestures = gestures.copy(systemBars = it) }
+                        ReaderGestureToggle("Bottom Gestures", gestures.bottom) { gestures = gestures.copy(bottom = it) }
+                        ReaderGestureToggle("Side Gestures", gestures.sides) { gestures = gestures.copy(sides = it) }
+                        ReaderGestureToggle("Back Button", gestures.back) { gestures = gestures.copy(back = it) }
+                        Text("Center tap always opens controls. Bottom swipe up opens controls; side taps turn pages. Disabling System Bar Gestures keeps system bars visible. Disabling Back opens these settings instead of leaving the reader.", Modifier.padding(vertical = 12.dp), fontSize = 12.sp)
+                        ReaderGestureToggle("Show reading footer", showProgress) { showProgress = it }
+                        }
                     }
                     "More" -> {
+                        ReaderGestureToggle("Show book tabs", showBookTabs) { showBookTabs = it; settings.edit().putBoolean("showBookTabs", it).apply() }
                         TextButton(onClick = { panel = "Contents" }) { Text("Contents and bookmarks") }
                         TextButton(onClick = { panel = "Search" }) { Text("Search this book") }
                         TextButton(onClick={panel="Annotations"}) { Text("Highlights, notes & bookmarks") }
@@ -801,6 +1135,16 @@ class ReaderActivity : AppCompatActivity() {
         model.error?.let { message -> AlertDialog(onDismissRequest={model.error=null},title={Text("Reader")},text={Text(message)},confirmButton={TextButton(onClick={model.error=null}){Text("OK")}}) }
         if(exporting)BasicAlertDialog(onDismissRequest={}) { Surface { Row(Modifier.padding(24.dp),verticalAlignment=Alignment.CenterVertically) { CircularProgressIndicator();Text("Preparing export…",Modifier.padding(start=16.dp)) } } }
     }
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        selected?.let { outState.putString("selectionAnchor", it.anchor); outState.putString("selectionText", it.text) }
+    }
+    private fun saveReadingPosition() {
+        if (!::model.isInitialized) return
+        pdf?.let { model.position(JSONObject().put("page", page).toString(), if (it.pageCount <= 1) 1.0 else page.toDouble() / (it.pageCount - 1)) }
+        navigator?.currentLocator?.value?.let { locator -> model.position(locator.toJSON().toString(), locator.locations.totalProgression ?: locator.locations.progression ?: 0.0) }
+    }
+    override fun onPause() { saveReadingPosition(); super.onPause() }
     override fun onDestroy() {
         val session=pdf; val book=publication
         super.onDestroy()
@@ -813,7 +1157,7 @@ class ReaderActivity : AppCompatActivity() {
     listOf(0xFFFFD85A.toInt(),0xFF93D9AF.toInt(),0xFF8FC7F4.toInt(),0xFFF0A6BD.toInt()).forEach { color ->
         val label=when(color){0xFFFFD85A.toInt()->"Yellow";0xFF93D9AF.toInt()->"Green";0xFF8FC7F4.toInt()->"Blue";else->"Pink"}
         val chosen=selected==color
-        Box(Modifier.padding(4.dp).size(40.dp).semantics { contentDescription="$label highlight"; this.selected=chosen }.clip(CircleShape).background(Color(color)).border(if(selected==color)2.dp else 0.dp,MaterialTheme.colorScheme.onSurface,CircleShape)
+        Box(Modifier.padding(4.dp).size(48.dp).semantics { contentDescription="$label highlight"; this.selected=chosen }.clip(CircleShape).background(Color(color)).border(if(selected==color)2.dp else 0.dp,MaterialTheme.colorScheme.onSurface,CircleShape)
             .clickable(onClickLabel="Select ${when(color){0xFFFFD85A.toInt()->"yellow";0xFF93D9AF.toInt()->"green";0xFF8FC7F4.toInt()->"blue";else->"pink"}} highlight"){onSelect(color)})
     }
 }
