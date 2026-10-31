@@ -120,6 +120,14 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
         }
     }
 
+    fun markOpened(id: String, pageId: String? = null) {
+        val now = System.currentTimeMillis()
+        saveNotes(notebooks.map { note ->
+            if (note.id != id || note.deletedAt > 0) note
+            else note.copy(openedAt = now, lastViewedPageId = pageId?.takeIf { target -> note.pages.any { it.id == target } || note.pins.any { it.id == target } } ?: note.lastViewedPageId)
+        })
+    }
+
     fun saveNotes(updated: List<Notebook>) {
         onMain {
             if (cleared) return@onMain
