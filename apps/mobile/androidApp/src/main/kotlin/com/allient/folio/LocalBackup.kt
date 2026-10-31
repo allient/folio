@@ -564,6 +564,7 @@ internal class LocalBackupViewModel(application: Application) : AndroidViewModel
         private set
     var folderError by mutableStateOf<String?>(null)
         private set
+    fun clearFolderError() { folderError = null }
     /** Kept versions in the backup folder, newest first. */
     var versions by mutableStateOf<List<BackupVersion>>(emptyList())
         private set

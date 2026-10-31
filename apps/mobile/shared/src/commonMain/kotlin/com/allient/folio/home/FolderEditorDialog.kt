@@ -43,7 +43,7 @@ private val FolderColors = listOf(
     "lavender" to Color(0xFFC5BCEC), "rose" to Color(0xFFEDB7C7),
     "peach" to Color(0xFFF1C3A5), "sand" to Color(0xFFE9D48E),
 )
-private val FolderStyles = listOf("classic" to "Classic", "papers" to "With papers", "tabbed" to "Tabbed", "open" to "Open")
+private val FolderStyles = listOf("classic" to "Classic", "papers" to "With papers", "tabbed" to "Tabbed", "open" to "Open", "mosaic" to "Mosaic")
 
 /** Shared by notebook and reader libraries; appearance is part of the saved folder. */
 @Composable
@@ -52,6 +52,7 @@ fun FolderEditorDialog(
     folders: List<NoteFolder>,
     onDismiss: () -> Unit,
     onSave: (String, String, String) -> Unit,
+    contentPreview: (@Composable (Modifier) -> Unit)? = null,
 ) {
     var name by rememberSaveable(existing?.id) { mutableStateOf(existing?.name.orEmpty()) }
     var color by rememberSaveable(existing?.id) { mutableStateOf(existing?.color ?: "sage") }
@@ -60,6 +61,11 @@ fun FolderEditorDialog(
     val duplicate = folders.any { it.id != existing?.id && it.name.equals(name.trim(), ignoreCase = true) }
     val valid = name.isNotBlank() && !duplicate
     val submit = { attempted = true; if (valid) onSave(name.trim(), color, style) }
+    val styles = FolderStyles
+    val artwork: @Composable (String, Modifier) -> Unit = { selectedStyle, modifier ->
+        if (selectedStyle == "mosaic" && contentPreview != null) contentPreview(modifier)
+        else FolderArtwork(color, selectedStyle, modifier)
+    }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         BoxWithConstraints(Modifier.fillMaxWidth().imePadding().padding(20.dp), contentAlignment = Alignment.Center) {
             val wide = maxWidth >= 540.dp
@@ -82,9 +88,11 @@ fun FolderEditorDialog(
                         val preview: @Composable (Modifier) -> Unit = { modifier ->
                             Column(modifier.clip(RoundedCornerShape(20.dp)).background(Color(0xFFF1F5F0)).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text("LIVE PREVIEW", fontSize = 9.sp, letterSpacing = 1.6.sp, color = FolderMuted)
-                                FolderArtwork(color, style, Modifier.padding(top = 18.dp, bottom = 12.dp).width(160.dp).height(116.dp))
+                                Box(Modifier.padding(top = 18.dp, bottom = 12.dp).size(160.dp, 116.dp), contentAlignment = Alignment.Center) {
+                                    artwork(style, if (style == "mosaic") Modifier.size(87.dp, 116.dp) else Modifier.fillMaxSize())
+                                }
                                 Text(name.trim().ifBlank { "Your new folder" }, color = FolderInk, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text("${FolderStyles.firstOrNull { it.first == style }?.second ?: "Classic"} · ${color.replaceFirstChar { it.uppercase() }}", color = FolderMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                                Text("${styles.firstOrNull { it.first == style }?.second ?: "Classic"} · ${color.replaceFirstChar { it.uppercase() }}", color = FolderMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
                             }
                         }
                         val fields: @Composable (Modifier) -> Unit = { modifier ->
@@ -128,7 +136,8 @@ fun FolderEditorDialog(
                         }
                         // Two rows on narrow screens preserve comfortable touch targets.
                         Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            FolderStyles.chunked(if (wide) 4 else 2).forEach { row ->
+                            val columns = if (wide) 4 else 2
+                            styles.chunked(columns).forEach { row ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                     row.forEach { (id, label) ->
                                         val chosen = style == id
@@ -137,13 +146,14 @@ fun FolderEditorDialog(
                                             .border(if (chosen) 1.5.dp else 1.dp, if (chosen) Color(0xFF628873) else Color(0xFFE3E8E0), RoundedCornerShape(14.dp))
                                             .selectable(chosen, role = Role.RadioButton, onClick = { style = id }).testTag("folder-style-$id")
                                             .semantics { contentDescription = "$label folder style" }.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                            FolderArtwork(color, id, Modifier.width(76.dp).height(58.dp))
+                                            artwork(id, if (id == "mosaic") Modifier.size(44.dp, 58.dp) else Modifier.size(76.dp, 58.dp))
                                             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                                 if (chosen) SelectionCheck(Modifier.size(12.dp))
-                                                Text(label, fontSize = 11.sp, color = FolderInk, fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Normal)
+                                                Text(label, fontSize = 11.sp, color = FolderInk, fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Normal, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                             }
                                         }
                                     }
+                                    repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                                 }
                             }
                         }

@@ -24,6 +24,20 @@ data class HomeBook(
     val progress: Float, val pageCount: Int, val missing: Boolean, val deletedAt: Long = 0,
 )
 
+internal data class FolderMosaicItem(val id: String, val folderId: String?, val isBook: Boolean, val updatedAt: Long)
+
+/** Match the active tab, exclude Trash, and bound each folder to four recent thumbnails. */
+internal fun folderMosaicItems(notebooks: List<HomeNotebook>, books: List<HomeBook>, segment: String): Map<String?, List<FolderMosaicItem>> {
+    val items = buildList {
+        notebooks.filter { it.deletedAt == 0L && (segment == "all" || (segment == "canvas" && it.infinite) || (segment == "notes" && !it.infinite)) }
+            .forEach { add(FolderMosaicItem(it.id, it.folderId, false, maxOf(it.updatedAt, it.openedAt))) }
+        if (segment == "all" || segment == "books") books.filter { it.deletedAt == 0L }
+            .forEach { add(FolderMosaicItem(it.id, it.folderId, true, maxOf(it.openedAt, it.createdAt))) }
+    }
+    return items.sortedWith(compareByDescending<FolderMosaicItem> { it.updatedAt }.thenBy { it.isBook }.thenBy { it.id })
+        .groupBy { it.folderId }.mapValues { (_, contents) -> contents.take(4) }
+}
+
 object HomeSort { const val Edited = "edited"; const val Created = "created"; const val Type = "type"; const val Name = "name"
     val all = listOf(Edited to "Last edit", Created to "Date created", Type to "File type", Name to "Name") }
 

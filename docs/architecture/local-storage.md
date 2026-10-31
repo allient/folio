@@ -70,7 +70,7 @@ Everything else is deleted, so at most 22 backups exist. There is no size cap: r
 
 **Restore.** Settings lists the kept versions with date and size. **Restore** imports the chosen file through the regular library import, which adds fresh copies and never erases the current library.
 
-**Reminder.** The home banner appears when changes have gone unbacked for 3 days: the last backup or manual export is more than 3 days old (or, with no backup at all, the first unbacked change is) while changes are pending.
+**Reminder.** The home banner appears when changes have gone unbacked for 3 days: the last backup or manual export is more than 3 days old (or, with no backup at all, the first unbacked change is) while changes are pending. It offers **Export backup** and, while Smart backups are off, **Turn on**: a short guide (choose a folder such as `Documents/Folio`, then Allow) that opens the folder picker, enables Smart backups and starts the first backup. With Smart backups on but stale, the second button opens Settings.
 
 **Preferences** (`backup` SharedPreferences): `enabled`, `folderUri`, `folderLabel`, `generation`, `lastSuccess`, `lastFile`, `signature`, `error`, `lastExport`, `lastExportFile`, `firstUnbackedChange`.
 

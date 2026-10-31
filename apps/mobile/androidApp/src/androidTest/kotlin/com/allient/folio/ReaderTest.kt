@@ -57,6 +57,26 @@ class ReaderTest {
             assertEquals(1,store.documents().size)
         }
     }
+    @Test fun pdfContentsPreservesChapterTitlesChildrenAndDestinations() {
+        val file = pdf()
+        PDDocument.load(file).use { document ->
+            val outline = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline()
+            val chapter = com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem().apply {
+                title = "Introduction"; setDestination(document.getPage(0))
+            }
+            chapter.addLast(com.tom_roush.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem().apply {
+                title = "Getting started"; setDestination(document.getPage(1))
+            })
+            outline.addLast(chapter); document.documentCatalog.documentOutline = outline
+            document.save(File(directory, "outlined.pdf"))
+        }
+        PdfReaderSession(File(directory, "outlined.pdf")).use { session ->
+            val chapter = session.contents().single()
+            assertEquals("Introduction", chapter.title); assertEquals(0, chapter.pageIndex)
+            assertEquals("Getting started", chapter.children.single().title); assertEquals(1, chapter.children.single().pageIndex)
+        }
+        PdfReaderSession(file).use { assertTrue(it.contents().isEmpty()) }
+    }
     @Test fun pdfTextSelectionAndAnnotationsSurviveReadingPositionUpdates()=runBlocking {
         val doc=ReaderStore(context).use{it.importDocument(Uri.fromFile(pdf()))}
         val selection=PdfReaderSession(File(doc.path)).use{session->
@@ -90,6 +110,39 @@ class ReaderTest {
             assertArrayEquals(original,source.readBytes());assertArrayEquals(original,File(doc.path).readBytes())
         }
     }
+    @Test fun underlineStylesSurviveReopeningAndExportAsEditableAnnotations() = runBlocking {
+        val source = pdf()
+        val original = source.readBytes()
+        val doc = ReaderStore(context).use { it.importDocument(Uri.fromFile(source)) }
+        val anchor = PdfReaderSession(File(doc.path)).use { it.searchPage(0, "Knotes").single().anchor }
+        val styles = listOf("solid", "dashed", "wavy")
+        ReaderStore(context).use { store ->
+            styles.forEachIndexed { index, style ->
+                store.saveAnnotation(ReaderAnnotation(
+                    id = "underline-$style", documentId = doc.id, kind = AnnotationKind.UNDERLINE,
+                    anchor = JSONObject(anchor).put("underlineStyle", style).toString(),
+                    quote = "Knotes", color = 0xFF2F7A68.toInt(), createdAt = index.toLong(),
+                ))
+            }
+        }
+        ReaderStore(context).use { store ->
+            val saved = store.annotations(doc.id)
+            assertEquals(styles, saved.map { JSONObject(it.anchor).getString("underlineStyle") })
+            val output = ReaderExport.annotatedPdf(context, doc, saved, File(directory, "underlines.pdf"))
+            PDDocument.load(output).use { exported ->
+                val annotations = exported.getPage(0).annotations
+                assertEquals(listOf("Underline", "Underline", "Squiggly"), annotations.map { it.subtype })
+                assertTrue(annotations.all { it.normalAppearanceStream != null })
+                val dashed = annotations[1] as com.tom_roush.pdfbox.pdmodel.interactive.annotation.PDAnnotationTextMarkup
+                assertEquals("D", dashed.borderStyle.style)
+                assertTrue(com.tom_roush.pdfbox.text.PDFTextStripper().getText(exported).contains("Knotes"))
+            }
+            assertArrayEquals(original, File(doc.path).readBytes())
+            saved.forEach { store.deleteAnnotation(it.id) }
+            assertTrue(store.annotations(doc.id).isEmpty())
+        }
+    }
+
     @Test fun libraryBackupRestoresReaderReferencesWithoutBookBytesAndReconnectsOnReimport()=runBlocking {
         val source=pdf()
         val originalFolderId=UUID.randomUUID().toString()

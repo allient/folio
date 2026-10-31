@@ -1,5 +1,8 @@
 package com.allient.folio
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.testTag
 import android.os.Bundle
 import android.net.Uri
 import androidx.activity.ComponentActivity
@@ -137,6 +140,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
     var showPenSettings by remember { mutableStateOf(false) }
     if (showPenSettings) GlobalPenSettingsDialog { showPenSettings = false }
     var enableAfterFolderChoice by rememberSaveable { mutableStateOf(true) }
+    var showSmartBackupGuide by rememberSaveable { mutableStateOf(false) }
     var libraryRestoreComplete by remember { mutableStateOf<Int?>(null) }
     var backupExportMessage by remember { mutableStateOf<String?>(null) }
     // Saveable: the save picker can outlive this composition (rotation while it is open).
@@ -269,10 +273,14 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                 }
                 current == null -> libraryStateHolder.SaveableStateProvider("library") { Column(Modifier.fillMaxSize()) {
                     if (backupReminder) {
-                        Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), shape = RoundedCornerShape(16.dp), color = Color(0xFFFFF4D6)) {
+                        Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).testTag("backup-reminder"), shape = RoundedCornerShape(16.dp), color = Color(0xFFFFF4D6)) {
                             Row(Modifier.padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(if (backup.state.enabled) "Recent changes haven’t been backed up for 3 days. Check Smart backups in Settings, or export a copy now." else "Recent changes haven’t been backed up for 3 days. Export a copy, or turn on Smart backups in Settings.", Modifier.weight(1f), fontSize = 13.sp, color = Color(0xFF4B3B13))
+                                Text(if (backup.state.enabled) "Recent changes haven’t been backed up for 3 days. Check Smart backups in Settings, or export a copy now."
+                                    else "Recent changes haven’t been backed up for 3 days. Turn on Smart backups so Folio saves copies for you, or export one now.",
+                                    Modifier.weight(1f), fontSize = 13.sp, color = Color(0xFF4B3B13))
                                 TextButton(onClick = ::exportFullLibraryBackup, enabled = !repository.isSaving && !backup.running) { Text("Export backup") }
+                                if (backup.state.enabled) TextButton(onClick = { showSettings = true }, Modifier.testTag("backup-reminder-settings")) { Text("Settings") }
+                                else Button(onClick = { showSmartBackupGuide = true }, Modifier.testTag("backup-reminder-turn-on"), enabled = !backup.choosingFolder) { Text("Turn on") }
                             }
                         }
                     }
@@ -363,7 +371,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                         isSaving = repository.isSaving,
                         onImport = { importDocument.launch(arrayOf("*/*")) },
                         onOpen = { id ->
-                            repository.saveNotes(repository.notebooks.map { if (it.id == id) it.copy(openedAt = System.currentTimeMillis()) else it })
+                            repository.markOpened(id)
                             openNotebookId = id
                         },
                         onCreate = { name, template, folder, infiniteCanvas ->
@@ -412,8 +420,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                     onBack = { openNotebookId = null },
                     onNavigateNotebook = { id, pageId ->
                         repository.notebooks.firstOrNull { it.id == id && it.deletedAt == 0L }?.let { target ->
-                            if (pageId != null && (target.pages.any { it.id == pageId } || target.pins.any { it.id == pageId }))
-                                repository.saveNotes(repository.notebooks.map { if (it.id == id) it.copy(lastViewedPageId = pageId) else it })
+                            repository.markOpened(id, pageId)
                             openNotebookId = id
                         }
                     },
@@ -442,6 +449,22 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
             }
             reader.error?.let { message ->
                 AlertDialog(onDismissRequest = { reader.error = null }, title = { Text("Reading library") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { reader.error = null }) { Text("OK") } })
+            }
+            if (showSmartBackupGuide) AlertDialog(onDismissRequest = { showSmartBackupGuide = false }, modifier = Modifier.testTag("smart-backup-guide"),
+                title = { Text("Turn on Smart backups") },
+                text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Folio will copy your whole library to a folder on this device after you edit, when you leave the app, and every few hours. Older copies are thinned out automatically.")
+                    Text("1. Tap Choose folder.")
+                    Text("2. Pick a folder, or create one such as Documents/Folio.")
+                    Text("3. Tap Use this folder, then Allow.")
+                    Text("The first backup starts right away. You can change the folder or turn this off in Settings → Smart backups.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } },
+                confirmButton = { Button(onClick = { showSmartBackupGuide = false; openBackupFolderPicker(true) }, Modifier.testTag("smart-backup-choose-folder")) { Text("Choose folder") } },
+                dismissButton = { TextButton(onClick = { showSmartBackupGuide = false }) { Text("Not now") } })
+            if (!showSettings) backup.folderError?.let { message ->
+                AlertDialog(onDismissRequest = { backup.clearFolderError() }, title = { Text("Smart backups") }, text = { Text(message) },
+                    confirmButton = { TextButton(onClick = { backup.clearFolderError(); showSmartBackupGuide = true }) { Text("Try again") } },
+                    dismissButton = { TextButton(onClick = { backup.clearFolderError() }) { Text("Close") } })
             }
             backupExportMessage?.let { message ->
                 AlertDialog(onDismissRequest = { backupExportMessage = null }, title = { Text("Library backup") }, text = { Text(message) },

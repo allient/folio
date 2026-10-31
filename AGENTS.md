@@ -18,6 +18,9 @@ Engineering guide for Folio, for human contributors and coding agents. Read it b
 
 Bun workspaces and Turborepo: apps in `apps/`, shared packages in `packages/`.
 
+Use Bun 1.4.4 or later (the minimum patched version for CVE-2026-111497). The root
+`packageManager` field pins the version installed by the docs GitHub Actions workflow.
+
 ```
 apps/mobile/                 Gradle root (Kotlin Multiplatform)
   androidApp/                Android app: activities, editor, ink, storage, files, reader, OCR, updates
@@ -97,7 +100,12 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 ### UI
 - Follow the brand kit: sage `#2F7A68`, ink `#1E2B28`, cream `#F6F1E6`, Geist (`FolioBrand`, `folioTypography()`). The editor keeps its fixed light colours.
 - Support phones (~360–411 dp) and tablets. Touch targets are at least 48 dp. Dialogs and sheets scroll, and long text ellipsizes.
+- Notebook editors share the compact tab strip with the reader. **More → Show recent note tabs** saves visibility in `editor` preferences. Tabs show the current note plus up to 11 recent notebooks/canvases; closing tabs never deletes notes, and switching flushes ink. Tabs keep their position when selected (`stableDocumentTabOrder`, saved as `noteTabOrder`); new tabs go to the end. The "N ▾" button opens a drop-down with Hide tab bar, Close other tabs and per-tab options. The common `recentDocumentTabs` helper filters Trash/closed items.
 - Dialog, selection and search state survives rotation (`rememberSaveable`).
+- The folder editor offers **Mosaic** (`NoteFolder.style = "mosaic"`), saved per folder. It shows up to four live notebook, canvas or book thumbnails matching the active tab; All mixes these types. Empty folders retain folder artwork.
+- Reader Contents preserves PDF/EPUB chapter hierarchy with expandable groups and a page fallback for PDFs without outlines. Compact open-book tabs include a pinned scrollable-list picker; tabs and gesture switches are saved in `reader-preferences`; closing a tab never deletes content.
+- Reader selection toolbars follow projected PDF selection bounds or the EPUB navigator selection rectangle, prefer above/below the passage, and stay inside screen margins.
+- Reader Contrast offers saved PDF display adjustments (embolden, sharpen, watermark bleaching, dark color enhancement and smoothing); process pixel filters on workers, preserve originals/exports, and keep the footer limited to time, battery, chapter and position.
 - Every icon-only control has a `contentDescription`. Keep existing test tags stable; flows and tests depend on them.
 
 ## Data invariants
@@ -179,3 +187,25 @@ Sources: [`docs/`](docs). Each file needs a `title` in its frontmatter; the webs
 - Commit messages: one short sentence in the imperative or descriptive style used in `git log` (for example "Table bar next to the table"). No prefixes.
 - Keep docs in step with code. If behaviour, a command or a data format changes, update this file, the relevant docs page and the README if users would notice.
 - Never commit secrets, signing material, device backups (`artifacts/recovery`) or screenshots of other apps.
+
+### Reader Format preferences
+
+PDF display preferences live in `reader-preferences` SharedPreferences. Confirm marquee
+crops before saving; Cancel must preserve the prior crop. Crops transform the reading view
+only; keep annotations in original normalized page coordinates and exports unchanged.
+An applied crop hides Fit Screen/Fit Width until Reset; derive this from the persisted crop.
+
+Split View uses `ReaderSplitPane.kt` for an independently owned secondary PDF/EPUB session.
+Close its native session and remove its EPUB fragment on disposal. Horizontal means side-by-side;
+Vertical means stacked. Reader landscape locks and split layout persist in `reader-preferences`.
+
+ReaderActivity follows display orientation on API 36+ devices; do not add restricted-
+resizability compatibility properties, which letterbox the reader. Landscape locks remain
+available on Android 15 and earlier.
+
+PDF Read mode supports hold-then-drag text selection and draggable range handles. Keep its selection toolbar non-modal so handles remain reachable. PDF underline variants live in the optional anchor JSON `underlineStyle` field; missing values mean solid.
+
+Reader Normal mode has neither fit control selected. Fit Screen and Fit Width detect the
+visible PDF content on a worker and trim blank margins (including scanned pages). Fit Screen
+fits that content within the viewport; Fit Width fills its width. Reset clears fitting and
+manual crop and returns to Normal. Reset Zoom clears zoom while retaining crop/fit settings.

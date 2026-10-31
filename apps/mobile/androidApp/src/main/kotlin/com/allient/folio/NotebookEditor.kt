@@ -158,6 +158,22 @@ internal fun NotebookEditor(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val preferences = remember { context.getSharedPreferences("editor", Context.MODE_PRIVATE) }
+    var showNoteTabs by remember { mutableStateOf(preferences.getBoolean("showNoteTabs", true)) }
+    var closedNoteTabs by remember { mutableStateOf(preferences.getStringSet("closedNoteTabs", emptySet()).orEmpty().toSet()) }
+    LaunchedEffect(notebook.id) {
+        if (notebook.id in closedNoteTabs) {
+            closedNoteTabs = closedNoteTabs - notebook.id
+            preferences.edit().putStringSet("closedNoteTabs", closedNoteTabs).apply()
+        }
+    }
+    // Tabs keep their position when selected; the saved order only grows at the end.
+    val recentNotes = remember(repository.notebooks, notebook.id, closedNoteTabs) {
+        val items = repository.notebooks.map { DocumentTab(it.id, it.title, if (it.infiniteCanvas) "Canvas" else "Notebook", it.openedAt, it.deletedAt) }
+        val previous = preferences.getString("noteTabOrder", null)?.split('\n')?.filter { it.isNotBlank() }.orEmpty()
+        val order = stableDocumentTabOrder(previous, items, notebook.id, closedNoteTabs)
+        if (order != previous) preferences.edit().putString("noteTabOrder", order.joinToString("\n")).apply()
+        order.mapNotNull { id -> items.firstOrNull { it.id == id } }
+    }
     val files = remember { NotebookFiles(context) }
     val latestNotebook by rememberUpdatedState(notebook)
     val latestOnChange by rememberUpdatedState(onNotebookChange)
@@ -1260,6 +1276,9 @@ internal fun NotebookEditor(
                     Text(if (draft.isNotBlank() && results.isEmpty()) "No matches. Handwriting recognition is not included yet." else "Search indexes typed text, outlines and tags.", fontSize = 11.sp, color = ChromeMuted)
                 }
                 "more" -> {
+                    ToolToggle("Show recent note tabs", "Switch quickly between recently opened notebooks and canvases.", showNoteTabs, {
+                        showNoteTabs = it; preferences.edit().putBoolean("showNoteTabs", it).apply()
+                    })
                     ToolAction(InkIcon.Rename, "Rename notebook") { draft = notebook.title; sheet = "rename" }
                     ToolAction(InkIcon.Search, "Search") { draft = ""; sheet = "search" }
                     ToolAction(InkIcon.Sticker, "Stickers", "Place an emoji sticker on the page") { sheet = "stickers" }
@@ -1344,6 +1363,29 @@ internal fun NotebookEditor(
     Box(Modifier.fillMaxSize().background(Color.White)) {
         Column(Modifier.fillMaxSize()) {
             if (!focusMode) {
+                if (showNoteTabs) androidx.compose.material3.MaterialTheme(colorScheme = androidx.compose.material3.lightColorScheme(
+                    primary = ChromeInk, onSurface = ChromeInk, surface = Color(0xFFFAFAFA), secondaryContainer = com.allient.folio.FolioBrand.SageSoft,
+                    surfaceVariant = Color(0xFFE2E6E4), surfaceContainerHigh = Color(0xFFEEF1EF), onSurfaceVariant = ChromeMuted,
+                )) {
+                    DocumentTabs(recentNotes, notebook.id,
+                        listTitle = "Recent notes", tagPrefix = "notebook-note",
+                        onHideTabs = { showNoteTabs = false; preferences.edit().putBoolean("showNoteTabs", false).apply() },
+                        onCloseOthers = {
+                            closedNoteTabs = (closedNoteTabs + recentNotes.map { it.id }.filter { it != notebook.id }).toList().takeLast(128).toSet()
+                            preferences.edit().putStringSet("closedNoteTabs", closedNoteTabs).apply()
+                        },
+                        onSelect = { id -> if (id != notebook.id) { save(); onNavigateNotebook(id, null) } },
+                        onClose = { id ->
+                            closedNoteTabs = (closedNoteTabs + id).toList().takeLast(128).toSet()
+                            preferences.edit().putStringSet("closedNoteTabs", closedNoteTabs).apply()
+                            if (id == notebook.id) {
+                                save()
+                                val next = recentNotes.firstOrNull { it.id != id }
+                                if (next == null) onBack() else onNavigateNotebook(next.id, null)
+                            }
+                        },
+                    )
+                }
                 // Phones and narrow windows: the title gives way and fewer brushes show, so page controls always fit.
                 val screenWidthDp = LocalConfiguration.current.screenWidthDp
                 val compactBar = screenWidthDp < 600
