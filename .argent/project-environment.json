@@ -1,0 +1,1 @@
+{"project":"Folio","is_react_native":false,"is_native_android":true,"is_native_ios":false,"mobile_root":"apps/mobile","debug_application_id":"com.allient.folio.dev","metro_required":false,"build":"./gradlew :androidApp:assembleDebug","lint":"./gradlew :androidApp:lintDebug","preferred_device":"emulator-5554"}
