@@ -51,13 +51,17 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 
 **Read with a pen in hand**
 - Open PDF and EPUB books, from the library or from other apps.
-- Highlight, underline, write in the margins, add notes and bookmarks.
-- Search, jump to any page and recognize text in scanned pages, all on the device.
+- Optional folder mosaics with note, canvas and book previews: folder options → Edit folder → Mosaic.
+- Highlight, underline, write in the margins, add notes and bookmarks, with selection tools beside the selected passage.
+- Adjust PDF text weight, sharpness, pale backgrounds and dark tones; keep time, battery and reading position in view.
+- Search, browse expandable chapters and subchapters, jump to any page and recognize text in scanned pages, all on the device.
+- Browser-style open-book tabs that keep their order; the tab menu switches, closes other tabs or hides the bar (bring it back from **More → Show book tabs**). Customize reading gestures.
 - Study view: a book and a notebook side by side.
 - Export the annotated PDF, or your reading notes as Markdown.
 
 **A tidy library**
 - Folders with colours and styles, favourites, recent items and search across names, typed text, tags and book titles.
+- Recent-note tabs for quick switching that keep their order, with the same tab menu and a show/hide option in the editor’s More menu.
 - A Trash that keeps deleted items for 7 or 30 days.
 - Smart backups to a folder you choose, with daily, weekly and monthly versions.
 - Export pages as PDF or PNG, or a notebook as an editable `.folio` file.
@@ -72,7 +76,7 @@ Folio is coming to Google Play for Android phones and tablets. Until then you ca
 
 ### Build from source
 
-You need [Bun](https://bun.sh) 1.4 or later, JDK 21 and the Android SDK (or Android Studio).
+You need [Bun](https://bun.sh) 1.4.4 or later, JDK 21 and the Android SDK (or Android Studio).
 
 ```bash
 git clone https://github.com/allient/folio.git
@@ -116,3 +120,18 @@ Built with [Jetpack Ink](https://developer.android.com/jetpack/androidx/releases
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
+
+PDF reader Format controls include scrolling or single pages, LTR/RTL navigation, zoom,
+fit modes, adjustable marquee crop with Apply/Cancel, margins and text enhancement.
+Reader display settings persist when you close and reopen the reader. While cropped, only
+Marquee Crop and Reset appear in the Crop row; Reset restores the fit controls.
+
+Reader Split View supports the current document, another PDF/EPUB, handwritten study notes
+or text notes, with side-by-side or stacked panes and saved landscape orientation controls.
+
+In the PDF reader, hold a word and drag to select text, then drag either selection handle to adjust the passage. The selection toolbar offers highlight colors, solid/dashed/wavy underlines, notes, copy, share and Remove marks. Long-press an existing mark to edit its color or delete it. Scanned pages need OCR first.
+
+Reader Normal mode has neither fit control selected. Fit Screen and Fit Width detect the
+visible PDF content on a worker and trim blank margins (including scanned pages). Fit Screen
+fits that content within the viewport; Fit Width fills its width. Reset clears fitting and
+manual crop and returns to Normal. Reset Zoom clears zoom while retaining crop/fit settings.

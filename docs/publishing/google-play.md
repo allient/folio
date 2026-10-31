@@ -197,6 +197,8 @@ In Play Console → Closed testing, add a tester list, share the link, and wait 
    ```
 
    fastlane sets the version code to one above the highest code on any track. You never edit it by hand.
+
+   Builds made without fastlane (plain Gradle, `just release`) use the defaults in `androidApp/build.gradle.kts` (currently `1.0.3`, code 3). Raise them when you release by hand.
 3. Test the internal build on a phone and a tablet.
 4. Ship it: `just play-promote`, or `FOLIO_VERSION_NAME=1.1.0 just play-production` for a staged rollout.
 5. If the store text or screenshots changed: `just play-metadata`.
@@ -216,6 +218,7 @@ In Play Console → Closed testing, add a tester list, share the link, and wait 
 | Variable | Default | Meaning |
 |---|---|---|
 | `FOLIO_VERSION_NAME` | `1.0.<code>` | Version name shown to users |
+| `FOLIO_VERSION_CODE` | next code on Play | Forces the version code (needed before the Play API key exists) |
 | `RELEASE_STATUS` | `completed` (`inProgress` for production) | Use `draft` while the app has never been published |
 | `ROLLOUT` | `0.2` | Production rollout fraction |
 | `UPDATE_PRIORITY` | `0` | In-app update priority, 0–5 (see below) |

@@ -1,1 +1,5 @@
-First release of Folio: handwritten notes, infinite canvas, PDF and EPUB reader, smart backups.
+Folio 1.0.3
+- Browser-style tabs for notes and books. Tabs keep their order, and the tab menu can hide the bar or close other tabs.
+- Show or hide the tab bar from More in the editor and the reader.
+- Turn on Smart backups in a few taps from the backup reminder.
+- Reader: split view, display contrast, crop and fit-to-content, and easier text selection.
