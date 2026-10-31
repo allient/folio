@@ -117,7 +117,7 @@ class TrashTest {
     }
 
     @Test fun trashedStateSurvivesSqliteSerializationAndLibraryBackup() {
-        val folder = NoteFolder("folder-1", "Archive", "blue", "papers", deletedAt = now - day)
+        val folder = NoteFolder("folder-1", "Archive", "blue", "mosaic", deletedAt = now - day)
         val trashedNote = note("Old notes", folder.id).copy(deletedAt = now - 3 * day, createdAt = 1234)
         val liveNote = note("Current")
         val json = serializeNotebook(trashedNote)
@@ -130,6 +130,7 @@ class TrashTest {
         val before = System.currentTimeMillis()
         val imported = NotebookFiles(context).importLibraryBackup(Uri.fromFile(archive))
         val restoredFolder = imported.settings.folders.single()
+        assertEquals("mosaic", restoredFolder.style)
         assertTrue("Trashed folder stays in Trash", restoredFolder.deletedAt >= before)
         val restoredTrashed = imported.notebooks.single { it.title == "Old notes" }
         assertTrue("Trashed notebook stays in Trash", restoredTrashed.deletedAt >= before)

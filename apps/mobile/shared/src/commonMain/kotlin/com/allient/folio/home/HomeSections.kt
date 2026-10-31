@@ -107,6 +107,22 @@ internal fun LibraryTile(
     }
 }
 
+/** Up to four library thumbnails, with empty cells preserving portrait proportions. */
+@Composable
+internal fun <T> FolderMosaic(items: List<T>, preview: @Composable (T, Modifier) -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier.padding(3.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        repeat(2) { row ->
+            Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                repeat(2) { column ->
+                    Box(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(2.dp)).background(HomeSidebarBackground)) {
+                        items.getOrNull(row * 2 + column)?.let { preview(it, Modifier.fillMaxSize()) }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** Small rounded label drawn over a card thumbnail. */
 @Composable
 internal fun TileBadge(text: String, modifier: Modifier, filled: Boolean = false, tag: String? = null) {

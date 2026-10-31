@@ -201,6 +201,10 @@ fun NotebookHome(
     val showNotes = segment == "all" || segment == "notes"
     val showCanvas = segment == "all" || segment == "canvas"
     val showBooks = segment == "all" || segment == "books"
+    val folderPreviews = remember(liveNotes, liveBooks, segment) { folderMosaicItems(liveNotes, liveBooks, segment) }
+    val itemPreview: @Composable (FolderMosaicItem, Modifier) -> Unit = { item, modifier ->
+        if (item.isBook) bookCover(item.id, modifier) else thumbnail(item.id, modifier)
+    }
     fun folderCount(id: String) = liveNotes.count { placed(it.folderId) == id && ((it.infinite && showCanvas) || (!it.infinite && showNotes)) } + (if (showBooks) liveBooks.count { placed(it.folderId) == id } else 0)
     fun countLabel(count: Int) = when (segment) { "notes" -> "notebook"; "canvas" -> "canvas"; "books" -> "book"; else -> "item" }
         .let { unit -> "$count ${if (count == 1) unit else if (unit == "canvas") "canvases" else "${unit}s"}" }
@@ -386,7 +390,9 @@ fun NotebookHome(
                                                             onLongClick = { if (folder != null) detailsFolderId = folder.id })
                                                         .testTag("folder-$target").semantics { contentDescription = "Open folder ${folder?.name ?: "All folders"}" },
                                                     mark, highlighted = dragId != null && bounds[target]?.contains(dragPoint) == true, previewBackground = Color(0xFFFAFAFA)) {
-                                                    FolderArtwork(folder?.color ?: "sage", folder?.style ?: "classic", if (grid) Modifier.fillMaxWidth(.85f).aspectRatio(1.35f) else Modifier.fillMaxWidth(.9f).aspectRatio(1.35f))
+                                                    val covers = if (folder?.style == "mosaic") folderPreviews[folder.id].orEmpty() else emptyList()
+                                                    if (covers.isNotEmpty()) FolderMosaic(covers, itemPreview, Modifier.fillMaxSize().testTag("folder-cover-preview-$target"))
+                                                    else FolderArtwork(folder?.color ?: "sage", folder?.style ?: "classic", if (grid) Modifier.fillMaxWidth(.85f).aspectRatio(1.35f) else Modifier.fillMaxWidth(.9f).aspectRatio(1.35f))
                                                 }
                                             }
                                             is NoteEntry -> {
@@ -512,7 +518,11 @@ fun NotebookHome(
         val contents = liveNotes.filter { placed(it.folderId) == id }
         val bookCount = liveBooks.count { placed(it.folderId) == id }
         LibraryDetailsDialog(folder.name, "${contents.size} notebooks · $bookCount books", "Folder", contents.maxByOrNull { it.updatedAt }?.dateLabel ?: "No notebooks yet",
-            preview = { modifier -> Box(modifier, contentAlignment = Alignment.Center) { FolderArtwork(folder.color, folder.style, Modifier.size(100.dp, 76.dp)) } },
+            preview = { modifier ->
+                val previews = folderPreviews[id].orEmpty()
+                if (folder.style == "mosaic" && previews.isNotEmpty()) FolderMosaic(previews, itemPreview, modifier)
+                else Box(modifier, contentAlignment = Alignment.Center) { FolderArtwork(folder.color, folder.style, Modifier.size(100.dp, 76.dp)) }
+            },
             onDismiss = { detailsFolderId = null }, actions = listOf(
                 DetailAction(Symbol.Open, "Open") { detailsFolderId = null; screen = "home"; viewName = HomeView.Home.name; folderId = id },
                 DetailAction(Symbol.Rename, "Edit folder") { detailsFolderId = null; editedFolderId = folder.id; folderDialog = true },
@@ -539,6 +549,15 @@ fun NotebookHome(
                 settings.folders + NoteFolder(id, name, color, style)
             }
             onSettingsChange(settings.copy(folders = updated)); folderDialog = false
+    }, contentPreview = { modifier ->
+        val covers = editedFolder?.let { folderPreviews[it.id] }.orEmpty()
+        if (covers.isNotEmpty()) FolderMosaic(covers, itemPreview, modifier)
+        else FolderMosaic(listOf("NOTE", "PDF", "CANVAS", "EPUB"), { format, cell ->
+            Box(cell.background(style.soft).padding(4.dp), contentAlignment = Alignment.Center) {
+                HomeSymbol(Symbol.Book, Modifier.size(20.dp), tint = style.accent)
+                Text(format, Modifier.align(Alignment.BottomCenter), fontSize = 7.sp, color = style.accent)
+            }
+        }, modifier)
     })
     deleteId?.let { id -> AlertDialog(onDismissRequest = { deleteId = null }, title = { Text("Move notebook to Trash?") }, text = { Text(trashNote) },
         confirmButton = { TextButton(modifier = Modifier.testTag("confirm-delete-notebook"), onClick = { onTrash("note", setOf(id)); deleteId = null }) { Text("Move to Trash") } },
@@ -883,7 +902,7 @@ private fun LibraryDetailsDialog(
                 }
                 HorizontalDivider(Modifier.padding(top = 20.dp), color = Line.copy(alpha = .5f))
                 BoxWithConstraints(Modifier.fillMaxWidth().padding(16.dp)) {
-                    val columns = if (maxWidth < 380.dp) 3 else 4
+                    val columns = minOf(actions.size.coerceAtLeast(1), if (maxWidth < 380.dp) 3 else 4)
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         actions.chunked(columns).forEach { row ->
                             Row(Modifier.fillMaxWidth()) {
