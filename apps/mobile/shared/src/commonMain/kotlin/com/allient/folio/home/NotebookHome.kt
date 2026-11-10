@@ -24,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -43,6 +42,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.allient.folio.InfinitePaper
+import com.allient.folio.LucideGlyph
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.composables.icons.lucide.*
 import androidx.compose.foundation.shape.CircleShape
 import com.allient.folio.NotebookTemplateCatalog
 import androidx.compose.ui.window.Dialog
@@ -55,7 +57,17 @@ private val Muted = HomeMuted
 private val Line = HomeLine
 private enum class HomeView { Home, Recent, Favorites }
 private val papers = NotebookTemplateCatalog.all
-internal enum class Symbol { Trash, Copy, Rename, Share, Folder, All, Star, Clock, Hub, Tag, Search, Menu, Back, Plus, Close, More, Download, Sidebar, ChevronDown, ChevronRight, Check, Gear, Info, Book, Notes, Dots, Select, Open }
+internal enum class Symbol(val icon: ImageVector) {
+    Trash(Lucide.Trash2), Copy(Lucide.Copy), Rename(Lucide.PencilLine), Share(Lucide.Share2), Folder(Lucide.Folder),
+    All(Lucide.LayoutGrid), Star(Lucide.Star), Clock(Lucide.Clock), Hub(Lucide.Presentation), Tag(Lucide.Tag),
+    Search(Lucide.Search), Menu(Lucide.Menu), Back(Lucide.ArrowLeft), Plus(Lucide.Plus), Close(Lucide.X), More(Lucide.Menu),
+    Download(Lucide.Download), Sidebar(Lucide.PanelLeft), ChevronDown(Lucide.ChevronDown), ChevronRight(Lucide.ChevronRight),
+    Check(Lucide.Check), Gear(Lucide.Settings), Info(Lucide.Info), Book(Lucide.BookOpen), Notes(Lucide.NotebookText),
+    Dots(Lucide.EllipsisVertical), Select(Lucide.SquareCheck), Open(Lucide.ExternalLink),
+    // Create menu: one distinct icon per action.
+    NewNotebook(Lucide.NotebookPen), NewCanvas(Lucide.Infinity), NewFolder(Lucide.FolderPlus),
+    ImportBook(Lucide.BookPlus), ImportAsNotebook(Lucide.FileInput), ImportBackup(Lucide.ArchiveRestore),
+}
 private val segments = listOf("all" to "All", "notes" to "Notes", "canvas" to "Canvas", "books" to "Books")
 
 private sealed interface Entry { val key: String }
@@ -91,7 +103,7 @@ fun NotebookHome(
     templatePreview: (@Composable (String, Modifier) -> Unit)? = null,
     books: List<HomeBook> = emptyList(),
     bookCover: @Composable (String, Modifier) -> Unit = { _, _ -> },
-    onOpenBook: (String) -> Unit = {}, onImportBook: (String?) -> Unit = {},
+    onOpenBook: (String) -> Unit = {}, onImportBook: (String?) -> Unit = {}, onImportPdfNotebook: () -> Unit = {},
     /** Live boards (the Live tab). The tab is hidden when [onOpenBoard] is null. */
     boards: List<HomeBoard> = emptyList(),
     boardPreview: @Composable (String, Modifier) -> Unit = { _, _ -> },
@@ -466,12 +478,13 @@ fun NotebookHome(
                                     Box(contentAlignment = Alignment.Center) { HomeSymbol(Symbol.Plus, Modifier.size(24.dp), tint = Color.White) }
                                 }
                                 DropdownMenu(fabMenu, { fabMenu = false }, modifier = Modifier.penPressureFilter()) {
-                                    DropdownMenuItem(text = { Text("New notebook") }, modifier = Modifier.testTag("home-new-notebook"), leadingIcon = { HomeSymbol(Symbol.Notes, Modifier.size(20.dp)) }, onClick = { fabMenu = false; newNote(false) })
-                                    DropdownMenuItem(text = { Text("New infinite canvas") }, modifier = Modifier.testTag("home-new-canvas"), leadingIcon = { HomeSymbol(Symbol.All, Modifier.size(20.dp)) }, onClick = { fabMenu = false; newNote(true) })
-                                    DropdownMenuItem(text = { Text("New folder") }, modifier = Modifier.testTag("home-new-folder"), leadingIcon = { HomeSymbol(Symbol.Folder, Modifier.size(20.dp)) }, onClick = { fabMenu = false; editedFolderId = null; folderDialog = true })
+                                    DropdownMenuItem(text = { Text(maxLines = 1, text = "New notebook") }, modifier = Modifier.widthIn(min = 320.dp).testTag("home-new-notebook"), leadingIcon = { HomeSymbol(Symbol.NewNotebook, Modifier.size(20.dp)) }, onClick = { fabMenu = false; newNote(false) })
+                                    DropdownMenuItem(text = { Text(maxLines = 1, text = "Import PDF/EPUB as notebook") }, modifier = Modifier.widthIn(min = 320.dp).testTag("home-import-pdf-notebook"), leadingIcon = { HomeSymbol(Symbol.ImportAsNotebook, Modifier.size(20.dp)) }, onClick = { fabMenu = false; onImportPdfNotebook() })
+                                    DropdownMenuItem(text = { Text(maxLines = 1, text = "New infinite canvas") }, modifier = Modifier.widthIn(min = 320.dp).testTag("home-new-canvas"), leadingIcon = { HomeSymbol(Symbol.NewCanvas, Modifier.size(20.dp)) }, onClick = { fabMenu = false; newNote(true) })
+                                    DropdownMenuItem(text = { Text(maxLines = 1, text = "New folder") }, modifier = Modifier.widthIn(min = 320.dp).testTag("home-new-folder"), leadingIcon = { HomeSymbol(Symbol.NewFolder, Modifier.size(20.dp)) }, onClick = { fabMenu = false; editedFolderId = null; folderDialog = true })
                                     HorizontalDivider(color = HomeHairline)
-                                    DropdownMenuItem(text = { Text("Import PDF or EPUB book") }, modifier = Modifier.testTag("home-import-book"), leadingIcon = { HomeSymbol(Symbol.Book, Modifier.size(20.dp)) }, onClick = { fabMenu = false; onImportBook(currentFolder?.id) })
-                                    DropdownMenuItem(text = { Text("Import notebook or backup") }, modifier = Modifier.testTag("home-import"), leadingIcon = { HomeSymbol(Symbol.Download, Modifier.size(20.dp)) }, onClick = { fabMenu = false; onImport() })
+                                    DropdownMenuItem(text = { Text(maxLines = 1, text = "Import PDF/EPUB book") }, modifier = Modifier.widthIn(min = 320.dp).testTag("home-import-book"), leadingIcon = { HomeSymbol(Symbol.ImportBook, Modifier.size(20.dp)) }, onClick = { fabMenu = false; onImportBook(currentFolder?.id) })
+                                    DropdownMenuItem(text = { Text(maxLines = 1, text = "Import notebook or backup") }, modifier = Modifier.widthIn(min = 320.dp).testTag("home-import"), leadingIcon = { HomeSymbol(Symbol.ImportBackup, Modifier.size(20.dp)) }, onClick = { fabMenu = false; onImport() })
                                 }
                             }
                             if (newBoard) BoardNameDialog("New board", "", "Create", onDismiss = { newBoard = false }) { newBoard = false; onNewBoard(it) }
@@ -831,50 +844,10 @@ internal fun HomeIconButton(symbol: Symbol, label: String, selected: Boolean, on
     }
 }
 
+/** Folio's library icons: Lucide line icons. [folderFill] paints the shape yellow (favourite star). */
 @Composable
-internal fun HomeSymbol(symbol: Symbol, modifier: Modifier, folderFill: Boolean = false, tint: Color = Ink) {
-    Canvas(modifier) {
-        val path = Path()
-        fun line(vararg points: Float) { path.moveTo(points[0], points[1]); for (i in 2 until points.size step 2) path.lineTo(points[i], points[i+1]) }
-        when (symbol) {
-            Symbol.Trash -> { line(4f,6f,20f,6f); line(8f,6f,8f,3f,16f,3f,16f,6f); line(6f,6f,7f,22f,17f,22f,18f,6f); line(10f,10f,10f,18f); line(14f,10f,14f,18f) }
-            Symbol.Copy -> { line(8f,8f,22f,8f,22f,22f,8f,22f,8f,8f); line(4f,17f,2f,17f,2f,2f,17f,2f,17f,4f) }
-            Symbol.Rename -> { line(3f,19f,5f,13f,16f,2f,21f,7f,10f,18f,3f,19f); line(12f,22f,22f,22f) }
-            Symbol.Share -> { line(14f,2f,22f,9f,14f,16f); line(22f,9f,11f,9f,7f,13f); line(6f,4f,2f,4f,2f,22f,20f,22f,20f,17f) }
-
-            Symbol.Folder -> { line(2f, 7f, 9f, 7f, 11f, 4f, 20f, 6f, 20f, 10f); line(2f, 7f, 2f, 21f, 19f, 21f, 23f, 10f, 7f, 10f, 2f, 21f) }
-            Symbol.All -> { line(3f, 3f, 21f, 3f, 21f, 21f, 3f, 21f, 3f, 3f); line(7f, 7f, 17f, 7f); line(7f, 12f, 17f, 12f); line(7f, 17f, 13f, 17f) }
-            Symbol.Star -> { line(12f, 2f, 15f, 8f, 22f, 9f, 17f, 14f, 18f, 21f, 12f, 18f, 6f, 21f, 7f, 14f, 2f, 9f, 9f, 8f, 12f, 2f) }
-            Symbol.Clock -> { path.addOval(Rect(2f,2f,22f,22f)); line(12f, 5f, 12f, 12f, 17f, 15f) }
-            Symbol.Hub -> { line(3f, 12f, 21f, 12f, 21f, 21f, 3f, 21f, 3f, 12f); line(2f, 16f, 22f, 16f); line(12f, 12f, 6f, 6f, 9f, 2f, 12f, 6f, 15f, 2f, 18f, 6f, 12f, 12f) }
-            Symbol.Tag -> { line(3f, 3f, 12f, 3f, 22f, 13f, 13f, 22f, 3f, 12f, 3f, 3f); path.addOval(Rect(6f,6f,9f,9f)) }
-            Symbol.Search -> { path.addOval(Rect(2f,2f,17f,17f)); line(15f,15f,22f,22f) }
-            Symbol.Menu -> { path.addOval(Rect(2f,2f,22f,22f)); line(7f,8f,17f,8f); line(7f,12f,17f,12f); line(7f,16f,17f,16f) }
-            Symbol.Back -> { line(12f,5f,5f,12f,12f,19f); line(5f,12f,22f,12f) }
-            Symbol.Plus -> { line(12f,2f,12f,22f); line(2f,12f,22f,12f) }
-            Symbol.Close -> { line(5f,5f,19f,19f); line(5f,19f,19f,5f) }
-            Symbol.More -> { line(4f,7f,20f,7f); line(4f,12f,20f,12f); line(4f,17f,20f,17f) }
-            Symbol.Download -> { line(4f,8f,4f,21f,20f,21f,20f,8f); line(12f,2f,12f,15f); line(7f,10f,12f,15f,17f,10f) }
-            Symbol.Sidebar -> { line(3f,4f,21f,4f,21f,20f,3f,20f,3f,4f); line(9f,4f,9f,20f); line(5f,8f,7f,8f); line(5f,11f,7f,11f) }
-            Symbol.ChevronDown -> line(5f,9f,12f,16f,19f,9f)
-            Symbol.ChevronRight -> line(9f,5f,16f,12f,9f,19f)
-            Symbol.Check -> line(4f,12.5f,9.5f,18f,20f,6f)
-            Symbol.Gear -> { path.addOval(Rect(5f,5f,19f,19f)); path.addOval(Rect(9.5f,9.5f,14.5f,14.5f)); line(12f,1.5f,12f,5f); line(12f,19f,12f,22.5f); line(1.5f,12f,5f,12f); line(19f,12f,22.5f,12f); line(4.6f,4.6f,7f,7f); line(17f,17f,19.4f,19.4f); line(4.6f,19.4f,7f,17f); line(17f,7f,19.4f,4.6f) }
-            Symbol.Info -> { path.addOval(Rect(2f,2f,22f,22f)); line(12f,10.5f,12f,17f); line(12f,7f,12f,7.6f) }
-            Symbol.Book -> { line(12f,6f,10f,4f,3f,4f,3f,19f,10f,19f,12f,21f,14f,19f,21f,19f,21f,4f,14f,4f,12f,6f,12f,21f) }
-            Symbol.Notes -> { line(5f,2.5f,19f,2.5f,19f,21.5f,5f,21.5f,5f,2.5f); line(8.5f,8f,15.5f,8f); line(8.5f,12f,15.5f,12f); line(8.5f,16f,13f,16f) }
-            Symbol.Dots -> { path.addOval(Rect(10.6f,3.6f,13.4f,6.4f)); path.addOval(Rect(10.6f,10.6f,13.4f,13.4f)); path.addOval(Rect(10.6f,17.6f,13.4f,20.4f)) }
-            Symbol.Select -> { line(3f,3f,21f,3f,21f,21f,3f,21f,3f,3f); line(7f,12f,10.5f,15.5f,17f,8.5f) }
-            Symbol.Open -> { line(10f,4f,4f,4f,4f,20f,20f,20f,20f,14f); line(13f,3f,21f,3f,21f,11f); line(21f,3f,11f,13f) }
-        }
-        with(drawContext.canvas) {
-            save(); scale(size.width / 24f, size.height / 24f)
-            if (folderFill || symbol == Symbol.Dots) drawPath(path, androidx.compose.ui.graphics.Paint().apply { color = if (symbol == Symbol.Dots) tint else Color(0xFFF2C94C) })
-            drawPath(path, androidx.compose.ui.graphics.Paint().apply { color = tint; style = androidx.compose.ui.graphics.PaintingStyle.Stroke; strokeWidth = 1.4f; strokeJoin = androidx.compose.ui.graphics.StrokeJoin.Round; strokeCap = androidx.compose.ui.graphics.StrokeCap.Round })
-            restore()
-        }
-    }
-}
+internal fun HomeSymbol(symbol: Symbol, modifier: Modifier, folderFill: Boolean = false, tint: Color = Ink) =
+    LucideGlyph(symbol.icon, modifier, tint, fill = if (folderFill) Color(0xFFF2C94C) else null)
 
 private data class DetailAction(val icon: Symbol, val label: String, val run: () -> Unit)
 

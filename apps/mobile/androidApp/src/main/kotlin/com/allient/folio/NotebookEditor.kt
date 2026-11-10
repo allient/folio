@@ -1,5 +1,12 @@
 package com.allient.folio
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.material3.FilterChip
 import android.content.Context
 import android.graphics.Canvas as AndroidCanvas
@@ -126,6 +133,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -178,30 +186,9 @@ internal fun NotebookEditor(
     val latestNotebook by rememberUpdatedState(notebook)
     val latestOnChange by rememberUpdatedState(onNotebookChange)
     var pageIndex by rememberSaveable(notebook.id) { mutableStateOf(notebook.pages.indexOfFirst { it.id == notebook.lastViewedPageId }.coerceAtLeast(0)) }
-    val legacyBrushes = remember(preferences) { brushes.filterNot { it.eraser }.map { brush ->
-        val width = preferences.getFloat("brush-${brush.name}-width", brush.width)
-        brush.copy(width = if (width.isFinite()) width.coerceIn(.5f, 32f) else brush.width,
-            color = preferences.getInt("brush-${brush.name}-color", brush.color))
-    } }
-    val savedBrushes = remember { runCatching {
-        val json = org.json.JSONArray(preferences.getString("brush-presets-v2", "[]"))
-        (0 until json.length()).map { index -> val item = json.getJSONObject(index)
-            val type = brushes.first { it.name == item.getString("type") && !it.eraser }
-                type.copy(width = item.getDouble("width").toFloat().coerceIn(BrushCatalog.widthRange(type.name)), color = item.getInt("color"),
-                sensitivity = item.optDouble("sensitivity", .5).toFloat().coerceIn(0f, 1f), presetId = item.getString("id"), label = item.optString("label", type.name),
-                texture = item.optDouble("texture", .65).toFloat(), grain = item.optDouble("grain", 1.0).toFloat(),
-                angle = item.optDouble("angle", 0.0).toFloat(), variant = item.optString("variant", ""))
-        }.distinctBy { it.presetId }.ifEmpty { legacyBrushes }
-    }.getOrDefault(legacyBrushes) }
-    var selectedBrush by remember(notebook.id) { mutableStateOf(savedBrushes.first()) }
-    val orderedBrushes = remember(savedBrushes) {
-        val ids = (0 until savedBrushes.size).mapNotNull { preferences.getString("brush-preset-id-$it", null) }
-        (ids.mapNotNull { id -> savedBrushes.firstOrNull { it.presetId == id } } + savedBrushes.filter { brush -> ids.none { it == brush.presetId } }).distinctBy { it.presetId }
-    }
-    var presets by remember(notebook.id) { mutableStateOf(orderedBrushes) }
-    var brushOptions by remember(notebook.id) { mutableStateOf(savedBrushes) }
-    var previousPen by remember(notebook.id) { mutableStateOf(savedBrushes.first()) }
-    var brushDragRemainder by remember { mutableFloatStateOf(0f) }
+    val brushState = rememberBrushPresetsState(preferences, notebook.id)
+    var selectedBrush by brushState::selected
+    var previousPen by remember(notebook.id) { mutableStateOf(brushState.options.first()) }
     var showBrush by remember { mutableStateOf(false) }
     var showPages by remember { mutableStateOf(false) }
     var focusMode by remember { mutableStateOf(startInFocusMode) }
@@ -287,6 +274,11 @@ internal fun NotebookEditor(
     val pageListState = rememberLazyListState(initialFirstVisibleItemIndex = safeIndex)
     val savedPage = notebook.pages[safeIndex]
     var page by remember(savedPage.id) { mutableStateOf(savedPage) }
+    // Adding pages without the Page+ sheet: writing near the bottom of the last page, or pulling up past it and holding.
+    var pullPx by remember { mutableFloatStateOf(0f) }
+    var pullProgress by remember { mutableFloatStateOf(0f) }
+    var pullConsumed by remember { mutableStateOf(false) }
+    var slideInPageId by remember { mutableStateOf<String?>(null) }
     val editingText = page.texts.firstOrNull { it.id == editingTextId }
     var undoStack by remember(savedPage.id) { mutableStateOf(emptyList<NotebookPage>()) }
     var redoStack by remember(savedPage.id) { mutableStateOf(emptyList<NotebookPage>()) }
@@ -305,6 +297,7 @@ internal fun NotebookEditor(
         zoomBox = zoomBox?.let { b -> android.graphics.RectF(b.left, b.top, b.right, b.top + b.width() * zoomRatio) }
     }
     var drawingViewportWidthPx by remember { mutableIntStateOf(0) }
+    var drawingViewportHeightPx by remember { mutableIntStateOf(0) }
     val panelXdpi = context.resources.displayMetrics.xdpi
     var zoom by remember(savedPage.id) { mutableFloatStateOf(1f) }
     var viewportCenterX by remember(savedPage.id) { mutableFloatStateOf(.5f) }
@@ -335,16 +328,6 @@ internal fun NotebookEditor(
     LaunchedEffect(eraserMode, eraserWidth, eraseActiveLayerOnly, autoReturnToPen) {
         preferences.edit().putString("eraserMode", eraserMode.name).putFloat("eraserWidth", eraserWidth)
             .putBoolean("eraseActiveLayerOnly", eraseActiveLayerOnly).putBoolean("autoReturnToPen", autoReturnToPen).apply()
-    }
-    LaunchedEffect(brushOptions, presets) {
-        preferences.edit().apply {
-            putString("brush-presets-v2", org.json.JSONArray().apply { brushOptions.forEach { brush -> put(org.json.JSONObject().apply {
-                put("id", brush.presetId); put("type", brush.name); put("label", brush.label); put("width", brush.width); put("color", brush.color); put("sensitivity", brush.sensitivity)
-                put("texture", brush.texture); put("grain", brush.grain); put("angle", brush.angle); put("variant", brush.variant)
-            }) } }.toString())
-            brushOptions.forEach { putFloat("brush-${it.name}-width", it.width); putInt("brush-${it.name}-color", it.color) }
-            presets.forEachIndexed { index, brush -> putString("brush-preset-id-$index", brush.presetId); putString("brush-preset-$index", brush.name) }
-        }.apply()
     }
     LaunchedEffect(shapeColor, shapeWidth, shapeLineStyle, fillColor, lassoAutoSwitch, shapeFilled, shapeFillColor, shapeBorderNone) {
         preferences.edit().putInt("shapeColor", shapeColor).putFloat("shapeWidth", shapeWidth)
@@ -421,6 +404,101 @@ internal fun NotebookEditor(
         onNotebookChange(notebook.copy(pages = currentPages, updatedAt = System.currentTimeMillis()))
         pageIndex = insertAt
     }
+    /** Inserts a page with [template] at [position]; keeps unsaved edits of the current page. */
+    fun insertTemplatePage(template: String, position: String, navigate: Boolean = true, added: NotebookPage = NotebookPage(template = template)): NotebookPage {
+        canvas?.flushInput()
+        val currentPages = latestNotebook.pages.map { if (it.id == page.id) page else it }.toMutableList()
+        val insertAt = when (position) { "Before" -> safeIndex; "Last Page" -> currentPages.size; else -> safeIndex + 1 }.coerceIn(0, currentPages.size)
+        currentPages.add(insertAt, added)
+        onNotebookChange(latestNotebook.copy(pages = currentPages, updatedAt = System.currentTimeMillis()))
+        if (navigate) { slideInPageId = added.id; pageIndex = insertAt }
+        return added
+    }
+    // Pull up past the last page and hold: a ring fills for PULL_TO_ADD_HOLD_MS, then the page is added.
+    val pullThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
+    val pullArmed = pullPx >= pullThresholdPx && !pullConsumed
+    LaunchedEffect(pullArmed) {
+        pullProgress = 0f
+        if (!pullArmed) return@LaunchedEffect
+        val start = System.currentTimeMillis()
+        while (true) {
+            pullProgress = pullToAddProgress(System.currentTimeMillis() - start)
+            if (pullProgress >= 1f) {
+                pullConsumed = true; pullPx = 0f; pullProgress = 0f
+                insertTemplatePage(page.template, "Last Page")
+                break
+            }
+            delay(16)
+        }
+    }
+    // Single-page layout: the page follows a sideways drag. Released past the threshold it slides to the next or previous
+    // page; on the last page, dragging left reveals "Release to add page" and adds one.
+    val pageShift = remember { Animatable(0f) }
+    var pageTurning by remember { mutableStateOf(false) }
+    val minTurnPx = with(androidx.compose.ui.platform.LocalDensity.current) { 96.dp.toPx() }
+    val pageTurnThresholdPx = maxOf(minTurnPx, drawingViewportWidthPx * .22f)
+    // Neighbour pages are rendered ahead as full-quality snapshots, so the sliding preview matches the real page.
+    val snapshotPages = effectivePageLayout == "Single Page"
+    val snapshotContext = androidx.compose.ui.platform.LocalContext.current
+    val pendingPage = remember(page.template, notebook.pages.size) { NotebookPage(template = page.template) } // the page a swipe past the end adds
+    val previousSnapshot by rememberPageSnapshot(if (snapshotPages) notebook.pages.getOrNull(safeIndex - 1) else null, drawingViewportWidthPx, drawingViewportHeightPx, snapshotContext.filesDir)
+    val nextSnapshot by rememberPageSnapshot(if (snapshotPages) (notebook.pages.getOrNull(safeIndex + 1) ?: pendingPage) else null, drawingViewportWidthPx, drawingViewportHeightPx, snapshotContext.filesDir)
+    var addingPage by remember { mutableStateOf(false) }
+    var landingSnapshot by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    var lastDrag by remember { mutableStateOf(0f to 0L) }
+    var dragVelocity by remember { mutableStateOf(0f) } // px per ms, negative = toward the next page
+    val flickMinPx = with(androidx.compose.ui.platform.LocalDensity.current) { 24.dp.toPx() }
+    // Grey gutter between two pages while they slide, so the page edges are easy to see.
+    val pageGapPx = with(androidx.compose.ui.platform.LocalDensity.current) { 10.dp.toPx() }
+    fun onPageDrag(dx: Float, released: Boolean) {
+        if (pageTurning || notebook.infiniteCanvas) return
+        val width = drawingViewportWidthPx.toFloat().coerceAtLeast(1f)
+        val canPrevious = safeIndex > 0
+        val now = System.currentTimeMillis()
+        if (!released) {
+            val (previousDx, previousTime) = lastDrag
+            if (previousTime > 0L && now > previousTime) dragVelocity = dragVelocity * .4f + (dx - previousDx) / (now - previousTime) * .6f
+            lastDrag = dx to now
+            // Leftward is always allowed (next page or add page); rightward on the first page only stretches a little.
+            val shift = if (dx < 0f || canPrevious) dx else dx * .25f
+            scope.launch { pageShift.snapTo(shift.coerceIn(-width - pageGapPx, width + pageGapPx)) }
+            return
+        }
+        val velocity = if (now - lastDrag.second < 120L) dragVelocity else 0f
+        lastDrag = 0f to 0L; dragVelocity = 0f
+        val atLast = safeIndex >= latestNotebook.pages.lastIndex
+        // A quick flick turns the page too; on the last page, adding a page needs the full "Release to add page" pull.
+        val forward = dx <= -pageTurnThresholdPx || (!atLast && dx < -flickMinPx && velocity < -.6f)
+        val backward = canPrevious && (dx >= pageTurnThresholdPx || (dx > flickMinPx && velocity > .6f))
+        scope.launch {
+            pageTurning = true
+            try {
+                if (forward || backward) {
+                    val direction = if (forward) -1f else 1f
+                    canvas?.flushInput()
+                    val newPage = if (forward && atLast) pendingPage.also { addingPage = true } else null
+                    // Slide the current page out and the preview fully in, then swap in the real page at the same spot.
+                    val remaining = (width - kotlin.math.abs(pageShift.value)) / width
+                    pageShift.animateTo(direction * (width + pageGapPx), tween((140 + 200 * remaining).toInt(), easing = androidx.compose.animation.core.LinearOutSlowInEasing))
+                    val target = when {
+                        backward -> safeIndex - 1
+                        newPage == null -> safeIndex + 1
+                        else -> latestNotebook.pages.size.also { insertTemplatePage(page.template, "Last Page", navigate = false, added = newPage) }
+                    }
+                    landingSnapshot = if (forward) nextSnapshot else previousSnapshot
+                    pageIndex = target
+                    pageShift.snapTo(0f)
+                    addingPage = false
+                    delay(160) // the new canvas has drawn by now; drop the preview underneath it
+                    landingSnapshot = null
+                } else pageShift.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .85f, stiffness = androidx.compose.animation.core.Spring.StiffnessMedium))
+            } finally { pageTurning = false; addingPage = false }
+        }
+    }
+    fun onFingerPull(distance: Float) {
+        if (distance <= 0f) { pullPx = 0f; pullConsumed = false; return }
+        if (!pullConsumed && !notebook.infiniteCanvas && safeIndex == notebook.pages.lastIndex) pullPx = distance
+    }
     fun openToolPanel(name: String) {
         if (notebook.infiniteCanvas && name in listOf("templates", "page layout", "page+", "pages")) { sheet = "pins"; return }
         if (mode == CanvasMode.Shape || mode == CanvasMode.Fill || mode == CanvasMode.Pan) {
@@ -440,22 +518,9 @@ internal fun NotebookEditor(
             undoStack = (undoStack + page).takeLast(80); page = redoStack.last(); redoStack = redoStack.dropLast(1); selectedIds = emptySet(); if (page.layers.none { it.id == activeLayer }) activeLayer = page.layers.first().id; replacePage(page)
         }
     }
-    fun updateBrush(brush: BrushStyle) {
-        selectedBrush = brush
-        brushOptions = brushOptions.map { if (it.presetId == brush.presetId) brush else it }
-        presets = presets.map { if (it.presetId == brush.presetId) brush else it }
-        mode = CanvasMode.Write
-    }
-    fun addBrush() {
-        val source = if (selectedBrush.eraser) previousPen else selectedBrush
-        val added = source.copy(presetId = UUID.randomUUID().toString(), label = "${source.name} ${brushOptions.count { it.name == source.name } + 1}")
-        brushOptions = brushOptions + added; presets = presets + added; selectedBrush = added; mode = CanvasMode.Write; showBrush = true
-    }
-    fun deleteBrush() {
-        if (brushOptions.size <= 1) return
-        brushOptions = brushOptions.filterNot { it.presetId == selectedBrush.presetId }; presets = presets.filterNot { it.presetId == selectedBrush.presetId }
-        selectedBrush = presets.firstOrNull() ?: brushOptions.first(); mode = CanvasMode.Write
-    }
+    fun updateBrush(brush: BrushStyle) { brushState.update(brush); mode = CanvasMode.Write }
+    fun addBrush() { brushState.add(if (selectedBrush.eraser) previousPen else selectedBrush); mode = CanvasMode.Write; showBrush = true }
+    fun deleteBrush() { if (brushState.delete()) mode = CanvasMode.Write }
     fun stopRecording() {
         canvas?.flushInput()
         repository.stopRecording(notebook.id)
@@ -758,7 +823,7 @@ internal fun NotebookEditor(
                         }
                     }
                 }
-                "pens" -> BrushSettings(if (selectedBrush.eraser) previousPen else selectedBrush, brushOptions, ::updateBrush, ::addBrush, ::deleteBrush, drawingViewportWidthPx, panelXdpi, ::pickPageColor)
+                "pens" -> BrushSettings(if (selectedBrush.eraser) previousPen else selectedBrush, brushState.options, ::updateBrush, ::addBrush, ::deleteBrush, ::pickPageColor)
                 "layers" -> LayerControls(page, activeLayer, { activeLayer = it }, ::applyPage)
                 "shapes" -> {
                     val shapeWidthMm = brushWidthMillimetres(shapeWidth, drawingViewportWidthPx, panelXdpi)
@@ -1134,14 +1199,20 @@ internal fun NotebookEditor(
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("Before", "After", "Last Page").forEach { position -> FilterChip(selected = pagePlacement == position, onClick = { pagePlacement = position }, label = { Text(position) }) }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf("Blank", "Ruled", "Grid", "Daily planner").forEach { name ->
-                            val id = when (name) { "Ruled" -> "lined"; "Grid" -> "grid"; "Daily planner" -> "daily"; else -> "blank" }
-                            TextButton(onClick = {
-                                canvas?.flushInput(); val added = NotebookPage(template = id)
-                                val pages = notebook.pages.toMutableList(); val at = when(pagePlacement) { "Before" -> safeIndex; "Last Page" -> pages.size; else -> safeIndex + 1 }
-                                pages.add(at.coerceIn(0, pages.size), added); onNotebookChange(notebook.copy(pages = pages, updatedAt = System.currentTimeMillis())); pageIndex = at; sheet = null
-                            }) { Text(name, fontSize = 11.sp) }
+                    Text("Tap a paper to add the page", fontSize = 11.sp, color = ChromeMuted)
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        listOf("Blank" to "blank", "Ruled" to "lined", "Grid" to "grid", "Daily planner" to "daily").forEach { (name, id) ->
+                            Column(Modifier.width(100.dp).clip(RoundedCornerShape(12.dp)).background(Color.White).border(1.dp, Color(0xFFD5DAD8), RoundedCornerShape(12.dp))
+                                .clickable(role = androidx.compose.ui.semantics.Role.Button) { insertTemplatePage(id, pagePlacement); sheet = null }
+                                .testTag("page-plus-$id").semantics { contentDescription = "Add a $name page" }.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(Modifier.fillMaxWidth().aspectRatio(.72f).clip(RoundedCornerShape(6.dp)).border(1.dp, Color(0xFFE6E9E8), RoundedCornerShape(6.dp))) {
+                                    NotebookPageThumbnail(NotebookPage(template = id), Modifier.fillMaxSize().background(Color.White))
+                                    Box(Modifier.align(Alignment.Center).size(28.dp).clip(CircleShape).background(Color(0xFF2F7A68)), contentAlignment = Alignment.Center) {
+                                        Text("+", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                                    }
+                                }
+                                Text(name, Modifier.padding(top = 6.dp), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                     }
                     ToolAction(InkIcon.Template, "More templates") { sheet = "templates" }
@@ -1400,39 +1471,11 @@ internal fun NotebookEditor(
                         Text(notebook.title, fontSize = 13.sp, color = ChromeInk, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(bottom = 5.dp))
                         Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(1.dp).background(Color(0xFFB8B8B8)))
                     }
-                    Box {
-                        // At most five brushes are visible; extra presets scroll inside this strip only.
-                        val brushSlotPx = with(androidx.compose.ui.platform.LocalDensity.current) { 36.dp.toPx() }
-                        val brushListState = androidx.compose.foundation.lazy.rememberLazyListState()
-                        val brushScrollable = presets.size > maxBrushes
-                        LaunchedEffect(selectedBrush.presetId) {
-                            val index = presets.indexOfFirst { it.presetId == selectedBrush.presetId }
-                            val visible = brushListState.layoutInfo.visibleItemsInfo
-                            if (index >= 0 && visible.isNotEmpty() && (index <= visible.first().index || index >= visible.last().index))
-                                brushListState.animateScrollToItem((index - 2).coerceAtLeast(0))
-                        }
-                        LazyRow(Modifier.width((36 * presets.size.coerceIn(1, maxBrushes) - 4).dp).height(36.dp)
-                            .then(if (brushScrollable) Modifier.graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
-                                .drawWithContent {
-                                    drawContent()
-                                    val fade = 10.dp.toPx()
-                                    if (brushListState.canScrollBackward) drawRect(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), 0f, fade), size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
-                                    if (brushListState.canScrollForward) drawRect(androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), size.width - fade, size.width), topLeft = Offset(size.width - fade, 0f), size = androidx.compose.ui.geometry.Size(fade, size.height), blendMode = androidx.compose.ui.graphics.BlendMode.DstIn)
-                                } else Modifier),
-                            state = brushListState, userScrollEnabled = brushScrollable, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            items(presets, key = { it.presetId }) { brush ->
-                            BrushPreset(brush.name, brush.width, brush.color, !selectedBrush.eraser && selectedBrush.presetId == brush.presetId && mode == CanvasMode.Write && sheet == null,
-                                id = brush.presetId, modifier = Modifier.animateItem(),
-                                onClick = { if (selectedBrush.presetId == brush.presetId && mode == CanvasMode.Write) showBrush = !showBrush
-                                    else { selectedBrush = brush; mode = CanvasMode.Write; selectedIds = emptySet() } },
-                                onReorderDrag = { draggedId, delta ->
-                                    brushDragRemainder += delta
-                                    while (brushDragRemainder >= brushSlotPx && presets.indexOfFirst { it.presetId == draggedId } < presets.lastIndex) { presets = reorderByDrag(presets, draggedId, 1, BrushStyle::presetId); brushDragRemainder -= brushSlotPx }
-                                    while (brushDragRemainder <= -brushSlotPx && presets.indexOfFirst { it.presetId == draggedId } > 0) { presets = reorderByDrag(presets, draggedId, -1, BrushStyle::presetId); brushDragRemainder += brushSlotPx }
-                                }, onReorderEnd = { brushDragRemainder = 0f })
-                            }
-                        }
-                        DropdownMenu(showBrush, onDismissRequest = { showBrush = false }, modifier = Modifier.penPressureFilter().width(360.dp).heightIn(max = 900.dp)) { BrushSettings(selectedBrush, brushOptions, ::updateBrush, ::addBrush, ::deleteBrush, drawingViewportWidthPx, panelXdpi, ::pickPageColor) }
+                    // At most five brushes are visible; extra presets scroll inside this strip only.
+                    BrushPresetBar(brushState.presets, selectedBrush.presetId, highlighted = !selectedBrush.eraser && mode == CanvasMode.Write && sheet == null,
+                        reselectOpensSettings = mode == CanvasMode.Write, maxVisible = maxBrushes, settingsOpen = showBrush, onSettingsOpenChange = { showBrush = it },
+                        onSelect = { brush -> selectedBrush = brush; mode = CanvasMode.Write; selectedIds = emptySet() }, onMove = brushState::move) {
+                        BrushSettings(selectedBrush, brushState.options, ::updateBrush, ::addBrush, ::deleteBrush, ::pickPageColor)
                     }
                     ChromeDivider()
                     InkToolButton(InkIcon.Eraser, "Eraser", {
@@ -1444,7 +1487,8 @@ internal fun NotebookEditor(
                     if (!notebook.infiniteCanvas) {
                     InkToolButton(InkIcon.Previous, "Previous page", { canvas?.flushInput(); pageIndex = safeIndex - 1 }, enabled = safeIndex > 0, buttonSize = 28.dp)
                     Box(Modifier.width(42.dp).height(44.dp).clickable { canvas?.flushInput(); showPages = true }.semantics { contentDescription = "Page manager, page ${safeIndex + 1} of ${notebook.pages.size}" }, contentAlignment = Alignment.Center) { Text("${safeIndex + 1}/${notebook.pages.size}", fontSize = 11.sp) }
-                    InkToolButton(InkIcon.Next, "Next page or add page", { canvas?.flushInput(); if (safeIndex < notebook.pages.lastIndex) pageIndex = safeIndex + 1 else addPage() }, buttonSize = 28.dp)
+                    if (safeIndex < notebook.pages.lastIndex) InkToolButton(InkIcon.Next, "Next page", { canvas?.flushInput(); pageIndex = safeIndex + 1 }, buttonSize = 28.dp)
+                    else InkToolButton(InkIcon.PlusSmall, "Add page", { addPage("Last Page") }, buttonSize = 28.dp)
                     } else InkToolButton(InkIcon.Tag, "Canvas pins", { sheet = "pins" })
                     if (saveError != null) InkToolButton(InkIcon.More, "Save failed, retry", { message = saveError; save() })
                     Spacer(Modifier.width(3.dp))
@@ -1453,14 +1497,25 @@ internal fun NotebookEditor(
             }
             Row(Modifier.weight(1f).fillMaxWidth()) {
                 if (!focusMode && !railOnRight) { Rail(); Box(Modifier.width(1.dp).fillMaxHeight().background(ChromeLine)) }
-                Box(Modifier.weight(1f).fillMaxHeight().onSizeChanged { drawingViewportWidthPx = it.width }) {
+                Box(Modifier.weight(1f).fillMaxHeight().clipToBounds().onSizeChanged { drawingViewportWidthPx = it.width; drawingViewportHeightPx = it.height }) {
                     if (effectivePageLayout == "Scroll") {
                         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
                             val pageHeight = maxHeight
-                            LazyColumn(state = pageListState, modifier = Modifier.fillMaxSize(), userScrollEnabled = !fingerDrawing && (notebook.infiniteCanvas || singleFingerSwipe)) {
+                            val pullConnection = remember(pageListState) { object : NestedScrollConnection {
+                                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                                    if (pullPx <= 0f || available.y <= 0f) return Offset.Zero
+                                    val used = kotlin.math.min(pullPx, available.y); onFingerPull(pullPx - used); return Offset(0f, used)
+                                }
+                                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                                    if (source != NestedScrollSource.UserInput || available.y >= 0f || pageListState.canScrollForward) return Offset.Zero
+                                    onFingerPull(pullPx - available.y); return available
+                                }
+                                override suspend fun onPreFling(available: Velocity): Velocity { onFingerPull(0f); return Velocity.Zero }
+                            } }
+                            LazyColumn(state = pageListState, modifier = Modifier.fillMaxSize().nestedScroll(pullConnection), userScrollEnabled = !fingerDrawing && (notebook.infiniteCanvas || singleFingerSwipe)) {
                                 items(notebook.pages, key = { it.id }) { model ->
                                     val index = notebook.pages.indexOfFirst { it.id == model.id }
-                                    Column(Modifier.fillMaxWidth()) {
+                                    Column(Modifier.fillMaxWidth().animateItem()) {
                                     NotebookPageCanvas(
                                         model = model, isActive = model.id == page.id, pageHeight = pageHeight,
                                         swipeEnabled = if (notebook.infiniteCanvas) !fingerDrawing else singleFingerSwipe && !fingerDrawing,
@@ -1473,7 +1528,13 @@ internal fun NotebookEditor(
                                         eraseActiveLayerOnly = eraseActiveLayerOnly, lassoKind = lassoKind, fingerDrawing = fingerDrawing, pinchToZoom = pinchToZoom,
                                         activeLayerId = if (model.id == page.id) activeLayer else model.layers.firstOrNull()?.id ?: "ink",
                                         selectedIds = if (model.id == page.id) selectedIds else emptySet(),
-                                        onVerticalFingerScroll = { delta -> pageListState.dispatchRawDelta(delta) },
+                                        onVerticalFingerScroll = { delta ->
+                                            val used = pageListState.dispatchRawDelta(delta)
+                                            // Two-finger scrolling past the last page feeds pull-to-add-page.
+                                            if (delta > 0f && !pageListState.canScrollForward) onFingerPull(pullPx + delta - used)
+                                            else if (delta < 0f && pullPx > 0f) onFingerPull((pullPx + delta).coerceAtLeast(.5f))
+                                        },
+                                        onFingerPull = { if (it <= 0f) onFingerPull(0f) },
                                         pageSwipeEnabled = effectivePageLayout == "Single Page" && !notebook.infiniteCanvas && horizontalPageSwipe,
                                         longPressSelectEnabled = longPressSelectEnabled && fingerDrawing,
                                         onLongPressSelection = { isObject -> if (model.id == page.id) { mode = if (isObject) CanvasMode.Objects else CanvasMode.MoveSelection; sheet = null } },
@@ -1508,6 +1569,30 @@ internal fun NotebookEditor(
                             }
                         }
                     } else {
+                        val pageSlide = remember { Animatable(0f) }
+                        LaunchedEffect(page.id) {
+                            if (slideInPageId == page.id) { pageSlide.snapTo(1f); pageSlide.animateTo(0f, tween(380, easing = FastOutSlowInEasing)) }
+                            slideInPageId = null
+                        }
+                        // Read the drag offset only in draw-phase lambdas so a drag never recomposes the editor.
+                        val shiftSign by remember { derivedStateOf { kotlin.math.sign(pageShift.value) } }
+                        if (shiftSign != 0f) Box(Modifier.fillMaxSize().background(Color(0xFFE4E7E4)))
+                        landingSnapshot?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.FillBounds) }
+                        val onLastPage = safeIndex >= notebook.pages.lastIndex
+                        val neighbourSnapshot = when {
+                            shiftSign < 0f -> if (onLastPage && !addingPage) null else nextSnapshot
+                            shiftSign > 0f -> previousSnapshot
+                            else -> null
+                        }
+                        if (shiftSign < 0f && onLastPage && !addingPage) {
+                            AddPageReveal({ -pageShift.value }, pageTurnThresholdPx, Modifier.align(Alignment.CenterEnd))
+                        }
+                        if (neighbourSnapshot != null) {
+                            androidx.compose.foundation.Image(neighbourSnapshot, null, Modifier.fillMaxSize().graphicsLayer {
+                                val shift = pageShift.value
+                                translationX = shift + if (shift < 0f) size.width + pageGapPx else -size.width - pageGapPx
+                            }.pageEdges { true }.testTag("page-drag-neighbour"), contentScale = androidx.compose.ui.layout.ContentScale.FillBounds)
+                        }
                         key(page.id) {
                             AndroidView(factory = { ctx -> InkCanvasView(ctx) { updated -> applyPage(page.copy(strokes = updated)) }.also { canvas = it } },
                                 update = { view ->
@@ -1551,6 +1636,8 @@ internal fun NotebookEditor(
                                         val destination = safeIndex + delta
                                         if (destination in notebook.pages.indices) { view.flushInput(); pageIndex = destination }
                                     }
+                                    view.onFingerPull = ::onFingerPull
+                                    view.onPageDrag = if (!notebook.infiniteCanvas) ::onPageDrag else null
                                     // Live erasing and drags are published once at gesture completion.
                                     if (!view.hasPendingEdits) { view.texts = page.texts; view.images = page.images; view.blocks = page.blocks; view.strokes = page.strokes }
                                     view.selectedStrokeIds = selectedIds; view.onSelectionChanged = { ids ->
@@ -1559,9 +1646,11 @@ internal fun NotebookEditor(
                                         if (ids.isNotEmpty() && lassoAutoSwitch && mode == CanvasMode.Lasso) { selectedBrush = previousPen; mode = CanvasMode.Write }
                                     }
                                     view.onZoomChanged = { zoom = it; viewportCenterX = view.viewportCenterX; viewportCenterY = view.viewportCenterY }
-                            }, modifier = Modifier.fillMaxSize().clipToBounds().background(Color.White))
+                            }, modifier = Modifier.fillMaxSize().graphicsLayer { translationY = pageSlide.value * size.height; translationX = pageShift.value }.clipToBounds().background(Color.White)
+                                .pageEdges { pageShift.value != 0f })
                         }
                     }
+                    PageAddOverlays(pullPx, pullThresholdPx, pullProgress, Modifier.align(Alignment.BottomCenter))
                     zoomBox?.let { box ->
                         fun moveBox(next: android.graphics.RectF) { zoomBox = next }
                         fun step(direction: Int) {
@@ -1739,7 +1828,7 @@ internal fun NotebookEditor(
                         }
                     }
                     if (focusMode) {
-                        NoteToolbox(brushOptions, selectedBrush, { brush -> selectedBrush = brush; mode = CanvasMode.Write; selectedIds = emptySet() },
+                        NoteToolbox(brushState.options, selectedBrush, { brush -> selectedBrush = brush; mode = CanvasMode.Write; selectedIds = emptySet() },
                             onExit = { focusMode = false }, canUndo = undoStack.isNotEmpty(), canRedo = redoStack.isNotEmpty(),
                             onAction = { tool -> when (tool) {
                                 "Undo" -> undo(); "Redo" -> redo()
@@ -1750,8 +1839,8 @@ internal fun NotebookEditor(
                                 "Ruler" -> { canvas?.flushInput(); rulerOn = !rulerOn }
                                 "Pages" -> { if (notebook.infiniteCanvas) sheet = "pins" else { focusMode = false; showPages = true } }
                                 else -> sheet = when (tool) { "Templates" -> "templates"; "Pressure" -> "pressure"; "Share" -> "share & export"; else -> tool.lowercase(Locale.ROOT) }
-                            } }, onRestoreBrushes = { restored -> brushOptions = restored; presets = restored; selectedBrush = restored.firstOrNull { it.presetId == selectedBrush.presetId } ?: restored.first() },
-                            brushSettings = { BrushSettings(selectedBrush, brushOptions, ::updateBrush, ::addBrush, ::deleteBrush, drawingViewportWidthPx, panelXdpi, ::pickPageColor) },
+                            } }, onRestoreBrushes = brushState::restore,
+                            brushSettings = { BrushSettings(selectedBrush, brushState.options, ::updateBrush, ::addBrush, ::deleteBrush, ::pickPageColor) },
                             widthMillimetres = { it.width })
                     }
                     if (recording) Surface(Modifier.align(Alignment.BottomCenter).padding(12.dp).widthIn(max = 420.dp).fillMaxWidth(),
@@ -1794,7 +1883,18 @@ internal fun NotebookEditor(
         if (showPages && !focusMode) {
             NotebookPageManager(notebook, page.id,
                 onSelect = { id -> canvas?.flushInput(); pageIndex = notebook.pages.indexOfFirst { it.id == id }.coerceAtLeast(0); showPages = false },
-                onClose = { showPages = false }, onAdd = ::addPage, onPageAction = ::pageAction)
+                onClose = { showPages = false }, onAdd = ::addPage, onPageAction = ::pageAction,
+                onDeletePages = { ids ->
+                    canvas?.flushInput()
+                    val current = latestNotebook.pages.map { if (it.id == page.id) page else it }
+                    val kept = current.filterNot { it.id in ids }
+                    if (kept.isNotEmpty() && !notebook.infiniteCanvas) {
+                        // Stay on the current page if it survives, otherwise on the nearest earlier page that does.
+                        val anchor = current.subList(0, safeIndex + 1).lastOrNull { it.id !in ids } ?: kept.first()
+                        onNotebookChange(latestNotebook.copy(pages = kept, updatedAt = System.currentTimeMillis()))
+                        pageIndex = kept.indexOfFirst { it.id == anchor.id }.coerceAtLeast(0)
+                    }
+                })
         }
         busy?.let { label ->
             Box(Modifier.fillMaxSize().background(Color.White.copy(alpha = .87f)).clickable(enabled = true) {}, contentAlignment = Alignment.Center) {
@@ -1842,6 +1942,7 @@ private fun NotebookPageCanvas(
     activeLayerId: String,
     selectedIds: Set<String>,
     onVerticalFingerScroll: (Float) -> Unit,
+    onFingerPull: (Float) -> Unit = {},
     onCanvas: (InkCanvasView) -> Unit,
     onPageChange: (NotebookPage) -> Unit,
     onSelection: (Set<String>) -> Unit,
@@ -1877,7 +1978,7 @@ private fun NotebookPageCanvas(
                 view.longPressSelectEnabled = longPressSelectEnabled
                 view.onLongPressSelection = { isObject -> if (isActive) onLongPressSelection(isObject) }
                 view.onEmbeddedAction = { item -> if (isActive) onEmbeddedAction(item) }
-                view.onVerticalFingerScroll = onVerticalFingerScroll
+                view.onVerticalFingerScroll = onVerticalFingerScroll; view.onFingerPull = onFingerPull
                 if (!view.hasPendingEdits) { view.texts = model.texts; view.images = model.images; view.strokes = model.strokes }
                 view.selectedStrokeIds = selectedIds
                 view.onSelectionChanged = { onSelection(it) }
@@ -1940,122 +2041,6 @@ private fun RecordingMiniPlayer(attachment: NoteAttachment, onClose: () -> Unit,
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BrushSettings(brush: BrushStyle, presets: List<BrushStyle>, onChange: (BrushStyle) -> Unit,
-    onAdd: () -> Unit, onDelete: () -> Unit, viewportWidthPx: Int, xdpi: Float, onPickFromPage: ((Int) -> Unit) -> Unit) {
-    val widthPx = brush.width
-    var advanced by remember { mutableStateOf(false) }
-    var showColorPicker by remember(brush.presetId) { mutableStateOf(false) }
-    if (showColorPicker) BrushColorPicker(brush.color, { showColorPicker = false }, { color ->
-        onChange(brush.copy(color = color)); showColorPicker = false
-    }, { showColorPicker = false; onPickFromPage { onChange(brush.copy(color = (brush.color and 0xFF000000.toInt()) or (it and 0xFFFFFF))) } })
-    val palette = listOf(0xFF252525, 0xFF555555, 0xFF888888, 0xFFBBBBBB, 0xFFFFFFFF, 0xFFB33E3E, 0xFF446C50, 0xFF345C91,
-        0xFF7BB9B2, 0xFF9966A1, 0xFFB9916B, 0xFFEAC243, 0xFF344F41, 0xFF68537E, 0xFF76A9C0, 0xFFC48787)
-    Column(Modifier.fillMaxWidth().padding(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${brush.label} · ${String.format(Locale.US, "%.1f px", widthPx)}", fontSize = 12.sp,
-                fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-            InkToolButton(InkIcon.Rotate, "Reset brush to preset defaults", { onChange(BrushCatalog.reset(brush)) })
-            InkToolButton(InkIcon.Add, "Add brush preset", onAdd)
-            InkToolButton(InkIcon.Trash, "Delete brush preset", onDelete, enabled = presets.size > 1)
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            brushes.filterNot { it.eraser }.chunked(6).forEach { row ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    row.forEach { type ->
-                        val chosen = brush.name == type.name
-                        Column(Modifier.weight(1f).height(48.dp).clip(RoundedCornerShape(6.dp))
-                            .background(if (chosen) Color(0xFFE0F1EB) else Color(0xFFF6F7F6))
-                            .border(if (chosen) 2.dp else 1.dp, if (chosen) Color(0xFF287463) else ChromeLine, RoundedCornerShape(6.dp))
-                            .selectable(selected = chosen, role = Role.RadioButton,
-                                onClick = { onChange(BrushCatalog.default(type.name).copy(presetId = brush.presetId)) })
-                            .semantics { contentDescription = "Brush type ${type.name}" }.padding(4.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center) {
-                             BrushGlyph(type.name, brush.color, Modifier.size(16.dp, 20.dp))
-                             Text(type.name, fontSize = 8.sp, maxLines = 2, lineHeight = 9.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                        }
-                    }
-                    repeat(6 - row.size) { Spacer(Modifier.weight(1f)) }
-                }
-            }
-        }
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BrushCatalog.forType(brush.name).forEach { preset ->
-                Surface(Modifier.width(118.dp).clickable { onChange(preset.copy(presetId = brush.presetId)) }
-                    .semantics { contentDescription = "Preset ${preset.label}"; selected = brush.variant == preset.variant },
-                    shape = RoundedCornerShape(8.dp), border = androidx.compose.foundation.BorderStroke(if (brush.variant == preset.variant) 2.dp else 1.dp, if (brush.variant == preset.variant) Color(0xFF287463) else ChromeLine)) {
-                    Column(Modifier.padding(6.dp)) {
-                        BrushPreview(preset)
-                        Text(preset.label, fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1)
-                        Text(String.format(Locale.US, "%.1f px", preset.width), fontSize = 9.sp, lineHeight = 12.sp, color = ChromeMuted)
-                    }
-                }
-            }
-        }
-        HorizontalDivider(color = ChromeLine)
-        BrushPreview(brush)
-        val range = BrushCatalog.widthRange(brush.name)
-        val step = BrushCatalog.widthStep(brush.name)
-        fun setWidth(value: Float) = onChange(brush.copy(width = ((value / step).roundToInt() * step).coerceIn(range)))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Size", fontSize = 12.sp, modifier = Modifier.weight(1f))
-            InkToolButton(InkIcon.Previous, "Decrease brush width", { setWidth(widthPx - step) }, buttonSize = 28.dp, enabled = widthPx > range.start)
-            Text(String.format(Locale.US, "%.1f px", widthPx), fontSize = 12.sp)
-            InkToolButton(InkIcon.Next, "Increase brush width", { setWidth(widthPx + step) }, buttonSize = 28.dp, enabled = widthPx < range.endInclusive)
-        }
-        VariableWidthSlider(widthPx.coerceIn(range), range.start, range.endInclusive, Modifier.fillMaxWidth().height(34.dp)) { setWidth(it) }
-        Row { Text("Opacity", fontSize = 12.sp, modifier = Modifier.weight(1f)); Text("${android.graphics.Color.alpha(brush.color) * 100 / 255}%", fontSize = 12.sp) }
-        LineSlider(android.graphics.Color.alpha(brush.color) / 255f, .1f..1f, "Brush opacity") { onChange(brush.copy(color = (brush.color and 0x00FFFFFF) or ((it * 255).toInt() shl 24))) }
-        if (BrushCatalog.pressureResponsive(brush.name)) {
-            Row { Text("Pressure response", fontSize = 12.sp, modifier = Modifier.weight(1f)); Text("${(brush.sensitivity * 100).toInt()}%", fontSize = 12.sp) }
-            LineSlider(brush.sensitivity, 0f..1f, "${brush.label} pressure sensitivity") { onChange(brush.copy(sensitivity = it)) }
-            Text("Higher makes light pressure fuller. Curves: Pressure in the toolbox.", fontSize = 10.sp, color = ChromeMuted)
-        } else Text("Constant-width tip: pressure does not change this brush.", fontSize = 10.sp, color = ChromeMuted)
-        val natural = NaturalMediaRenderer.supports(brush.name)
-        if (natural || BrushCatalog.angled(brush.name)) {
-            Row(Modifier.fillMaxWidth().clickable { advanced = !advanced }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(if (brush.name == "Paint brush") "Bristles & paint load" else if (natural) "Texture & angle" else "Nib angle", fontSize = 12.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                Text(if (advanced) "Hide" else "Show", fontSize = 11.sp, color = Color(0xFF287463))
-            }
-        }
-        if (advanced && (natural || BrushCatalog.angled(brush.name))) {
-            if (natural) {
-                Text("${if (brush.name == "Paint brush") "Dryness" else "Grain strength"} · ${(brush.texture * 100).toInt()}%", fontSize = 11.sp)
-                LineSlider(brush.texture, 0f..1f, "Grain strength") { onChange(brush.copy(texture = it)) }
-                Text("${if (brush.name == "Paint brush") "Bristle coarseness" else "Grain scale"} · ${String.format(Locale.US, "%.1f", brush.grain)}", fontSize = 11.sp)
-                LineSlider(brush.grain, .4f..4f, "Grain scale") { onChange(brush.copy(grain = it)) }
-            }
-            if (BrushCatalog.angled(brush.name)) {
-                Text("${if (natural) "Texture" else "Nib"} angle · ${brush.angle.toInt()}°", fontSize = 11.sp)
-                LineSlider(brush.angle, -90f..90f, "Angle") { onChange(brush.copy(angle = it)) }
-            }
-        }
-        Text("Sizes are canvas px at 100% zoom. Pressure brushes draw up to about 2× at full pressure.", fontSize = 10.sp, lineHeight = 12.sp, color = ChromeMuted)
-        HorizontalDivider(color = ChromeLine)
-        Row { Text("Colors", fontSize = 12.sp, modifier = Modifier.weight(1f)); Text(String.format(Locale.US, "#%08X", brush.color), fontSize = 11.sp, color = ChromeMuted) }
-        palette.chunked(8).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            row.forEach { value ->
-                val ink = (value.toInt() and 0x00FFFFFF) or (brush.color and 0xFF000000.toInt())
-                Box(Modifier.size(30.dp).clip(CircleShape).background(Color(value))
-                    .border(if (brush.color == ink) 3.dp else 1.dp, if (brush.color == ink) ChromeInk else Color(0xFFBBBBBB), CircleShape)
-                    .clickable { onChange(brush.copy(color = ink)) }
-                    .semantics { contentDescription = String.format(Locale.US, "Ink color #%06X", value and 0xFFFFFF) })
-            }
-        } }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { showColorPicker = true }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)) {
-                Box(Modifier.size(14.dp).clip(CircleShape).background(Color(brush.color or 0xFF000000.toInt())).border(1.dp, ChromeLine, CircleShape))
-                Spacer(Modifier.width(5.dp)); Text("Custom color", fontSize = 10.sp, maxLines = 1)
-            }
-            OutlinedButton(onClick = { onPickFromPage { onChange(brush.copy(color = (brush.color and 0xFF000000.toInt()) or (it and 0xFFFFFF))) } }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(10.dp), contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)) {
-                InkSymbol(InkIcon.Eyedropper, Modifier.size(14.dp)); Spacer(Modifier.width(5.dp)); Text("Pick from page", fontSize = 10.sp, maxLines = 1)
-            }
-        }
-        Text("Tap the selected brush again to edit. + creates an independent preset.", fontSize = 10.sp, color = ChromeMuted)
     }
 }
 
@@ -2132,5 +2117,60 @@ internal fun VariableWidthSlider(value: Float, minimum: Float, maximum: Float, m
         val thumb = Offset(left + (right - left) * fraction, center)
         drawCircle(Color.White, 9.dp.toPx(), thumb)
         drawCircle(Color(0xFF555555), 9.dp.toPx(), thumb, style = Stroke(1.5.dp.toPx()))
+    }
+}
+
+/** Pull-up-to-add ring and the "page added" hint, shown at the bottom of the page area. */
+/** Thin vertical lines on the left and right page edges while [visible] (read at draw time). */
+private fun Modifier.pageEdges(visible: () -> Boolean) = drawWithContent {
+    drawContent()
+    if (visible()) {
+        val stroke = 1.dp.toPx()
+        drawRect(Color(0xFFB9BFBB), size = androidx.compose.ui.geometry.Size(stroke, size.height))
+        drawRect(Color(0xFFB9BFBB), topLeft = Offset(size.width - stroke, 0f), size = androidx.compose.ui.geometry.Size(stroke, size.height))
+    }
+}
+
+@Composable
+private fun AddPageReveal(revealPxOf: () -> Float, thresholdPx: Float, modifier: Modifier) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val revealPx = revealPxOf().coerceAtLeast(0f)
+    val armed = revealPx >= thresholdPx
+    val haptics = androidx.compose.ui.platform.LocalHapticFeedback.current
+    LaunchedEffect(armed) { if (armed) haptics.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress) }
+    val progress = (revealPx / thresholdPx).coerceIn(0f, 1f)
+    val scale by androidx.compose.animation.core.animateFloatAsState(if (armed) 1.08f else .72f + .28f * progress, label = "add-page-scale")
+    val sage = Color(0xFF2F7A68)
+    Box(modifier.fillMaxHeight().width(with(density) { revealPx.toDp() }).clipToBounds().background(Color(0xFFEDF1EE)).testTag("add-page-reveal"),
+        contentAlignment = Alignment.Center) {
+        Column(Modifier.requiredWidth(200.dp).graphicsLayer { alpha = progress }, horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                InkSymbol(InkIcon.Previous, Modifier.graphicsLayer { translationX = (1f - progress) * 18f }, color = sage)
+                Box(Modifier.graphicsLayer { scaleX = scale; scaleY = scale }.size(64.dp).clip(CircleShape).background(if (armed) sage else Color(0xFFD6E8E1)),
+                    contentAlignment = Alignment.Center) {
+                    InkSymbol(InkIcon.AddPage, Modifier.size(30.dp), color = if (armed) Color.White else sage)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(if (armed) "Release to add page" else "Swipe to add page", color = if (armed) ChromeInk else ChromeMuted, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun PageAddOverlays(pullPx: Float, thresholdPx: Float, progress: Float, modifier: Modifier) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    if (pullPx > with(density) { 8.dp.toPx() }) {
+        val lift = with(density) { (pullPx.coerceAtMost(thresholdPx * 2f) * .4f).toDp() }
+        androidx.compose.material3.Surface(modifier.padding(bottom = 28.dp + lift).testTag("pull-to-add-page"), shape = RoundedCornerShape(24.dp), color = ChromeInk.copy(alpha = .94f), shadowElevation = 6.dp) {
+            Row(Modifier.padding(start = 10.dp, end = 18.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(progress = { if (pullPx >= thresholdPx) progress else (pullPx / thresholdPx).coerceIn(0f, 1f) * .08f },
+                        modifier = Modifier.fillMaxSize(), color = Color(0xFF8FD3BE), trackColor = Color.White.copy(alpha = .18f), strokeWidth = 3.dp)
+                    Text("+", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+                }
+                Text(if (pullPx < thresholdPx) "Pull up to add a page" else "Keep holding to add a page", color = Color.White, fontSize = 13.sp)
+            }
+        }
     }
 }

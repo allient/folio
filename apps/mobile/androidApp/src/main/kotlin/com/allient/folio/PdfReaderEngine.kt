@@ -254,6 +254,8 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     var chromeVisible = false
     var inkColor: Int = 0xFF303030.toInt()
     var inkWidth: Float = .003f
+    /** Active notebook brush for new strokes; null keeps the plain [inkColor]/[inkWidth] polyline pen. Eraser styles are ignored. */
+    var brush: BrushStyle? = null
     var onSelection: (PdfSelection?) -> Unit = {}
     var onSelectionBounds: (anchor: String, boundsInWindow: RectF) -> Unit = { _, _ -> }
     var onInk: (String) -> Unit = {}
@@ -262,11 +264,17 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     var onPageTap: (x: Float, y: Float, width: Float, height: Float) -> Boolean = { _, _, _, _ -> false }
     var gestures = ReaderGesturePreferences()
     var onShowControls: () -> Unit = {}
-    var onAnnotationLongPress: (ReaderAnnotation) -> Unit = {}
     var onError: (String) -> Unit = {}
     var annotations: List<ReaderAnnotation> = emptyList()
-    private data class Projection(val annotation: ReaderAnnotation, val groups: List<List<PointF>>, val inkWidth: Float)
+    /** [stroke] is set for notebook-brush ink and drawn by [NotebookRenderer]; legacy ink keeps the polyline. */
+    private data class Projection(val annotation: ReaderAnnotation, val groups: List<List<PointF>>, val inkWidth: Float, val stroke: InkStroke? = null)
     private var projections: List<Projection> = emptyList()
+    /**
+     * A finished stroke stays on screen from the moment the pen lifts until its saved copy has been projected, so the
+     * ink never disappears and reappears (the "re-render" flash) while it is written to the database.
+     */
+    private class PendingInk(val projection: Projection) { var anchor: String? = null }
+    private val pendingInk = mutableListOf<PendingInk>()
     private val pageBounds = RectF()
     private val annotationBounds = RectF()
     private val drawPath = Path()
@@ -377,8 +385,13 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     private var selectionFrom = PointF()
     private var selectionTo = PointF()
     private var draggingHandle = -1
+    /** Set when a held stylus turns an automatic pen stroke into a text selection; lasts for the rest of that gesture. */
+    private var gestureToolOverride: String? = null
+    private var gestureStylusAutoPen = false
     private val longPress = Runnable {
         if (drawing && tool == "Read") {
+            // A stylus that stays still is selecting, not writing: drop the dot it started and continue as a Read gesture.
+            if (gestureStylusAutoPen) { gestureToolOverride = "Read"; clearStroke() }
             selecting = true
             parent?.requestDisallowInterceptTouchEvent(true)
             performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
@@ -405,6 +418,9 @@ internal class PdfPageReaderView(context: Context) : View(context) {
             }
         }
     }
+    /** Selection handles are a stem plus a large dot below the text, so they are easy to see and grab with a finger or stylus. */
+    private val handleDrop get() = dp(16f)
+    private val handleRadius get() = dp(13f)
     private fun selectionHandles(): List<PointF> {
         val groups = if (selecting || draggingHandle >= 0) previewGroups else projections.firstOrNull { it.annotation.id == "selection" }?.groups.orEmpty()
         if (groups.isEmpty()) return emptyList()
@@ -441,6 +457,23 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     }
     private var drawing = false
     private val stroke = mutableListOf<PointF>()
+    private val strokePressures = mutableListOf<Float>()
+    private val strokeTimes = mutableListOf<Long>()
+    private var strokeBrush: BrushStyle? = null
+    private val ink = JetpackInkEngine()
+    private fun startStroke(point: PointF, event: MotionEvent) {
+        stroke.clear(); strokePressures.clear(); strokeTimes.clear(); ink.clearLive()
+        strokeBrush = brush?.takeUnless { it.eraser }
+        addStrokePoint(point, event.getPressure(0), 0L, event)
+    }
+    private fun addStrokePoint(point: PointF, raw: Float, elapsed: Long, event: MotionEvent) {
+        val stylus = event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS || event.getToolType(0) == MotionEvent.TOOL_TYPE_ERASER
+        val active = strokeBrush
+        val pressure = if (!stylus || !raw.isFinite()) 1f else active?.mapPressure(raw.coerceIn(0f, 1f)) ?: raw.coerceIn(0f, 1f)
+        stroke += point; strokePressures += pressure; strokeTimes += elapsed
+        if (active != null) ink.append(InkPoint(point.x, ReaderInk.strokeY(point.y, aspect), pressure, elapsed), active)
+    }
+    private fun clearStroke() { stroke.clear(); strokePressures.clear(); strokeTimes.clear(); ink.clearLive(); strokeBrush = null }
     private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
             // Zoom around the fingers: the page point under the focus stays under it.
@@ -461,7 +494,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     fun show(session: PdfReaderSession, page: Int, annotations: List<ReaderAnnotation>) {
         if (this.session !== session || this.page != page) {
             removeCallbacks(longPress); selectionJob?.cancel(); selecting = false; draggingHandle = -1; preview = null; previewGroups = emptyList()
-            this.session = session; this.page = page; bitmap = null; projections = emptyList(); textLines = emptyList(); accessibility.invalidateRoot(); stroke.clear(); zoom = displayZoom; panX = 0f; panY = 0f; scheduleRender()
+            this.session = session; this.page = page; bitmap = null; projections = emptyList(); pendingInk.clear(); textLines = emptyList(); accessibility.invalidateRoot(); clearStroke(); zoom = displayZoom; panX = 0f; panY = 0f; scheduleRender()
         }
         if (this.annotations != annotations) { this.annotations = annotations; updateProjections() }
     }
@@ -520,7 +553,16 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         val index = page; val records = annotations.filter { JSONObject(it.anchor).optInt("page", -1) == index }
         projectionJob?.cancel()
         projectionJob = scope.launch {
-            try { projections = withContext(Dispatchers.IO) { records.map { Projection(it, current.project(index, it.anchor), JSONObject(it.anchor).optDouble("normalizedWidth", .003).toFloat()) } }; invalidate() }
+            try { projections = withContext(Dispatchers.IO) {
+                val ratio by lazy { current.aspect(index) }
+                records.map { record ->
+                    val json = JSONObject(record.anchor); val groups = current.project(index, record.anchor)
+                    val brushStroke = if (record.kind == AnnotationKind.INK && ReaderInk.isBrush(json)) ReaderInk.toInkStroke(record.id, json, record.color, groups.firstOrNull().orEmpty(), ratio) else null
+                    Projection(record, groups, ReaderInk.normalizedWidth(json), brushStroke)
+                }
+            }
+                pendingInk.removeAll { pending -> pending.anchor?.let { saved -> records.any { it.anchor == saved } } == true }
+                invalidate() }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { onError(error.message ?: "Could not display annotations") }
         }
@@ -537,10 +579,15 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         val pageClip = canvas.save()
         canvas.clipRect(b.left + crop.left * b.width(), b.top + crop.top * b.height(), b.left + crop.right * b.width(), b.top + crop.bottom * b.height())
         bitmap?.let { paint.alpha = 255; paint.colorFilter = pageFilter; canvas.drawBitmap(it, null, b, paint); paint.colorFilter = null }
-        projections.forEach { (annotation, groups, inkWidth) ->
-            if (annotation.id == "selection" && (selecting || draggingHandle >= 0)) return@forEach
+        fun drawMark(projection: Projection) {
+            val (annotation, groups, inkWidth, brushStroke) = projection
+            if (annotation.id == "selection" && (selecting || draggingHandle >= 0)) return
             paint.color = annotation.color
-            if (annotation.kind == AnnotationKind.INK) groups.forEach { points ->
+            if (brushStroke != null) {
+                val inkClip = canvas.save(); canvas.translate(b.left, b.top)
+                NotebookRenderer.drawStroke(canvas, brushStroke, b.width(), ReaderInk.strokeHeight(b.width()), ink)
+                canvas.restoreToCount(inkClip)
+            } else if (annotation.kind == AnnotationKind.INK) groups.forEach { points ->
                 drawPath.rewind()
                 points.forEachIndexed { i, p -> val x=b.left+p.x*b.width();val y=b.top+p.y*b.height();if(i==0)drawPath.moveTo(x,y)else drawPath.lineTo(x,y) }
                 paint.style = Paint.Style.STROKE; paint.strokeCap = Paint.Cap.ROUND; paint.strokeJoin = Paint.Join.ROUND
@@ -571,6 +618,8 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                 else { paint.alpha = 90; canvas.drawRect(annotationBounds, paint); paint.alpha = 255 }
             }
         }
+        projections.forEach { drawMark(it) }
+        pendingInk.forEach { drawMark(it.projection) }
         if (selecting || draggingHandle >= 0) {
             paint.color = 0x5576B9EF
             previewGroups.forEach { points ->
@@ -578,8 +627,22 @@ internal class PdfPageReaderView(context: Context) : View(context) {
             }
         }
         paint.color = Color.rgb(47, 122, 104)
-        selectionHandles().forEach { canvas.drawCircle(it.x, it.y + dp(8f), dp(8f), paint) }
-        if (stroke.isNotEmpty()) {
+        selectionHandles().forEach { handle ->
+            val centerY = handle.y + handleDrop
+            paint.color = Color.rgb(47, 122, 104); paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(2.5f); paint.strokeCap = Paint.Cap.ROUND
+            canvas.drawLine(handle.x, handle.y, handle.x, centerY, paint)
+            paint.style = Paint.Style.FILL
+            canvas.drawCircle(handle.x, centerY, handleRadius + dp(2f), paint.apply { color = Color.WHITE })
+            canvas.drawCircle(handle.x, centerY, handleRadius, paint.apply { color = Color.rgb(47, 122, 104) })
+            paint.color = Color.WHITE; canvas.drawCircle(handle.x, centerY, handleRadius * .38f, paint)
+            paint.color = Color.rgb(47, 122, 104)
+        }
+        if (stroke.isNotEmpty() && strokeBrush != null) {
+            // Same engine as the saved stroke, so the live line already looks final.
+            val live = canvas.save(); canvas.translate(b.left, b.top)
+            ink.drawLive(canvas, b.width().toInt(), ReaderInk.strokeHeight(b.width()).toInt(), 1f)
+            canvas.restoreToCount(live)
+        } else if (stroke.isNotEmpty()) {
             drawPath.rewind()
             stroke.forEachIndexed { i,p -> val x=b.left+p.x*b.width();val y=b.top+p.y*b.height();if(i==0)drawPath.moveTo(x,y)else drawPath.lineTo(x,y) }
             paint.color = inkColor; paint.style = Paint.Style.STROKE; paint.strokeWidth = b.width() * inkWidth.coerceIn(.0008f,.02f); paint.strokeCap = Paint.Cap.ROUND; paint.strokeJoin = Paint.Join.ROUND; canvas.drawPath(drawPath,paint); paint.style = Paint.Style.FILL
@@ -605,7 +668,10 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        val tool = if (gestures.stylusWriting && (event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS || event.getToolType(0) == MotionEvent.TOOL_TYPE_ERASER) && this.tool == "Read") "Pen" else this.tool
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) gestureToolOverride = null
+        val stylusAutoPen = gestures.stylusWriting && (event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS || event.getToolType(0) == MotionEvent.TOOL_TYPE_ERASER) && this.tool == "Read"
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) gestureStylusAutoPen = stylusAutoPen
+        val tool = gestureToolOverride ?: if (stylusAutoPen) "Pen" else this.tool
         // Compose draws the reader controls over this full-screen native view. Yield
         // those edge bands on ACTION_DOWN so the controls receive the gesture instead
         // of the page reader consuming it underneath.
@@ -619,35 +685,38 @@ internal class PdfPageReaderView(context: Context) : View(context) {
             MotionEvent.ACTION_DOWN -> {
                 removeCallbacks(longPress)
                 selecting = false
-                draggingHandle = selectionHandles().indexOfFirst { hypot(event.x - it.x, event.y - it.y - dp(8f)) < dp(24f) }
+                draggingHandle = selectionHandles().withIndex().filter { (_, it) -> hypot(event.x - it.x, event.y - it.y - handleDrop) < dp(40f) }
+                    .minByOrNull { (_, it) -> hypot(event.x - it.x, event.y - it.y - handleDrop) }?.index ?: -1
                 if (draggingHandle >= 0) {
+                    // Grabbing a selection handle only moves the handle, even for a stylus that would otherwise write.
+                    gestureToolOverride = "Read"; clearStroke()
                     val groups = projections.firstOrNull { it.annotation.id == "selection" }?.groups.orEmpty()
                     if (groups.isNotEmpty()) {
                         selectionFrom = PointF(groups.first().minOf { it.x }, groups.first().map { it.y }.average().toFloat())
                         selectionTo = PointF(groups.last().maxOf { it.x }, groups.last().map { it.y }.average().toFloat())
                     }
                 }
-                if (tool == "Read" && gestures.clickLongPress && draggingHandle < 0) postDelayed(longPress, android.view.ViewConfiguration.getLongPressTimeout().toLong())
+                if ((tool == "Read" || stylusAutoPen) && gestures.clickLongPress && draggingHandle < 0) postDelayed(longPress, android.view.ViewConfiguration.getLongPressTimeout().toLong() + if (stylusAutoPen) 300L else 0L)
                 cropHandle = -1
                 if (tool == "MarqueeCrop") cropSelection?.let { rect ->
                     val b = bounds()
                     val corners = listOf(PointF(rect.left, rect.top), PointF(rect.right, rect.top), PointF(rect.right, rect.bottom), PointF(rect.left, rect.bottom))
                     cropHandle = corners.indexOfFirst { hypot(event.x - b.left - it.x * b.width(), event.y - b.top - it.y * b.height()) < dp(28f) }
                 }
-                parent?.requestDisallowInterceptTouchEvent(!scrolling || tool != "Read" || zoom > 1f); previous = PointF(event.x,event.y); gestureStartX = event.x; gestureStartY = event.y; downAt = event.eventTime; start = normalize(event.x,event.y); drawing = true; if (tool == "Pen") { stroke.clear(); stroke += start }; if (tool == "Eraser") { erasedInGesture.clear(); eraseAt(event.x, event.y) }; return true }
-            MotionEvent.ACTION_POINTER_DOWN -> { removeCallbacks(longPress); selecting = false; draggingHandle = -1; selectionJob?.cancel(); drawing = false; stroke.clear() }
+                parent?.requestDisallowInterceptTouchEvent(!scrolling || tool != "Read" || zoom > 1f); previous = PointF(event.x,event.y); gestureStartX = event.x; gestureStartY = event.y; downAt = event.eventTime; start = normalize(event.x,event.y); drawing = true; if (tool == "Pen" && draggingHandle < 0) startStroke(start, event); if (tool == "Eraser") { erasedInGesture.clear(); eraseAt(event.x, event.y) }; return true }
+            MotionEvent.ACTION_POINTER_DOWN -> { removeCallbacks(longPress); selecting = false; draggingHandle = -1; selectionJob?.cancel(); drawing = false; clearStroke() }
             MotionEvent.ACTION_MOVE -> {
                 if (!selecting && draggingHandle < 0 && hypot(event.x - gestureStartX, event.y - gestureStartY) > android.view.ViewConfiguration.get(context).scaledTouchSlop) removeCallbacks(longPress)
                 if (event.pointerCount == 1 && !scaleDetector.isInProgress) {
                     if (draggingHandle >= 0) {
-                        val point = normalize(event.x, event.y - dp(8f))
+                        val point = normalize(event.x, event.y - handleDrop)
                         updateSelection(if (draggingHandle == 0) point else selectionFrom, if (draggingHandle == 1) point else selectionTo)
                     } else if (selecting || tool == "Select") updateSelection(start, normalize(event.x, event.y))
                     if (tool == "Eraser" && drawing) eraseAt(event.x, event.y)
                     if (tool == "Read" && gestures.slide && !selecting && draggingHandle < 0 && (zoom > 1f || fitWidth)) { panX += event.x - previous.x; panY += event.y - previous.y; clampPan() }
                     if (tool == "Pen" && drawing && stroke.size < 10000) {
-                        for (i in 0 until event.historySize) stroke += normalize(event.getHistoricalX(i),event.getHistoricalY(i))
-                        stroke += normalize(event.x,event.y)
+                        for (i in 0 until event.historySize) addStrokePoint(normalize(event.getHistoricalX(i),event.getHistoricalY(i)), event.getHistoricalPressure(i), event.getHistoricalEventTime(i) - downAt, event)
+                        addStrokePoint(normalize(event.x,event.y), event.pressure, event.eventTime - downAt, event)
                     }
                 }
                 if (tool == "MarqueeCrop" && cropHandle >= 0) cropSelection?.let { rect ->
@@ -665,7 +734,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
             MotionEvent.ACTION_UP -> {
                 removeCallbacks(longPress)
                 if ((selecting && hypot(event.x - gestureStartX, event.y - gestureStartY) > dp(18f)) || draggingHandle >= 0) {
-                    val point = normalize(event.x, event.y - if (draggingHandle >= 0) dp(8f) else 0f)
+                    val point = normalize(event.x, event.y - if (draggingHandle >= 0) handleDrop else 0f)
                     updateSelection(if (draggingHandle == 0) point else if (draggingHandle == 1) selectionFrom else start,
                         if (draggingHandle == 0) selectionTo else point, publish = true)
                     selecting = false; draggingHandle = -1; drawing = false
@@ -680,32 +749,27 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                 val isTap = drawing && abs(dx) < dp(18f) && abs(dy) < dp(18f)
                 val held = event.eventTime - downAt >= android.view.ViewConfiguration.getLongPressTimeout()
                 val point = normalize(event.x,event.y)
-                val touchedMark = if (gestures.clickLongPress && held && tool != "Pen") projections.firstOrNull { projection ->
-                    projection.annotation.kind in listOf(AnnotationKind.HIGHLIGHT, AnnotationKind.UNDERLINE) && projection.groups.any { group ->
-                        if (group.size < 2) false else {
-                            val left = group.minOf { it.x } - .025f; val right = group.maxOf { it.x } + .025f
-                            val top = group.minOf { it.y } - .025f; val bottom = group.maxOf { it.y } + .025f
-                            point.x in left..right && point.y in top..bottom
-                        }
-                    }
-                }?.annotation else null
-                if (touchedMark != null) onAnnotationLongPress(touchedMark)
-                val pageTapHandled = isTap && !held && onPageTap(event.x, event.y, width.toFloat(), height.toFloat())
-                if (touchedMark == null && !pageTapHandled && drawing && (tool == "Select" || (gestures.clickLongPress && tool == "Read" && held && isTap))) {
+                // While writing or erasing, a short touch (the dot of an "i", a full stop) is ink, never a page tap that opens the menu or turns the page.
+                val pageTapHandled = isTap && !held && tool != "Pen" && tool != "Eraser" && onPageTap(event.x, event.y, width.toFloat(), height.toFloat())
+                if (!pageTapHandled && drawing && (tool == "Select" || (gestures.clickLongPress && tool == "Read" && held && isTap))) {
                     val end = normalize(event.x,event.y); val beginning = start
                     val longPressSelect = tool == "Read" && held && isTap
                     scope.launch { try { onSelection(withContext(Dispatchers.IO) {
                         if (longPressSelect) {
-                            val lines = current.textLines(index)
-                            val nearest = lines.minByOrNull { line ->
-                                val dx = maxOf(line.bounds.left - beginning.x, 0f, beginning.x - line.bounds.right)
-                                val dy = maxOf(line.bounds.top - beginning.y, 0f, beginning.y - line.bounds.bottom)
-                                dx * dx + dy * dy
+                            // A long press selects the pressed word (the range handles extend it). Only when no word is
+                            // under the finger does the nearest line stand in, as before.
+                            current.select(index, beginning, beginning) ?: run {
+                                val lines = current.textLines(index)
+                                val nearest = lines.minByOrNull { line ->
+                                    val dx = maxOf(line.bounds.left - beginning.x, 0f, beginning.x - line.bounds.right)
+                                    val dy = maxOf(line.bounds.top - beginning.y, 0f, beginning.y - line.bounds.bottom)
+                                    dx * dx + dy * dy
+                                }
+                                nearest?.takeIf { it.bounds.contains(beginning.x, beginning.y) || kotlin.math.sqrt(
+                                    maxOf(it.bounds.left - beginning.x, 0f, beginning.x - it.bounds.right).let { dx -> dx * dx } +
+                                        maxOf(it.bounds.top - beginning.y, 0f, beginning.y - it.bounds.bottom).let { dy -> dy * dy }
+                                ) < .06f }?.selection ?: current.select(index, beginning, end)
                             }
-                            nearest?.takeIf { it.bounds.contains(beginning.x, beginning.y) || kotlin.math.sqrt(
-                                maxOf(it.bounds.left - beginning.x, 0f, beginning.x - it.bounds.right).let { dx -> dx * dx } +
-                                    maxOf(it.bounds.top - beginning.y, 0f, beginning.y - it.bounds.bottom).let { dy -> dy * dy }
-                            ) < .06f }?.selection ?: current.select(index, beginning, end)
                         } else current.select(index, beginning, end)
                     }) } catch (error: Exception) { if (error is CancellationException) throw error; onError(error.message ?: "Could not select text") } }
                 }
@@ -730,15 +794,28 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                     val threshold = max(dp(48f), width * .12f)
                     if (abs(dx) >= threshold && abs(dx) > abs(dy) * 1.25f) onPageTurn((dx < 0f) != rtl)
                 }
+                // A single touch point becomes a dot: the brush engine and the saved anchor both need at least two points.
+                if (drawing && tool == "Pen" && stroke.size == 1) { stroke += stroke[0]; strokePressures += strokePressures[0]; strokeTimes += strokeTimes[0] + 8L }
                 if (!pageTapHandled && drawing && tool == "Pen" && stroke.size > 1) {
-                    val points = stroke.toList()
-                    stroke.clear(); invalidate()
-                    val width = inkWidth.coerceIn(.0008f,.02f)
-                    scope.launch { try { val anchor = withContext(Dispatchers.IO) { current.inkAnchor(index,points,width) }; onInk(JSONObject(anchor).put("normalizedWidth", width).toString()) } catch (error: Exception) { if (error is CancellationException) throw error; onError(error.message ?: "Could not save ink") } }
+                    val points = stroke.toList(); val pressures = strokePressures.toList(); val times = strokeTimes.toList(); val used = strokeBrush
+                    val width = if (used != null) ReaderInk.normalizedWidth(used) else inkWidth.coerceIn(.0008f,.02f)
+                    // Show the finished stroke at once (same engine, same points) and keep it until the saved copy is projected.
+                    val previewId = "pending-${System.nanoTime()}"
+                    val previewStroke = used?.let { ReaderInk.toInkStroke(previewId, ReaderInk.withBrush(JSONObject().put("normalizedWidth", width.toDouble()), it, pressures, times), inkColor, points, aspect) }
+                    val pending = PendingInk(Projection(ReaderAnnotation(previewId, "", AnnotationKind.INK, "", color = inkColor, createdAt = 0L), listOf(points), width, previewStroke))
+                    pendingInk += pending
+                    clearStroke(); invalidate()
+                    scope.launch { try { val anchor = withContext(Dispatchers.IO) { current.inkAnchor(index,points,width) }
+                        val json = JSONObject(anchor).put("normalizedWidth", width)
+                        val saved = (if (used != null) ReaderInk.withBrush(json, used, pressures, times) else json).toString()
+                        pending.anchor = saved
+                        // Safety net: the saved copy normally replaces the preview within a frame or two.
+                        postDelayed({ if (pendingInk.remove(pending)) invalidate() }, 4000)
+                        onInk(saved) } catch (error: Exception) { pendingInk.remove(pending); invalidate(); if (error is CancellationException) throw error; onError(error.message ?: "Could not save ink") } }
                 }
                 selecting = false; draggingHandle = -1; drawing = false; invalidate(); performClick()
             }
-            MotionEvent.ACTION_CANCEL -> { removeCallbacks(longPress); selectionJob?.cancel(); selecting = false; draggingHandle = -1; drawing = false; stroke.clear(); invalidate() }
+            MotionEvent.ACTION_CANCEL -> { gestureToolOverride = null; removeCallbacks(longPress); selectionJob?.cancel(); selecting = false; draggingHandle = -1; drawing = false; clearStroke(); invalidate() }
         }
         return true
     }
@@ -748,5 +825,5 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         // Compose can detach and re-attach the same view; a cancelled scope would leave the page blank.
         if (!scope.isActive) { scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate); scheduleRender(); updateProjections() }
     }
-    override fun onDetachedFromWindow() { removeCallbacks(longPress); scope.cancel(); bitmap = null; super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() { removeCallbacks(longPress); scope.cancel(); bitmap = null; clearStroke(); ink.release(); super.onDetachedFromWindow() }
 }

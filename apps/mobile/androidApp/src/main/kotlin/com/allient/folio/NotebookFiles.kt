@@ -484,6 +484,73 @@ internal class NotebookFiles(private val context: Context) {
         finally { localPdf.delete() }
     }
 
+    /**
+     * Turns a DRM-free EPUB into notebook pages of typed text you can write over. Each spine document starts a new page;
+     * text is wrapped and paginated for the reference 1200×1920 page. Images and styling are not kept.
+     */
+    fun importEpubPages(uri: Uri): Pair<String?, List<NotebookPage>> {
+        val localEpub = File(context.cacheDir, "epub-import-${UUID.randomUUID()}.epub")
+        try {
+            input(uri).use { source -> localEpub.outputStream().use { boundedCopy(source, it, 128L * 1024 * 1024) } }
+            val zip = try { java.util.zip.ZipFile(localEpub) } catch (notZip: java.util.zip.ZipException) { throw IllegalArgumentException("This file is not an EPUB book.", notZip) }
+            zip.use {
+                fun read(path: String): String? = zip.getEntry(path)?.let { entry ->
+                    require(entry.size <= 16L * 1024 * 1024) { "This EPUB has a chapter that is too large to import." }
+                    zip.getInputStream(entry).use { stream -> stream.readBytes().toString(Charsets.UTF_8) }
+                }
+                require(zip.getEntry("META-INF/encryption.xml") == null) { "This EPUB is protected (DRM) and can't be imported." }
+                val container = read("META-INF/container.xml") ?: throw IllegalArgumentException("This file is not an EPUB book.")
+                val opfPath = Regex("full-path\\s*=\\s*\"([^\"]+)\"").find(container)?.groupValues?.get(1)
+                    ?: throw IllegalArgumentException("This EPUB has no package file.")
+                val opf = read(opfPath) ?: throw IllegalArgumentException("This EPUB has no package file.")
+                val base = opfPath.substringBeforeLast('/', "").let { if (it.isEmpty()) "" else "$it/" }
+                val manifest = Regex("<(?:\\w+:)?item\\b[^>]*>", RegexOption.IGNORE_CASE).findAll(opf).mapNotNull { tag ->
+                    val attributes = Regex("([\\w:-]+)\\s*=\\s*\"([^\"]*)\"").findAll(tag.value).associate { it.groupValues[1].lowercase() to it.groupValues[2] }
+                    val id = attributes["id"] ?: return@mapNotNull null
+                    id to (attributes["href"] ?: return@mapNotNull null)
+                }.toMap()
+                val spine = Regex("<(?:\\w+:)?itemref\\b[^>]*idref\\s*=\\s*\"([^\"]+)\"", RegexOption.IGNORE_CASE).findAll(opf).map { it.groupValues[1] }.toList()
+                val title = Regex("<dc:title[^>]*>(.*?)</dc:title>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(opf)
+                    ?.groupValues?.get(1)?.let { epubParagraphs(it).joinToString(" ") }?.ifBlank { null }
+                val chapters = spine.mapNotNull { idref -> manifest[idref] }.map { href ->
+                    val path = normalizeZipPath(base + Uri.decode(href.substringBefore('#')))
+                    epubParagraphs(read(path).orEmpty())
+                }
+                val pages = epubTextPages(chapters)
+                require(pages.isNotEmpty()) { "This EPUB has no text to import." }
+                require(pages.size <= MAX_EPUB_PAGES) { "This book is too long to import as a notebook (more than $MAX_EPUB_PAGES pages). Open it in the reader instead." }
+                return title to pages
+            }
+        } finally { localEpub.delete() }
+    }
+
+    private fun normalizeZipPath(path: String): String {
+        val parts = ArrayDeque<String>()
+        path.split('/').forEach { part -> when (part) { "", "." -> Unit; ".." -> parts.removeLastOrNull(); else -> parts.addLast(part) } }
+        return parts.joinToString("/")
+    }
+
+    private fun epubTextPages(chapters: List<List<String>>): List<NotebookPage> {
+        // Measured on the reference page (1200 px wide); InkText scales with the page, so the wrap holds on any screen.
+        val pageWidth = 1200f; val pageHeight = 1920f
+        val paint = android.text.TextPaint().apply { isAntiAlias = true; typeface = android.graphics.Typeface.SERIF; textSize = EPUB_TEXT_SIZE * pageWidth / 600f }
+        val maxWidth = (EPUB_BOX_WIDTH * pageWidth).toInt()
+        val lineHeight = paint.fontSpacing * EPUB_LINE_SPACING
+        val linesPerPage = (((EPUB_BOTTOM - EPUB_TOP) * pageHeight) / lineHeight).toInt().coerceAtLeast(1)
+        val wrapped = chapters.map { paragraphs ->
+            paragraphs.flatMapIndexed { index, paragraph ->
+                val layout = android.text.StaticLayout.Builder.obtain(paragraph, 0, paragraph.length, paint, maxWidth).build()
+                val lines = (0 until layout.lineCount).map { paragraph.substring(layout.getLineStart(it), layout.getLineEnd(it)).trimEnd() }
+                if (index == 0) lines else listOf("") + lines
+            }
+        }
+        val firstBaseline = EPUB_TOP + -paint.fontMetrics.ascent / pageHeight
+        return paginateChapterLines(wrapped, linesPerPage).map { lines ->
+            NotebookPage(texts = listOf(InkText(text = lines.joinToString("\n"), x = (1f - EPUB_BOX_WIDTH) / 2f, y = firstBaseline,
+                size = EPUB_TEXT_SIZE, font = "Serif", lineSpacing = EPUB_LINE_SPACING, boxWidth = EPUB_BOX_WIDTH)))
+        }
+    }
+
     fun copyAttachment(uri: Uri): NoteAttachment {
         var name = uri.lastPathSegment?.substringAfterLast('/')?.ifBlank { null } ?: "Attachment"
         // Metadata is optional: some document providers expose a readable stream without a query.
@@ -560,5 +627,11 @@ internal class NotebookFiles(private val context: Context) {
         const val MAX_ASSET_BYTES = 128L * 1024 * 1024
         const val MAX_BACKUP_BYTES = 2048L * 1024 * 1024
         const val ZSTD_LEVEL = 3
+        const val MAX_EPUB_PAGES = 600
+        const val EPUB_TEXT_SIZE = 19f
+        const val EPUB_LINE_SPACING = 1.3f
+        const val EPUB_BOX_WIDTH = .84f
+        const val EPUB_TOP = .06f
+        const val EPUB_BOTTOM = .95f
     }
 }

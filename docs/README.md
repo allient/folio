@@ -22,6 +22,8 @@ These Markdown files are the project's developer documentation. They read well o
 - [Canvas tools review](features/canvas-tools-review.md)
 - [Ruler and zoom window](features/ruler-and-zoom-window.md)
 - [Tables, stickers and sticky notes](features/tables-stickers-notes.md)
+- [Pages, page turning and PDF/EPUB import](features/pages-and-import.md): swipe to turn or add a page, the page manager, importing a book as a notebook
+- [Reader pens, selection and marks](features/reader-writing-and-marks.md): notebook pens in the reader, word and stylus selection, the highlight editor
 - [Live boards](features/live-boards.md): Excalidraw boards with Folio's pen filter and live sessions for calls
 
 ## Investigations

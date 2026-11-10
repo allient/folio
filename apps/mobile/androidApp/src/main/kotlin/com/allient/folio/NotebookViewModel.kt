@@ -484,6 +484,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
         val extension = name.substringAfterLast('.', "").lowercase(java.util.Locale.ROOT)
         return when {
             mime == "application/pdf" || extension == "pdf" -> Notebook(title = title, pages = files.importPdfPages(uri))
+            mime == "application/epub+zip" || extension == "epub" -> files.importEpubPages(uri).let { (bookTitle, pages) -> Notebook(title = bookTitle ?: title, pages = pages) }
             mime.startsWith("image/") || extension in listOf("png", "jpg", "jpeg", "webp", "gif", "bmp", "heic", "heif") -> Notebook(title = title, pages = files.importImages(uri))
             else -> files.importBackup(uri)
         }

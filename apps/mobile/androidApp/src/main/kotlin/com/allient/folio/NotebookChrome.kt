@@ -26,7 +26,9 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
+import com.composables.icons.lucide.*
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
@@ -101,6 +103,8 @@ internal enum class InkIcon(val path: String) {
     More("M4 11 H5 V13 H4 Z M11 11 H12 V13 H11 Z M18 11 H19 V13 H18 Z"),
     Close("M6 6 L18 18 M18 6 L6 18"),
     Add("M12 4 V20 M4 12 H20"),
+    /** Plus sized like [Next] (10 units tall) for the top-bar page controls. */
+    PlusSmall("M12 7 V17 M7 12 H17"),
     Search("M16 10 A6 6 0 1 1 4 10 A6 6 0 1 1 16 10 M15 15 L21 21"),
     Trash("M4 6 H20 M9 6 V3 H15 V6 M6 6 L7 21 H17 L18 6 M10 10 V17 M14 10 V17"),
     Rename("M4 20 L5 15 L17 3 L21 7 L9 19 Z M14 6 L18 10 M13 21 H22"),
@@ -131,8 +135,71 @@ internal enum class InkIcon(val path: String) {
     Clock("M12 2 A10 10 0 1 1 12 22 A10 10 0 1 1 12 2 M12 6 V12 L16 14"),
 }
 
+/**
+ * Generic actions use Lucide; Folio's own tools (pens, erasers, lasso, reader underline styles, split
+ * view, page fitting) keep their custom paths. [InkIcon.path] stays for the canvas-drawn action bar.
+ */
+internal val InkIcon.lucide: ImageVector?
+    get() = when (this) {
+        InkIcon.Back -> Lucide.ArrowLeft
+        InkIcon.Previous -> Lucide.ChevronLeft
+        InkIcon.Next -> Lucide.ChevronRight
+        InkIcon.Close -> Lucide.X
+        InkIcon.More -> Lucide.Ellipsis
+        InkIcon.Add, InkIcon.PlusSmall -> Lucide.Plus
+        InkIcon.Search -> Lucide.Search
+        InkIcon.Trash -> Lucide.Trash2
+        InkIcon.Rename -> Lucide.PencilLine
+        InkIcon.Copy -> Lucide.Copy
+        InkIcon.Cut -> Lucide.Scissors
+        InkIcon.Paste -> Lucide.ClipboardPaste
+        InkIcon.Share -> Lucide.Share2
+        InkIcon.Tag -> Lucide.Tag
+        InkIcon.Undo -> Lucide.Undo2
+        InkIcon.Redo -> Lucide.Redo2
+        InkIcon.Save -> Lucide.Save
+        InkIcon.Saved -> Lucide.Check
+        InkIcon.Clock -> Lucide.Clock
+        InkIcon.Microphone -> Lucide.Mic
+        InkIcon.Text -> Lucide.Type
+        InkIcon.Insert -> Lucide.Paperclip
+        InkIcon.Table -> Lucide.Table
+        InkIcon.Sticker -> Lucide.Sticker
+        InkIcon.Sticky -> Lucide.StickyNote
+        InkIcon.Ruler -> Lucide.Ruler
+        InkIcon.Layers -> Lucide.Layers
+        InkIcon.Shapes -> Lucide.Shapes
+        InkIcon.Eyedropper -> Lucide.Pipette
+        InkIcon.Hand -> Lucide.Hand
+        InkIcon.Zoom, InkIcon.ZoomIn -> Lucide.ZoomIn
+        InkIcon.ZoomOut -> Lucide.ZoomOut
+        InkIcon.Crop -> Lucide.Crop
+        InkIcon.Rotate -> Lucide.RotateCcw
+        InkIcon.RotateRight -> Lucide.RotateCw
+        InkIcon.FlipHorizontal -> Lucide.FlipHorizontal2
+        InkIcon.FlipVertical -> Lucide.FlipVertical2
+        InkIcon.BringFront -> Lucide.BringToFront
+        InkIcon.SendBack -> Lucide.SendToBack
+        InkIcon.Expand -> Lucide.Maximize2
+        InkIcon.Collapse -> Lucide.Minimize2
+        InkIcon.Pages -> Lucide.Files
+        InkIcon.AddPage -> Lucide.FilePlus
+        InkIcon.Tools -> Lucide.SlidersHorizontal
+        InkIcon.Library -> Lucide.Library
+        InkIcon.Locate -> Lucide.LocateFixed
+        InkIcon.Lock -> Lucide.Lock
+        InkIcon.LockOpen -> Lucide.LockOpen
+        InkIcon.Visibility -> Lucide.Eye
+        InkIcon.VisibilityOff -> Lucide.EyeOff
+        InkIcon.ReaderBookmark -> Lucide.Bookmark
+        InkIcon.ReaderHighlight -> Lucide.Highlighter
+        InkIcon.ReaderTabList -> Lucide.List
+        else -> null
+    }
+
 @Composable
 internal fun InkSymbol(icon: InkIcon, modifier: Modifier = Modifier, color: Color = ChromeInk) {
+    icon.lucide?.let { return LucideGlyph(it, modifier.size(22.dp), color) }
     val path = remember(icon) { PathParser().parsePathString(icon.path).toPath() }
     Canvas(modifier.size(22.dp)) {
         scale(size.width / 24f, size.height / 24f, pivot = Offset.Zero) {
