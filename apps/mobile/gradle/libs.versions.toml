@@ -15,6 +15,7 @@ androidx-testExt = "1.3.0"
 composeMultiplatform = "1.12.1"
 junit = "4.13.2"
 kotlin = "2.4.20"
+lucide = "2.2.1"
 material3 = "1.12.0-alpha03"
 
 [libraries]
@@ -38,6 +39,7 @@ compose-material3 = { module = "org.jetbrains.compose.material3:material3", vers
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+lucide-icons = { module = "com.composables:icons-lucide-cmp", version.ref = "lucide" }
 
 [plugins]
 googleServices = { id = "com.google.gms.google-services", version.ref = "googleServices" }

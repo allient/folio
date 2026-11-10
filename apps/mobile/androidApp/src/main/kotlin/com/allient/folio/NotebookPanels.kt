@@ -3,6 +3,11 @@ package com.allient.folio
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,7 +45,7 @@ import androidx.compose.ui.unit.sp
 private const val MAX_NOTEBOOK_LAYERS = 10
 
 @Composable
-internal fun NotebookPageThumbnail(page: NotebookPage, modifier: Modifier = Modifier) {
+internal fun NotebookPageThumbnail(page: NotebookPage, modifier: Modifier = Modifier, bordered: Boolean = true) {
     val filesDir = LocalContext.current.filesDir
     val imagePaths = page.images.map { it.path }
     var loadedImages by remember(imagePaths) { mutableStateOf<Map<String, android.graphics.Bitmap>>(emptyMap()) }
@@ -48,7 +53,7 @@ internal fun NotebookPageThumbnail(page: NotebookPage, modifier: Modifier = Modi
         val cancel = NotebookImageStore.preload(page.images, filesDir, maxPixels = 256 * 1024) { loadedImages = it }
         onDispose(cancel)
     }
-    Canvas(modifier.background(Color.White).border(1.dp, ChromeLine)) {
+    Canvas(modifier.background(Color.White).then(if (bordered) Modifier.border(1.dp, ChromeLine) else Modifier)) {
         drawIntoCanvas { canvas ->
             canvas.save()
             canvas.clipRect(0f, 0f, size.width, size.height)
@@ -66,11 +71,40 @@ internal fun NotebookPageManager(
     onClose: () -> Unit,
     onAdd: () -> Unit,
     onPageAction: (pageId: String, action: String) -> Unit,
+    onDeletePages: (Set<String>) -> Unit = {},
 ) {
     var tab by remember { mutableIntStateOf(0) }
     var gridMode by remember { mutableStateOf(true) }
+    var selecting by rememberSaveable { mutableStateOf(false) }
+    var selectedIdList by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val pageIds = notebook.pages.map { it.id }.toSet()
+    val selectedIds = selectedIdList.filter { it in pageIds }.toSet()
+    var confirmDelete by remember { mutableStateOf(false) }
+    fun toggle(id: String) { selectedIdList = if (id in selectedIds) selectedIds.minus(id).toList() else selectedIds.plus(id).toList() }
+    fun startSelecting(id: String? = null) { selecting = true; selectedIdList = listOfNotNull(id) }
+    fun stopSelecting() { selecting = false; selectedIdList = emptyList() }
+    fun open(id: String) { if (selecting) toggle(id) else onSelect(id) }
+    // Deleting every page is not allowed: a notebook keeps at least one page.
+    val canDelete = selectedIds.isNotEmpty() && selectedIds.size < notebook.pages.size
+    if (confirmDelete) AlertDialog(
+        onDismissRequest = { confirmDelete = false },
+        title = { Text(if (selectedIds.size == 1) "Delete 1 page?" else "Delete ${selectedIds.size} pages?") },
+        text = { Text("The selected pages and their ink are removed from this notebook.") },
+        confirmButton = { TextButton(onClick = { confirmDelete = false; onDeletePages(selectedIds); stopSelecting() }, Modifier.testTag("pages-delete-confirm")) { Text("Delete", color = Color(0xFFB3261E)) } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+    )
     Column(Modifier.fillMaxSize().background(Color(0xFFF7F8F7))) {
-        Row(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (selecting && tab == 0) Row(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            InkToolButton(InkIcon.Close, "Cancel selection", ::stopSelecting)
+            Text(if (selectedIds.isEmpty()) "Select pages" else "${selectedIds.size} selected", Modifier.weight(1f).padding(start = 8.dp), fontSize = 18.sp, color = ChromeInk, fontWeight = FontWeight.Medium)
+            TextButton(onClick = { selectedIdList = if (selectedIds.size == notebook.pages.size) emptyList() else notebook.pages.map { it.id } }) {
+                Text(if (selectedIds.size == notebook.pages.size) "Clear" else "Select all", color = Color(0xFF245B50))
+            }
+            Button(onClick = { confirmDelete = true }, enabled = canDelete, modifier = Modifier.testTag("pages-delete-selected"), shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E)), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)) {
+                InkSymbol(InkIcon.Trash, Modifier.size(17.dp), color = if (canDelete) Color.White else ChromeMuted); Text("Delete", Modifier.padding(start = 6.dp))
+            }
+        } else Row(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             InkToolButton(InkIcon.Back, "Back to notebook", onClose)
             Column(Modifier.weight(1f).padding(start = 8.dp)) {
                 Text(if (tab == 0) "Pages" else if (tab == 1) "Outline" else "Tags", fontSize = 18.sp, color = ChromeInk, fontWeight = FontWeight.Medium)
@@ -79,6 +113,7 @@ internal fun NotebookPageManager(
             if (tab == 0) {
                 TextButton(onClick = { gridMode = true }) { Text("Grid", color = if (gridMode) Color(0xFF245B50) else ChromeMuted) }
                 TextButton(onClick = { gridMode = false }) { Text("List", color = if (!gridMode) Color(0xFF245B50) else ChromeMuted) }
+                if (notebook.pages.size > 1) TextButton(onClick = { startSelecting() }, Modifier.testTag("pages-select")) { Text("Select", color = ChromeMuted) }
                 Button(onClick = onAdd, shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)) {
                     InkSymbol(InkIcon.Add, Modifier.size(17.dp)); Text("Add page", Modifier.padding(start = 6.dp))
                 }
@@ -94,24 +129,28 @@ internal fun NotebookPageManager(
         }
         HorizontalDivider(color = ChromeLine)
         when (tab) {
-            0 -> if (gridMode) LazyVerticalGrid(GridCells.Adaptive(150.dp), Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(18.dp), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            0 -> if (gridMode) LazyVerticalGrid(GridCells.Adaptive(116.dp), Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 gridItems(notebook.pages, key = { it.id }) { page ->
                     val index = notebook.pages.indexOfFirst { it.id == page.id }
-                    PageManagerCard(page, index, page.id == currentPageId, { onSelect(page.id) }, onPageAction)
+                    PageManagerCard(page, index, page.id == currentPageId, { open(page.id) }, onPageAction,
+                        checked = if (selecting) page.id in selectedIds else null, onLongPress = { if (!selecting) startSelecting(page.id) })
                 }
             } else LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 itemsIndexed(notebook.pages, key = { _, page -> page.id }) { index, page ->
-                    Card(onClick = { onSelect(page.id) }, shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = Color.White),
-                        border = androidx.compose.foundation.BorderStroke(if (page.id == currentPageId) 2.dp else 1.dp, if (page.id == currentPageId) Color(0xFF367967) else ChromeLine)) {
-                        Row(Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                            NotebookPageThumbnail(page, Modifier.width(66.dp).aspectRatio(1200f / 1920f).clip(RoundedCornerShape(8.dp)))
+                    val checked = selecting && page.id in selectedIds
+                    Card(shape = RoundedCornerShape(14.dp), colors = CardDefaults.cardColors(containerColor = if (checked) Color(0xFFE6F1ED) else Color.White),
+                        border = androidx.compose.foundation.BorderStroke(if (page.id == currentPageId || checked) 2.dp else 1.dp, if (page.id == currentPageId || checked) Color(0xFF367967) else ChromeLine),
+                        modifier = Modifier.combinedClickable(onClick = { open(page.id) }, onLongClick = { if (!selecting) startSelecting(page.id) })) {
+                        Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            if (selecting) PageCheck(checked, Modifier.padding(end = 10.dp))
+                            NotebookPageThumbnail(page, Modifier.width(48.dp).aspectRatio(1200f / 1920f).clip(RoundedCornerShape(6.dp)))
                             Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
                                 Text("Page ${index + 1}${if (page.id == currentPageId) " · Current" else ""}", fontSize = 14.sp, color = ChromeInk, fontWeight = FontWeight.Medium)
                                 if (page.outline.isNotBlank()) Text(page.outline, fontSize = 12.sp, color = ChromeMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text("${page.strokes.size} strokes", fontSize = 11.sp, color = ChromeMuted)
                             }
-                            PageActions(index, notebook.pages.lastIndex, notebook.pages.size) { action -> onPageAction(page.id, action) }
+                            if (!selecting) PageActions(index, notebook.pages.lastIndex, notebook.pages.size) { action -> onPageAction(page.id, action) }
                         }
                     }
                 }
@@ -144,17 +183,28 @@ internal fun NotebookPageManager(
 }
 
 @Composable
-private fun PageManagerCard(page: NotebookPage, index: Int, selected: Boolean, onSelect: () -> Unit, onPageAction: (String, String) -> Unit) {
+private fun PageCheck(checked: Boolean, modifier: Modifier = Modifier) {
+    Box(modifier.size(24.dp).clip(CircleShape).background(if (checked) Color(0xFF2F7A68) else Color.White).border(1.5.dp, if (checked) Color(0xFF2F7A68) else ChromeMuted, CircleShape),
+        contentAlignment = Alignment.Center) { if (checked) InkSymbol(InkIcon.Saved, Modifier.size(16.dp), color = Color.White) }
+}
+
+/** [checked] is null outside selection mode. */
+@Composable
+private fun PageManagerCard(page: NotebookPage, index: Int, selected: Boolean, onSelect: () -> Unit, onPageAction: (String, String) -> Unit,
+    checked: Boolean? = null, onLongPress: () -> Unit = {}) {
     var menu by remember(page.id) { mutableStateOf(false) }
-    Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(if (selected) 2.dp else 1.dp, if (selected) Color(0xFF367967) else ChromeLine)) {
-        Column(Modifier.padding(9.dp)) {
-            NotebookPageThumbnail(page, Modifier.fillMaxWidth().aspectRatio(1200f / 1920f).clip(RoundedCornerShape(10.dp))
-                .clickable(role = Role.Button, onClick = onSelect))
-            Row(Modifier.fillMaxWidth().padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Page ${index + 1}${if (selected) " · Current" else ""}", Modifier.weight(1f).clickable(onClick = onSelect), fontSize = 12.sp, color = ChromeInk)
-                Box {
-                    InkToolButton(InkIcon.More, "Page ${index + 1} actions", { menu = true }, buttonSize = 30.dp)
+    val highlighted = checked == true
+    Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = if (highlighted) Color(0xFFE6F1ED) else Color.White),
+        border = androidx.compose.foundation.BorderStroke(if (selected || highlighted) 2.dp else 1.dp, if (selected || highlighted) Color(0xFF367967) else ChromeLine)) {
+        Column(Modifier.combinedClickable(role = Role.Button, onClick = onSelect, onLongClick = onLongPress).padding(7.dp).testTag("page-card-${index + 1}")) {
+            Box {
+                NotebookPageThumbnail(page, Modifier.fillMaxWidth().aspectRatio(1200f / 1920f).clip(RoundedCornerShape(8.dp)))
+                if (checked != null) PageCheck(checked, Modifier.align(Alignment.TopEnd).padding(6.dp))
+            }
+            Row(Modifier.fillMaxWidth().height(30.dp).padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Page ${index + 1}${if (selected) " · Current" else ""}", Modifier.weight(1f), fontSize = 11.sp, color = ChromeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (checked == null) Box {
+                    InkToolButton(InkIcon.More, "Page ${index + 1} actions", { menu = true }, buttonSize = 26.dp)
                     DropdownMenu(menu, { menu = false }, modifier = Modifier.penPressureFilter()) {
                         listOf("outline" to "Edit outline", "duplicate" to "Duplicate", "move-up" to "Move earlier", "move-down" to "Move later", "delete" to "Delete").forEach { (action, label) ->
                             DropdownMenuItem(text = { Text(label) }, onClick = { menu = false; onPageAction(page.id, action) })

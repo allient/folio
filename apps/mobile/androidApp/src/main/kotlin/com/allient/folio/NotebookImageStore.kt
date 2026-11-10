@@ -74,12 +74,15 @@ internal object NotebookImageStore {
     }
 
     /** Cancel suppresses callbacks and removes queued work when a thumbnail leaves composition. */
+    /** Decode edge for a page with [count] distinct images; shared so a prefetch and the page's own load hit the same cache entry. */
+    fun edgeFor(count: Int, maxPixels: Int = 6 * 1024 * 1024): Int = kotlin.math.sqrt(maxPixels.toDouble() / count.coerceAtLeast(1)).toInt().coerceIn(1, 2400)
+
     fun preload(images: List<InkImage>, filesDir: File, maxPixels: Int = 6 * 1024 * 1024, onReady: (Map<String, Bitmap>) -> Unit): () -> Unit {
         val cancelled = AtomicBoolean(false)
         val paths = images.map { it.path }.distinct()
         // Each visible page pins its sampled images, so eviction by another page cannot
         // make its images disappear. Sampling bounds the aggregate per-owner pixel budget.
-        val edge = kotlin.math.sqrt(maxPixels.toDouble() / paths.size.coerceAtLeast(1)).toInt().coerceIn(1, 2400)
+        val edge = edgeFor(paths.size, maxPixels)
         val task = FutureTask<Unit> {
             val loaded = mutableMapOf<String, Bitmap>()
             for (path in paths) {

@@ -73,8 +73,8 @@ This is an Android implementation. The iOS target remains the pre-existing start
 PDFKit and Readium Swift with a matching persistence adapter before advertising iOS reader support.
 DRM/Kindle formats and password-protected PDF opening are not supported in this iteration. OCR is
 Latin-script only, invoked per page; OCR text is not embedded back into the original PDF. PDF navigation
-is single-page; tiled deep zoom, pressure-sensitive PDF ink and PDF erasing are
-future enhancements (saved ink can currently be removed from the annotation list). Existing external
+is single-page; tiled deep zoom is a future enhancement. Saved ink can be erased stroke by stroke or
+removed from the annotation list. Existing external
 PDF annotations are rendered, but importing/editing their semantic records is not implemented.
 
 The open-source PDFBox Android port's latest published version is older than the rendering libraries;
@@ -133,3 +133,14 @@ Reader Normal mode has neither fit control selected. Fit Screen and Fit Width de
 visible PDF content on a worker and trim blank margins (including scanned pages). Fit Screen
 fits that content within the viewport; Fit Width fills its width. Reset clears fitting and
 manual crop and returns to Normal. Reset Zoom clears zoom while retaining crop/fit settings.
+
+## PDF ink with notebook pens
+
+The drawing bar uses the notebook's shared brush presets (`editor` preferences, `BrushPresetBar`,
+`BrushSettings`), so pens added or changed in either place appear in both. The reader remembers its last
+pen as `reader-selected-brush` in `reader-preferences`. An ink annotation's anchor keeps the legacy keys
+(`page`, `points` as `[x, y]` pairs, `width`, `normalizedWidth`) and, for brush ink, adds `brush` (brush
+type name), `engine`, `variant`, `texture`, `grain`, `angle`, `sensitivity`, `pressures` (one value in 0–1 per point) and `times` (milliseconds since pen-down, one per
+point, so the saved stroke replays exactly like the live one). The annotation colour is the pen colour. Anchors without `brush` are legacy ink and render
+as a plain polyline, unchanged; no database migration is needed. Annotated PDF export flattens brush ink to
+plain PDF Ink annotations (colour and width only).

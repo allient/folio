@@ -37,6 +37,9 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 
 **Pages, or no edges at all**
 - 35 page templates, from lined and Cornell to planners, Kanban and music staff.
+- Swipe the page left or right to turn it, with a smooth slide and a visible page edge. On the last page, swipe left and release to add a page (or tap **+** in the top bar); you can also pull up past it and hold. Page+ shows each paper as a card. Nothing is added by accident.
+- In the page manager, tap **Select** (or long-press a page) to delete several pages at once.
+- Open a PDF or EPUB as a notebook (**+ → Import PDF/EPUB as notebook**) to write on its pages. A PDF page becomes a picture; an EPUB becomes pages of typed text (images and styling are left out), each chapter starting on a new page.
 - An infinite canvas with pins and a minimap.
 - Layers, lasso, shapes, fill, text, tables, stickers, sticky notes, images, a ruler, a zoom window and voice notes.
 
@@ -52,7 +55,9 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 **Read with a pen in hand**
 - Open PDF and EPUB books, from the library or from other apps.
 - Optional folder mosaics with note, canvas and book previews: folder options → Edit folder → Mosaic.
-- Highlight, underline, write in the margins, add notes and bookmarks, with selection tools beside the selected passage.
+- Write on PDF pages with the notebook's pens (fountain pen, pencil, highlighter, chalk and more, with pressure). The toolbar matches the notebook's, and your pens are shared between both.
+- Highlight, underline, add notes and bookmarks. Long-press a word (finger or stylus) to select it and drag the large handles to extend; the selection toolbar is one small row you can drag out of the way.
+- 11 highlight colours plus a custom colour picker. Long-press a word inside a saved mark, then tap the palette button to change its type or colour (with a live preview) or delete it.
 - Adjust PDF text weight, sharpness, pale backgrounds and dark tones; keep time, battery and reading position in view.
 - Search, browse expandable chapters and subchapters, jump to any page and recognize text in scanned pages, all on the device.
 - Browser-style open-book tabs that keep their order; the tab menu switches, closes other tabs or hides the bar (bring it back from **More → Show book tabs**). Customize reading gestures.
@@ -128,6 +133,8 @@ Marquee Crop and Reset appear in the Crop row; Reset restores the fit controls.
 
 Reader Split View supports the current document, another PDF/EPUB, handwritten study notes
 or text notes, with side-by-side or stacked panes and saved landscape orientation controls.
+
+In the PDF reader, **Handwriting** opens a floating drawing bar with the same pens as your notebooks: tap a pen to write, tap it again for its settings (type, size, colour, pressure), and long-press to reorder. Pens you add or change are shared with the notebook editor. The hand pans and zooms the page without closing the bar; there's also the eraser (single strokes or the whole page), undo/redo, Bookmark page, Select text and More.
 
 In the PDF reader, hold a word and drag to select text, then drag either selection handle to adjust the passage. The selection toolbar offers highlight colors, solid/dashed/wavy underlines, notes, copy, share and Remove marks. Long-press an existing mark to edit its color or delete it. Scanned pages need OCR first.
 

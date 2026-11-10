@@ -1,5 +1,6 @@
-Folio 1.0.3
-- Browser-style tabs for notes and books. Tabs keep their order, and the tab menu can hide the bar or close other tabs.
-- Show or hide the tab bar from More in the editor and the reader.
-- Turn on Smart backups in a few taps from the backup reminder.
-- Reader: split view, display contrast, crop and fit-to-content, and easier text selection.
+Folio 1.0.4
+- Swipe to turn notebook pages with a smooth slide; swipe past the last page to add one.
+- Select and delete several pages at once. Import a PDF or EPUB as a notebook.
+- Reader: the notebook's pens and a cleaner toolbar, a movable selection bar with word selection (also with the stylus), more highlight colors and a color picker.
+- Smoother writing: no flicker when you lift the pen.
+- New icons throughout.

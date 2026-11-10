@@ -147,6 +147,8 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
     var pendingLibraryBackup by rememberSaveable { mutableStateOf<String?>(null) }
     val notebooks = repository.notebooks
     val libraryStateHolder = rememberSaveableStateHolder()
+    // A PDF opened as a notebook: every PDF page becomes a page you write on (the reader is not involved).
+    val importPdfNotebook = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> if (uri != null) repository.importDocument(uri) }
     val importDocument = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             if (withContext(Dispatchers.IO) { isReaderDocument(context, uri) }) {
@@ -317,6 +319,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                         onNewBoard = { title -> val board = boardStore.create(title); refreshBoards(); openBoard(board.id) },
                         onRenameBoard = { id, title -> boardStore.rename(id, title); refreshBoards() },
                         onDeleteBoard = { id -> boardStore.delete(id); refreshBoards() },
+                        onImportPdfNotebook = { importPdfNotebook.launch(arrayOf("application/pdf", "application/epub+zip")) },
                         onImportBook = { folderId ->
                             pendingReaderFolderId = folderId
                             importBook.launch(arrayOf("application/pdf", "application/epub+zip"))

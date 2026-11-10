@@ -20,3 +20,10 @@ fun selectionToolbarPosition(selection: Rect, viewport: IntSize, toolbar: IntSiz
     }.coerceIn(margin, maxY)
     return IntOffset(x, y)
 }
+
+/** The automatic [base] position moved by the user's [drag], kept inside the viewport margins. */
+fun draggedToolbarPosition(base: IntOffset, drag: IntOffset, viewport: IntSize, toolbar: IntSize, margin: Int): IntOffset {
+    val maxX = (viewport.width - toolbar.width - margin).coerceAtLeast(margin)
+    val maxY = (viewport.height - toolbar.height - margin).coerceAtLeast(margin)
+    return IntOffset((base.x + drag.x).coerceIn(margin, maxX), (base.y + drag.y).coerceIn(margin, maxY))
+}

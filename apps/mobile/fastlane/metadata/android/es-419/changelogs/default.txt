@@ -1,5 +1,6 @@
-Folio 1.0.3
-- Pestañas tipo navegador para notas y libros. Mantienen su orden, y el menú de pestañas permite ocultar la barra o cerrar las demás.
-- Muestra u oculta la barra de pestañas desde Más, en el editor y en el lector.
-- Activa las copias de seguridad inteligentes en pocos pasos desde el aviso de copia de seguridad.
-- Lector: vista dividida, contraste de pantalla, recorte y ajuste al contenido, y selección de texto más fácil.
+Folio 1.0.4
+- Desliza para pasar las páginas del cuaderno con una animación fluida; más allá de la última, añades una.
+- Selecciona y elimina varias páginas a la vez. Importa un PDF o EPUB como cuaderno.
+- Lector: los lápices del cuaderno y una barra más limpia, una barra de selección movible con selección por palabra (también con el lápiz), más colores y un selector de color.
+- Escritura más fluida: sin parpadeo al levantar el lápiz.
+- Íconos nuevos.

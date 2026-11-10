@@ -198,7 +198,7 @@ In Play Console → Closed testing, add a tester list, share the link, and wait 
 
    fastlane sets the version code to one above the highest code on any track. You never edit it by hand.
 
-   Builds made without fastlane (plain Gradle, `just release`) use the defaults in `androidApp/build.gradle.kts` (currently `1.0.3`, code 3). Raise them when you release by hand.
+   Builds made without fastlane (plain Gradle, `just release`) use the defaults in `androidApp/build.gradle.kts` (currently `1.0.4`, code 4). Raise them when you release by hand.
 3. Test the internal build on a phone and a tablet.
 4. Ship it: `just play-promote`, or `FOLIO_VERSION_NAME=1.1.0 just play-production` for a staged rollout.
 5. If the store text or screenshots changed: `just play-metadata`.

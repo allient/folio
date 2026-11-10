@@ -2,6 +2,7 @@
 package com.allient.folio
 
 import android.content.Intent
+import com.composables.icons.lucide.*
 
 import android.os.Bundle
 import android.view.*
@@ -82,6 +83,8 @@ class ReaderActivity : AppCompatActivity() {
     private var engineLoading by mutableStateOf(true)
     private var epubProgress by mutableDoubleStateOf(0.0)
     private val settings by lazy { getSharedPreferences("reader-preferences", MODE_PRIVATE) }
+    /** The notebook's preferences: the reader draws with the same, shared brush presets. */
+    private val editorPrefs by lazy { getSharedPreferences("editor", MODE_PRIVATE) }
     private var fontScale by mutableDoubleStateOf(1.0)
     private var themeName by mutableStateOf("Light")
     private var scroll by mutableStateOf(false)
@@ -243,8 +246,11 @@ class ReaderActivity : AppCompatActivity() {
         var selectionTextBounds by remember { mutableStateOf<Pair<String, androidx.compose.ui.geometry.Rect>?>(null) }
         var tool by rememberSaveable { mutableStateOf("Read") }
         var color by rememberSaveable { mutableIntStateOf(0xFFFFD85A.toInt()) }
-        var penColor by rememberSaveable { mutableIntStateOf(0xFF303030.toInt()) }
-        var penWidth by rememberSaveable { mutableFloatStateOf(.003f) }
+        val brushState = rememberBrushPresetsState(editorPrefs)
+        // Restores the reader's last pen once per loaded preset state (rotation and relaunch keep it).
+        val restoredBrush = remember(brushState) { settings.getString("reader-selected-brush", null)?.let { id -> brushState.presets.firstOrNull { it.presetId == id } }?.also { brushState.selected = it } }
+        val penBrush = restoredBrush.let { brushState.selected }
+        LaunchedEffect(penBrush.presetId) { settings.edit().putString("reader-selected-brush", penBrush.presetId).apply() }
         var editingMark by remember { mutableStateOf<ReaderAnnotation?>(null) }
         var markKind by remember { mutableStateOf(AnnotationKind.HIGHLIGHT) }
         var noteAnchor by rememberSaveable { mutableStateOf<String?>(null) }
@@ -429,7 +435,7 @@ class ReaderActivity : AppCompatActivity() {
                             }
                         }
                         AndroidView(factory={PdfPageReaderView(it)},update={ view ->
-                            view.show(session,index,records); view.tool=tool; view.chromeVisible=chromeVisible; view.inkColor=penColor; view.inkWidth=penWidth
+                            view.show(session,index,records); view.tool=tool; view.chromeVisible=chromeVisible; view.brush=penBrush; view.inkColor=penBrush.color
                             view.setLayout(pdfContentFit && pdfFitWidth, cropRect ?: fittedContent, pdfEnhancement, pdfScroll || pdfSpread, pdfRtl, alignTop = pdfContentFit && cropRect == null)
                             view.setDisplay(pdfZoom, pdfMargin, pdfContrast, pdfBrightness)
                             view.setImageAdjustments(imageAdjustments)
@@ -445,12 +451,11 @@ class ReaderActivity : AppCompatActivity() {
                                 selected = null
                             }
                             view.onPageTap = { x, y, width, height -> handlePageTap(x, y, width, height) }
-                            view.onAnnotationLongPress = { mark -> selected=null; editingMark=mark; markKind=mark.kind; color=mark.color; chromeVisible=true }
                             view.onSelectionBounds = { anchor, rect ->
                                 if (selected?.anchor == anchor) selectionTextBounds = anchor to androidx.compose.ui.geometry.Rect(rect.left, rect.top, rect.right, rect.bottom)
                             }
                             view.onSelection={selection -> selected=selection; if(selection != null) chromeVisible=false; if(selection==null) model.error="No selectable text here. This may be a scanned page; OCR is required for text highlights."}
-                            view.onInk={model.annotate(AnnotationKind.INK,it,color=penColor); redoInk.clear()}; view.onError={model.error=it}
+                            view.onInk={model.annotate(AnnotationKind.INK,it,color=penBrush.color); redoInk.clear()}; view.onError={model.error=it}
                         },modifier=modifier.clipToBounds())
                         }
                         if (pdfSpread && tool == "Read") {
@@ -577,19 +582,27 @@ class ReaderActivity : AppCompatActivity() {
             if (!chromeVisible && showProgress && selected == null) {
                 ReaderStatusLine(
                     position = if (pdf != null) "${page + 1}/${pdf!!.pageCount}" else "${(epubProgress * 100).toInt()}%",
-                    chapter = if (model.pendingWrites > 0) "Saving…" else (activeChapter?.title ?: currentLocator?.title).orEmpty().takeUnless { it == doc?.title }.orEmpty(),
+                    // The chapter title never swaps for a "Saving…" label: that flickered after every stroke.
+                    chapter = (activeChapter?.title ?: currentLocator?.title).orEmpty().takeUnless { it == doc?.title }.orEmpty(),
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
             if (drawingToolbar && !chromeVisible && pdf != null) {
                 val pageInk = model.annotations.filter { it.kind == AnnotationKind.INK && JSONObject(it.anchor).optInt("page", -1) == page }
-                ReaderDrawingToolbar(tool, penWidth, penColor, pageInk.isNotEmpty() && model.pendingWrites == 0, redoInk.isNotEmpty() && model.pendingWrites == 0,
-                    onRead = { tool = "Read"; drawingToolbar = false; drawingPopup = null },
-                    onPreset = { penWidth = it; tool = "Pen"; drawingPopup = null },
-                    onStyle = { drawingPopup = if (drawingPopup == "Pen") null else "Pen" },
+                ReaderDrawingToolbar(tool, brushState, bookmark != null, currentAnchor() != null,
+                    pageInk.isNotEmpty(), redoInk.isNotEmpty(),
+                    onClose = { tool = "Read"; drawingToolbar = false; drawingPopup = null },
+                    onPan = { tool = "Read"; drawingPopup = null },
+                    onBrush = { brush -> brushState.selected = brush; tool = "Pen"; drawingPopup = null },
+                    onBrushChange = { brush -> brushState.update(brush); tool = "Pen" },
+                    onBrushSettings = { drawingPopup = null },
                     onErase = { tool = "Eraser"; drawingPopup = if (drawingPopup == "Eraser") null else "Eraser" },
-                    onUndo = { pageInk.lastOrNull()?.let { redoInk.add(it); model.remove(it) } },
-                    onRedo = { if (redoInk.isNotEmpty()) model.save(redoInk.removeAt(redoInk.lastIndex)) },
+                    onUndo = { scope.launch {
+                        // Undo stays enabled while a stroke is still being saved; it simply waits for the save, so the button never blinks.
+                        snapshotFlow { model.pendingWrites }.first { it == 0 }
+                        model.annotations.lastOrNull { it.kind == AnnotationKind.INK && JSONObject(it.anchor).optInt("page", -1) == page }?.let { redoInk.add(it); model.remove(it) }
+                    } },
+                    onRedo = { if (redoInk.isNotEmpty()) scope.launch { snapshotFlow { model.pendingWrites }.first { it == 0 }; if (redoInk.isNotEmpty()) model.save(redoInk.removeAt(redoInk.lastIndex)) } },
                     onBookmark = ::toggleBookmark,
                     onSelect = { tool = "Select"; drawingToolbar = false; drawingPopup = null },
                     onMore = { chromeVisible = true; drawingPopup = null },
@@ -597,8 +610,7 @@ class ReaderActivity : AppCompatActivity() {
                 drawingPopup?.let { popup ->
                     Surface(Modifier.align(Alignment.TopCenter).padding(top = 78.dp, start = 16.dp, end = 16.dp).widthIn(max = 480.dp),
                         shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), shadowElevation = 3.dp) {
-                        if (popup == "Pen") ReaderPenPopover(penColor, penWidth, { penColor = it; tool = "Pen" }, { penWidth = it; tool = "Pen" }, { drawingPopup = null })
-                        else Column {
+                        Column {
                             Row(Modifier.fillMaxWidth().padding(start = 20.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text("Eraser", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                                 InkToolButton(InkIcon.Close, "Close eraser options", { drawingPopup = null }, buttonSize = 48.dp)
@@ -623,17 +635,30 @@ class ReaderActivity : AppCompatActivity() {
                 val textBounds = selectionTextBounds?.takeIf { it.first == selection.anchor }?.second
                 val density = androidx.compose.ui.platform.LocalDensity.current
                 val margin = with(density) { 12.dp.roundToPx() }
-                val gap = with(density) { 12.dp.roundToPx() }
-                val positionProvider = remember(textBounds, margin, gap) {
+                // Wide enough clearance that the selection handles (above the first line, below the last) stay reachable.
+                val gap = with(density) { 40.dp.roundToPx() }
+                var toolbarDrag by remember { mutableStateOf(androidx.compose.ui.unit.IntOffset.Zero) }
+                val toolbarGeometry = remember { object { var base = androidx.compose.ui.unit.IntOffset.Zero; var toolbar = androidx.compose.ui.unit.IntSize.Zero; var window = androidx.compose.ui.unit.IntSize.Zero } }
+                val positionProvider = remember(textBounds, margin, gap, toolbarDrag) {
                     object : androidx.compose.ui.window.PopupPositionProvider {
-                        override fun calculatePosition(anchorBounds: androidx.compose.ui.unit.IntRect, windowSize: androidx.compose.ui.unit.IntSize, layoutDirection: androidx.compose.ui.unit.LayoutDirection, popupContentSize: androidx.compose.ui.unit.IntSize): androidx.compose.ui.unit.IntOffset =
-                            selectionToolbarPosition(textBounds ?: androidx.compose.ui.geometry.Rect.Zero, windowSize, popupContentSize, margin, gap)
+                        override fun calculatePosition(anchorBounds: androidx.compose.ui.unit.IntRect, windowSize: androidx.compose.ui.unit.IntSize, layoutDirection: androidx.compose.ui.unit.LayoutDirection, popupContentSize: androidx.compose.ui.unit.IntSize): androidx.compose.ui.unit.IntOffset {
+                            val base = selectionToolbarPosition(textBounds ?: androidx.compose.ui.geometry.Rect.Zero, windowSize, popupContentSize, margin, gap)
+                            toolbarGeometry.base = base; toolbarGeometry.toolbar = popupContentSize; toolbarGeometry.window = windowSize
+                            return draggedToolbarPosition(base, toolbarDrag, windowSize, popupContentSize, margin)
+                        }
                     }
                 }
                 if (textBounds != null) androidx.compose.ui.window.Popup(popupPositionProvider = positionProvider) {
-                    Surface(Modifier.width((readerWidth - 24.dp).coerceAtMost(560.dp).coerceAtLeast(1.dp)).zIndex(2f),
-                        shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), shadowElevation = 6.dp) {
+                    Surface(Modifier.widthIn(max = (readerWidth - 24.dp).coerceAtLeast(1.dp)).zIndex(2f),
+                        shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), shadowElevation = 6.dp) {
                         ReaderSelectionToolbar(color, pdf != null, overlapping.isNotEmpty(),
+                            onEditMark = overlapping.firstOrNull()?.let { mark ->
+                                { selected = null; navigator?.clearSelection(); editingMark = mark; markKind = mark.kind; color = mark.color; chromeVisible = true }
+                            },
+                            onDrag = { delta ->
+                                val next = toolbarDrag + androidx.compose.ui.unit.IntOffset(delta.x.toInt(), delta.y.toInt())
+                                toolbarDrag = draggedToolbarPosition(toolbarGeometry.base, next, toolbarGeometry.window, toolbarGeometry.toolbar, margin) - toolbarGeometry.base
+                            },
                             onColor = { color = it }, onHighlight = { saveSelection(AnnotationKind.HIGHLIGHT, color) },
                             onUnderline = { style -> saveSelection(AnnotationKind.UNDERLINE, color, underlineStyle = style) },
                             onCopy = {
@@ -705,26 +730,26 @@ class ReaderActivity : AppCompatActivity() {
                 }
             })
             Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(horizontal = 8.dp),verticalAlignment = Alignment.CenterVertically) {
-                InkToolButton(InkIcon.Previous, "Back to library", { finish() }, buttonSize = 48.dp, tint = MaterialTheme.colorScheme.onSurface)
-                ReaderAction(InkIcon.Library, "Doc", Modifier.width(52.dp)) { panel = "Document" }
+                InkToolButton(InkIcon.Previous, "Back to library", { finish() }, buttonSize = 44.dp, tint = MaterialTheme.colorScheme.onSurface)
+                ReaderAction(Lucide.FileText, "Doc", Modifier.width(52.dp)) { panel = "Document" }
                 Spacer(Modifier.weight(1f))
                 Row(Modifier.weight(4f).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.End) {
                     // Phones: the everyday actions come first so they are visible without scrolling the row.
                     val compactActions = LocalConfiguration.current.screenWidthDp < 600
                     val secondary: @Composable () -> Unit = {
-                        if (pdf != null) ReaderAction(InkIcon.RectangleSelect, if (recognizing) "OCR…" else "OCR", Modifier.width(60.dp), enabled = !recognizing) { recognizeScannedPage() }
+                        if (pdf != null) ReaderAction(Lucide.ScanText, if (recognizing) "OCR…" else "OCR", Modifier.width(60.dp), enabled = !recognizing) { recognizeScannedPage() }
                         ReaderAction(InkIcon.Hand, "Gestures", Modifier.width(64.dp)) { panel = "Gestures" }
                     }
                     if (!compactActions) secondary()
                     ReaderAction(InkIcon.Search, "Search", Modifier.width(60.dp)) { panel = "Search" }
-                    ReaderAction(InkIcon.Pen, "Notes", Modifier.width(60.dp)) { if (pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false } else panel = "Annotations" }
+                    ReaderAction(Lucide.NotebookPen, "Notes", Modifier.width(60.dp)) { if (pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false } else panel = "Annotations" }
                     ReaderAction(InkIcon.ReaderBookmark, "Bookmark", Modifier.width(68.dp), active = bookmark != null, enabled = currentAnchor() != null) { toggleBookmark() }
                     ReaderAction(InkIcon.More, "More", Modifier.width(56.dp)) { panel = "More" }
                     if (compactActions) secondary()
                 }
             }
             HorizontalDivider()
-            if (tool == "Select" && pdf != null && selected == null) Text("Drag across text to select a passage. Long-press a line to select it.",Modifier.padding(horizontal=16.dp,vertical=4.dp),style=MaterialTheme.typography.bodySmall)
+            if (tool == "Select" && pdf != null && selected == null) Text("Drag across text to select a passage. Long-press a word to select it.",Modifier.padding(horizontal=16.dp,vertical=4.dp),style=MaterialTheme.typography.bodySmall)
             if (chromeVisible && tool == "Pen" && pdf != null) Text("Write directly on the page. Switch to Read to pan or zoom.",Modifier.padding(horizontal=16.dp,vertical=4.dp),style=MaterialTheme.typography.bodySmall)
             if (chromeVisible) readerNotice?.let { notice -> Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) { Text(notice,Modifier.weight(1f),style=MaterialTheme.typography.bodySmall);TextButton(onClick={readerNotice=null}){Text("Dismiss")} } }
             }
@@ -754,9 +779,9 @@ class ReaderActivity : AppCompatActivity() {
                     enabled = if (pdf != null) page < pdf!!.pageCount - 1 else nav != null, modifier = Modifier.widthIn(min = 48.dp).semantics { contentDescription = "Next page" }) { Text("›", fontSize = 28.sp) }
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                ReaderAction(InkIcon.Pages, "Contents", Modifier.weight(1f)) { readerTab = "Contents" }
-                ReaderAction(InkIcon.Text, "Select", Modifier.weight(1f), active = tool == "Select", enabled = pdf != null) { tool = "Select"; chromeVisible = false }
-                ReaderAction(InkIcon.ReaderHandwriting, "Handwriting", Modifier.weight(1f), enabled = pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false }
+                ReaderAction(Lucide.TableOfContents, "Contents", Modifier.weight(1f)) { readerTab = "Contents" }
+                ReaderAction(Lucide.TextSelect, "Select", Modifier.weight(1f), active = tool == "Select", enabled = pdf != null) { tool = "Select"; chromeVisible = false }
+                ReaderAction(Lucide.PenLine, "Handwriting", Modifier.weight(1f), enabled = pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false }
                 ReaderAction(InkIcon.Share, "Export notes", Modifier.weight(1f), enabled = !exporting && model.pendingWrites == 0) { export("notes") }
             }
             }
@@ -1038,13 +1063,6 @@ class ReaderActivity : AppCompatActivity() {
                         Row { listOf("Light","Sepia","Dark").forEach { name -> FilterChip(selected=themeName==name,onClick={themeName=name;applyPreferences()},label={Text(name)},modifier=Modifier.padding(end=8.dp)) } }
                         Row(verticalAlignment=Alignment.CenterVertically) { Text("Continuous scrolling",Modifier.weight(1f)); Switch(checked=scroll,onCheckedChange={scroll=it;applyPreferences()}) }
                     }
-                    "Ink" -> {
-                        Text("Pencil color", style=MaterialTheme.typography.titleMedium)
-                        ReaderInkColors(penColor) { penColor=it }
-                        Text("Stroke width", style=MaterialTheme.typography.titleMedium, modifier=Modifier.padding(top=12.dp))
-                        Slider(value=penWidth, onValueChange={penWidth=it}, valueRange=.001f.. .012f)
-                        Text("${(penWidth * 1000).toInt()} pt · use a stylus or finger to write", style=MaterialTheme.typography.bodySmall)
-                    }
                     "Annotations" -> {
                         if(model.annotations.isEmpty()) Text("Select text to highlight it, write with Pen, or add a note from the menu.")
                         LazyColumn { items(model.annotations,key={it.id}) { a ->
@@ -1115,22 +1133,10 @@ class ReaderActivity : AppCompatActivity() {
             else model.annotate(if(noteQuote.isBlank())AnnotationKind.NOTE else AnnotationKind.HIGHLIGHT,anchor,noteQuote,noteDraft,color)
             noteAnchor=null;selected=null;navigator?.clearSelection()
         },enabled=noteDraft.isNotBlank()){Text("Save note")}},dismissButton={TextButton(onClick={noteAnchor=null}){Text("Cancel")}}) }
-        editingMark?.let { mark -> AlertDialog(
-            onDismissRequest={editingMark=null}, title={Text("Edit ${mark.kind.name.lowercase()}")},
-            text={Column {
-                Text("Color", style=MaterialTheme.typography.titleSmall)
-                ReaderColors(color) { color=it }
-                Row(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                    FilterChip(selected=markKind==AnnotationKind.HIGHLIGHT,onClick={markKind=AnnotationKind.HIGHLIGHT},label={Text("Highlight")})
-                    FilterChip(selected=markKind==AnnotationKind.UNDERLINE,onClick={markKind=AnnotationKind.UNDERLINE},label={Text("Underline")})
-                }
-            }},
-            confirmButton={TextButton(onClick={model.save(mark.copy(kind=markKind,color=color,updatedAt=System.currentTimeMillis()));editingMark=null}){Text("Save")}},
-            dismissButton={Row {
-                TextButton(onClick={model.remove(mark);editingMark=null}){Text("Delete")}
-                TextButton(onClick={editingMark=null}){Text("Cancel")}
-            }}
-        ) }
+        editingMark?.let { mark -> ReaderMarkEditor(mark, markKind, color,
+            onKind = { markKind = it }, onColor = { color = it },
+            onSave = { model.save(mark.copy(kind = markKind, color = color, updatedAt = System.currentTimeMillis())); editingMark = null },
+            onDelete = { model.remove(mark); editingMark = null }, onCancel = { editingMark = null }) }
         if(jumpDialog)AlertDialog(onDismissRequest={jumpDialog=false},title={Text("Go to page")},text={OutlinedTextField(value=pageDraft,onValueChange={pageDraft=it.filter(Char::isDigit)},label={Text("1–${pdf?.pageCount}")},singleLine=true)},confirmButton={TextButton(onClick={page=pageDraft.toInt()-1;selected=null;jumpDialog=false},enabled=pageDraft.toIntOrNull()?.let { it in 1..(pdf?.pageCount?:0) }==true){Text("Go")}},dismissButton={TextButton(onClick={jumpDialog=false}){Text("Cancel")}})
         model.error?.let { message -> AlertDialog(onDismissRequest={model.error=null},title={Text("Reader")},text={Text(message)},confirmButton={TextButton(onClick={model.error=null}){Text("OK")}}) }
         if(exporting)BasicAlertDialog(onDismissRequest={}) { Surface { Row(Modifier.padding(24.dp),verticalAlignment=Alignment.CenterVertically) { CircularProgressIndicator();Text("Preparing export…",Modifier.padding(start=16.dp)) } } }
@@ -1153,18 +1159,4 @@ class ReaderActivity : AppCompatActivity() {
     companion object { private const val READER_CONTAINER_ID=0x4b4e0001 }
 }
 
-@Composable internal fun ReaderColors(selected: Int,onSelect:(Int)->Unit) {
-    listOf(0xFFFFD85A.toInt(),0xFF93D9AF.toInt(),0xFF8FC7F4.toInt(),0xFFF0A6BD.toInt()).forEach { color ->
-        val label=when(color){0xFFFFD85A.toInt()->"Yellow";0xFF93D9AF.toInt()->"Green";0xFF8FC7F4.toInt()->"Blue";else->"Pink"}
-        val chosen=selected==color
-        Box(Modifier.padding(4.dp).size(48.dp).semantics { contentDescription="$label highlight"; this.selected=chosen }.clip(CircleShape).background(Color(color)).border(if(selected==color)2.dp else 0.dp,MaterialTheme.colorScheme.onSurface,CircleShape)
-            .clickable(onClickLabel="Select ${when(color){0xFFFFD85A.toInt()->"yellow";0xFF93D9AF.toInt()->"green";0xFF8FC7F4.toInt()->"blue";else->"pink"}} highlight"){onSelect(color)})
-    }
-}
 
-@Composable private fun ReaderInkColors(selected: Int,onSelect:(Int)->Unit) {
-    listOf(0xFF242424.toInt(),0xFF315CBB.toInt(),0xFFB63838.toInt(),0xFF16866F.toInt()).forEach { color ->
-        val label=when(color){0xFF242424.toInt()->"Black";0xFF315CBB.toInt()->"Blue";0xFFB63838.toInt()->"Red";else->"Green"}
-        Box(Modifier.padding(4.dp).size(40.dp).semantics { contentDescription="$label pen color"; this.selected=selected==color }.clip(CircleShape).background(Color(color)).border(if(selected==color)2.dp else 0.dp,MaterialTheme.colorScheme.onSurface,CircleShape).clickable { onSelect(color) })
-    }
-}
