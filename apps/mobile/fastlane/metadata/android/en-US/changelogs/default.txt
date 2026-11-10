@@ -1,6 +1,7 @@
-Folio 1.0.4
+Folio 1.0.5
 - Swipe to turn notebook pages with a smooth slide; swipe past the last page to add one.
 - Select and delete several pages at once. Import a PDF or EPUB as a notebook.
-- Reader: the notebook's pens and a cleaner toolbar, a movable selection bar with word selection (also with the stylus), more highlight colors and a color picker.
+- Reader: the notebook's pens, a movable selection bar with word selection (also with the stylus), more highlight colors and a color picker.
 - Smoother writing: no flicker when you lift the pen.
+- A new About screen with links to the website and GitHub.
 - New icons throughout.

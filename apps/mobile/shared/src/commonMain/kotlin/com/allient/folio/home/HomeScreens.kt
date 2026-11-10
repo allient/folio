@@ -26,6 +26,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.selection.selectable
+import com.composables.icons.lucide.Bug
+import com.composables.icons.lucide.ExternalLink
+import com.composables.icons.lucide.Github
+import com.composables.icons.lucide.Globe
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Scale
+import com.composables.icons.lucide.Shield
 
 @Composable
 private fun ScreenHeader(title: String, onBack: () -> Unit, trailing: @Composable RowScope.() -> Unit = {}) {
@@ -238,30 +245,74 @@ internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreference
         dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Cancel") } })
 }
 
+private data class AboutLink(val tag: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val title: String, val subtitle: String, val url: String)
+
 @Composable
 internal fun AboutScreen(version: String, onBack: () -> Unit) {
     val style = LocalHomeStyle.current
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val links = listOf(
+        AboutLink("website", Lucide.Globe, "Documentation and more info", "folio.allient.io", com.allient.folio.FolioLinks.SITE),
+        AboutLink("github", Lucide.Github, "Like Folio? Star it on GitHub", "github.com/allient/folio", com.allient.folio.FolioLinks.GITHUB),
+        AboutLink("issues", Lucide.Bug, "Report a problem", "Open an issue on GitHub", com.allient.folio.FolioLinks.ISSUES),
+        AboutLink("privacy", Lucide.Shield, "Privacy policy", "folio.allient.io/privacy", com.allient.folio.FolioLinks.PRIVACY),
+        AboutLink("license", Lucide.Scale, "License", "Apache License 2.0", com.allient.folio.FolioLinks.LICENSE),
+    )
+    val libraries = listOf("Jetpack Ink" to "Handwriting strokes and rendering", "PDFium" to "PDF rendering", "PdfBox-Android" to "Annotated PDF export",
+        "Readium" to "EPUB reading", "ML Kit Text Recognition" to "On-device OCR", "Zstandard (zstd-jni)" to "Backup compression",
+        "Lucide" to "Icons (ISC)", "Geist" to "Interface typeface (SIL OFL)")
+    @Composable fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
+        Text(title, Modifier.padding(top = 28.dp, bottom = 10.dp), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.card)).background(Color.White).border(1.dp, HomeHairline, RoundedCornerShape(style.card)), content = content)
+    }
     Column(Modifier.fillMaxSize().background(HomeBackground).testTag("about-screen")) {
         ScreenHeader("About", onBack)
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 680.dp).fillMaxWidth()) {
-                com.allient.folio.FolioIcon(Modifier.size(96.dp))
-                Text("Folio", Modifier.padding(top = 18.dp), fontSize = 30.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, letterSpacing = (-.5).sp)
-                Text("Handwritten Notes & eReader", Modifier.padding(top = 2.dp), fontSize = 15.sp, color = com.allient.folio.FolioBrand.Sage)
-                Text("Version $version", Modifier.padding(top = 4.dp).testTag("about-version"), fontSize = 14.sp, color = HomeMuted)
-                Text("Folio keeps everything on this device. There are no accounts and no cloud sync, and the app has no internet permission. " +
-                    "Notebooks, folders and reading notes are stored in the app's private storage (SQLite databases and the media folder). " +
-                    "Uninstalling Folio or clearing its data removes them, so export a .folio backup to keep a copy.",
-                    Modifier.padding(top = 20.dp), fontSize = 15.sp, lineHeight = 23.sp, color = HomeInk)
-                Text("Open-source libraries", Modifier.padding(top = 28.dp, bottom = 8.dp), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
-                listOf("Jetpack Ink" to "Handwriting strokes and rendering", "PDFium" to "PDF rendering", "PdfBox-Android" to "Annotated PDF export",
-                    "Readium" to "EPUB reading", "ML Kit Text Recognition" to "On-device OCR", "Zstandard (zstd-jni)" to "Backup compression", "Geist" to "Interface typeface (SIL OFL)").forEach { (name, use) ->
-                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Text(name, Modifier.weight(1f), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = HomeInk)
-                        Text(use, Modifier.weight(1.3f), fontSize = 13.sp, color = HomeMuted, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                    com.allient.folio.FolioIcon(Modifier.size(84.dp))
+                    Column {
+                        Text("Folio", fontSize = 30.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, letterSpacing = (-.5).sp)
+                        Text("Handwritten Notes & eReader", Modifier.padding(top = 2.dp), fontSize = 15.sp, color = com.allient.folio.FolioBrand.Sage)
+                        Text("Version $version", Modifier.padding(top = 10.dp).clip(RoundedCornerShape(style.pill)).background(style.soft).padding(horizontal = 12.dp, vertical = 4.dp).testTag("about-version"),
+                            fontSize = 13.sp, color = HomeInk)
                     }
-                    HorizontalDivider(color = HomeHairline)
                 }
+                Column(Modifier.padding(top = 24.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).background(style.soft.copy(alpha = .5f)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Your notes stay on this device", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
+                    Text("There are no accounts and no cloud sync. Notebooks, folders and reading notes live in the app's private storage, so turn on Smart backups or export a .folio file before you uninstall or clear the app's data.",
+                        fontSize = 14.sp, lineHeight = 21.sp, color = HomeInk)
+                    Text("Folio uses the internet only for Live boards, the handwriting model download, Google Play updates and anonymous usage statistics, which you can switch off in Preferences.",
+                        fontSize = 13.sp, lineHeight = 19.sp, color = HomeMuted)
+                }
+                Section("Links") {
+                    links.forEachIndexed { index, link ->
+                        Row(Modifier.fillMaxWidth().heightIn(min = 60.dp).clickable(role = Role.Button, onClickLabel = "Open ${link.title}") { uriHandler.openUri(link.url) }
+                            .padding(horizontal = 16.dp, vertical = 8.dp).testTag("about-link-${link.tag}").semantics { contentDescription = "${link.title}, ${link.subtitle}" },
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            Box(Modifier.size(38.dp).clip(RoundedCornerShape(style.item)).background(style.soft), contentAlignment = Alignment.Center) {
+                                com.allient.folio.LucideGlyph(link.icon, Modifier.size(20.dp), style.accent)
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text(link.title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = HomeInk)
+                                Text(link.subtitle, fontSize = 13.sp, color = HomeMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            com.allient.folio.LucideGlyph(Lucide.ExternalLink, Modifier.size(18.dp), HomeMuted)
+                        }
+                        if (index < links.lastIndex) HorizontalDivider(Modifier.padding(start = 68.dp), color = HomeHairline)
+                    }
+                }
+                Section("Open-source libraries") {
+                    libraries.forEachIndexed { index, (name, use) ->
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(name, Modifier.weight(1f), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = HomeInk)
+                            Text(use, Modifier.weight(1.3f), fontSize = 13.sp, color = HomeMuted, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                        }
+                        if (index < libraries.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = HomeHairline)
+                    }
+                }
+                Text("Folio is open source under the Apache License 2.0. Made by Allient.", Modifier.padding(top = 24.dp, bottom = 8.dp).clickable(role = Role.Button, onClickLabel = "Open allient.io") { uriHandler.openUri(com.allient.folio.FolioLinks.ALLIENT) }.testTag("about-allient"),
+                    fontSize = 13.sp, color = HomeMuted)
             }
         }
     }
