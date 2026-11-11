@@ -11,6 +11,10 @@
   No account and no ads. Your notes stay on your device.
 </p>
 
+<p align="center">
+  <a href="https://play.google.com/store/apps/details?id=com.allient.folio"><img src="apps/docs/public/google-play-badge.png" alt="Get it on Google Play" height="80"></a>
+</p>
+
 <table>
   <tr>
     <td width="33%"><img src="apps/docs/src/assets/screenshots/library.png" alt="The Folio library"></td>
@@ -77,7 +81,9 @@ Folio works offline and your notes and books never leave your device. There is n
 
 ## Get Folio
 
-Folio is coming to Google Play for Android phones and tablets. Until then you can build it from source.
+<a href="https://play.google.com/store/apps/details?id=com.allient.folio"><img src="apps/docs/public/google-play-badge.png" alt="Get it on Google Play" height="80"></a>
+
+Install Folio from [Google Play](https://play.google.com/store/apps/details?id=com.allient.folio) on your Android phone or tablet, or build it from source.
 
 ### Build from source
 
@@ -108,7 +114,6 @@ Bug reports and ideas are welcome in [Issues](https://github.com/allient/folio/i
 
 ## Roadmap
 
-- Release on Google Play
 - Dark theme and more appearance options
 - Spanish and other languages
 - Handwriting recognition and search inside handwritten notes

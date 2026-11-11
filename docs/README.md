@@ -2,6 +2,8 @@
 
 These Markdown files are the project's developer documentation. They read well on GitHub and are also built into the website (`just docs`, then open http://localhost:4321). Start with [AGENTS.md](../AGENTS.md) for the engineering standards.
 
+Folio is on [Google Play](https://play.google.com/store/apps/details?id=com.allient.folio) and its source is on [GitHub](https://github.com/allient/folio).
+
 ## Publishing
 
 - [Publish on Google Play](publishing/google-play.md): first release and routine updates, step by step
