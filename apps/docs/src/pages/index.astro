@@ -3,7 +3,7 @@ import type { ImageMetadata } from 'astro';
 import Landing from '../layouts/Landing.astro';
 import InkMark from '../components/landing/InkMark.astro';
 import { Box, Container, Grid, Stack, Tablet } from '../components/ui';
-import { DESCRIPTION, FAQ, GITHUB, NAME, OG_IMAGE, SITE } from '../site';
+import { DESCRIPTION, FAQ, GITHUB, NAME, OG_IMAGE, PLAY_STORE, SITE } from '../site';
 
 const github = GITHUB;
 const shots = import.meta.glob<{ default: ImageMetadata }>('../assets/screenshots/*.png', { eager: true });
@@ -76,6 +76,8 @@ const jsonLd = [
 			'Works offline, no account, no ads',
 		],
 		codeRepository: github,
+		installUrl: PLAY_STORE,
+		downloadUrl: PLAY_STORE,
 		publisher: { '@type': 'Organization', name: 'Allient', url: 'https://allient.io' },
 	},
 	{
@@ -108,10 +110,10 @@ const gallery = [
 						Folio is a free handwriting notes app and eReader for Android tablets and pens. Write with brushes that answer to pressure, sketch on an infinite canvas, annotate your PDFs and EPUBs, and turn handwriting into text. Everything stays on your device.
 					</p>
 					<Stack direction={{ base: 'column', sm: 'row' }} gap={1.5} align={{ base: 'stretch', sm: 'center' }} class="hero__actions">
-						<a class="button" href={github}>Get the source on GitHub</a>
+						<a class="play-badge" href={PLAY_STORE}><img src="/google-play-badge.png" alt="Get it on Google Play" width="646" height="250" /></a>
 						<a class="button button--quiet" href="#features">See what it does</a>
 					</Stack>
-					<p class="hero__note">Free and open source for Android tablets. A Google Play release is on the way.</p>
+					<p class="hero__note">Free and open source for Android phones and tablets. <a href={github}>Read the code on GitHub</a>.</p>
 				</Stack>
 				<div class="hero__device">
 					<Tablet src={shot('editor')} alt="A Folio notebook page with handwritten notes" pen loading="eager" sizes="(min-width: 900px) 30rem, 85vw" />
@@ -217,8 +219,9 @@ const gallery = [
 		<Container size="sm">
 			<Stack gap={3} align="center">
 				<h2>Pick up the pen.</h2>
-				<p>Folio is in active development. Build it from source today, or watch the repository for the first release.</p>
-				<a class="button" href={github}>Open the repository</a>
+				<p>Folio is free and open source. Install it from Google Play, or follow the code on GitHub.</p>
+				<a class="play-badge" href={PLAY_STORE}><img src="/google-play-badge.png" alt="Get it on Google Play" width="646" height="250" loading="lazy" /></a>
+				<a class="button button--quiet" href={github}>Open the repository</a>
 			</Stack>
 		</Container>
 	</Box>
@@ -275,6 +278,20 @@ const gallery = [
 		font-size: var(--text-xl);
 		line-height: 1.55;
 		color: var(--folio-muted);
+	}
+	.play-badge {
+		display: inline-block;
+		line-height: 0;
+		/* The official badge has built-in padding; trim it so it lines up with the buttons. */
+		margin: -0.35rem -0.6rem;
+	}
+	.play-badge img {
+		height: 4.25rem;
+		width: auto;
+	}
+	.hero__note a {
+		color: inherit;
+		text-decoration: underline;
 	}
 	.hero__note {
 		font-size: var(--text-sm);

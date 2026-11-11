@@ -1,6 +1,7 @@
 // Facts about the site that several pages, endpoints and the agent files must agree on.
 export const SITE = 'https://folio.allient.io';
 export const GITHUB = 'https://github.com/allient/folio';
+export const PLAY_STORE = 'https://play.google.com/store/apps/details?id=com.allient.folio';
 export const NAME = 'Folio';
 export const TAGLINE = 'Handwritten notes, PDF annotation and an eReader for Android tablets';
 export const DESCRIPTION =
@@ -55,7 +56,7 @@ export const FAQ = [
 	},
 	{
 		q: 'Is Folio on Google Play?',
-		a: 'A Google Play release for Android phones and tablets is on the way. Until then you can build Folio from the source code on GitHub.',
+		a: 'Yes. Folio is free on Google Play for Android phones and tablets. You can also read the source code and build it yourself from GitHub.',
 	},
 ];
 
