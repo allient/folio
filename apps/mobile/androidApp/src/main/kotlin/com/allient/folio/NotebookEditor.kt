@@ -1322,15 +1322,16 @@ internal fun NotebookEditor(
                     })
                     ToolAction(InkIcon.Rename, "Rename notebook") { draft = notebook.title; sheet = "rename" }
                     ToolAction(InkIcon.Search, "Search") { draft = ""; sheet = "search" }
-                    ToolAction(InkIcon.Sticker, "Stickers", "Place an emoji sticker on the page") { sheet = "stickers" }
-                    ToolAction(InkIcon.Sticky, "Sticky note", "Place a coloured note you can write on") { addStickyNote() }
+                    // Only offer tools here that aren't already on the toolbar.
+                    if ("Stickers" !in toolbarTools) ToolAction(InkIcon.Sticker, "Stickers", "Place an emoji sticker on the page") { sheet = "stickers" }
+                    if ("Sticky" !in toolbarTools) ToolAction(InkIcon.Sticky, "Sticky note", "Place a coloured note you can write on") { addStickyNote() }
                     ToolAction(InkIcon.Tag, "Notebook tags") { selectedIds = emptySet(); draft = ""; sheet = "tags" }
-                    ToolAction(InkIcon.More, "Customize Toolbar") { sheet = "customize toolbar" }
+                    ToolAction(InkIcon.Tools, "Customize Toolbar") { sheet = "customize toolbar" }
                     if (clipboard.isNotEmpty()) ToolAction(InkIcon.Copy, "Paste strokes") { paste(); sheet = null }
                     ToolAction(InkIcon.Save, "Save") { save(); message = "Notebook saved." }
                     ToolAction(InkIcon.Microphone, "Recordings") { sheet = "recordings" }
-                    if (!notebook.infiniteCanvas) ToolAction(InkIcon.Previous, "Delete this page") { actionPageId = page.id; sheet = "delete page" }
-                    ToolAction(InkIcon.Trash, if (notebook.infiniteCanvas) "Clear canvas" else "Clear page") { sheet = "clear page" }
+                    if (!notebook.infiniteCanvas) ToolAction(InkIcon.Trash, "Delete this page") { actionPageId = page.id; sheet = "delete page" }
+                    ToolAction(InkIcon.Eraser, if (notebook.infiniteCanvas) "Clear canvas" else "Clear page") { sheet = "clear page" }
                 }
                 "clear page", "delete page" -> {
                     Text(if (dialog == "clear page") "Remove content from all visible, unlocked layers? Paper and protected layers are kept. Undo can restore it." else "Delete this page from the notebook?", fontSize = 14.sp)

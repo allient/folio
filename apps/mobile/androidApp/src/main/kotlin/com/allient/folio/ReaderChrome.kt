@@ -176,45 +176,89 @@ internal fun ReaderContrastRow(label: String, value: Int, maximum: Int, kind: St
     HorizontalDivider(Modifier.padding(horizontal = 20.dp))
 }
 
+/** The pen settings hint in the reader, where tapping the selected pen returns to reading instead. */
+internal const val READER_PEN_EDIT_HINT = "Long-press a pen to edit it."
+
+/** One reader pen button: the bar [label] ("Pen", "Highlight", …) and the shared notebook preset it draws with. */
+internal data class ReaderBrushSlot(val label: String, val brush: BrushStyle)
+
+/** Brush types that annotate a book, in slot order; each slot takes the first preset of its types, in this priority. */
+private val readerBrushTypes = listOf(
+    "Pen" to listOf("Pen", "Fineliner", "Gel pen", "Fountain pen", "Brush pen"),
+    "Highlight" to listOf("Highlighter", "Marker"),
+    "Pencil" to listOf("Pencil"),
+)
+
 /**
- * The PDF drawing bar, styled like the notebook's top bar and floating over the page. Pens are the shared notebook
- * [brushes] (`editor` presets): tap selects, tapping the selected pen again opens its settings. Hand pans and zooms
- * without closing the bar; picking a pen returns to writing.
+ * The few pens the reader offers, picked by type from the shared notebook [presets] so the user's colours and
+ * widths carry over. The [selected] brush fills its own slot; when it fits no shown slot (another type, or the
+ * Pencil on a phone) it is appended so the pen in use is always visible. Without a preset of a slot's type the
+ * catalog default is used. [pencil] adds the Pencil slot (tablets).
  */
-@Composable internal fun ReaderDrawingToolbar(
-    tool: String, brushes: BrushPresetsState, bookmarked: Boolean, canBookmark: Boolean, canUndo: Boolean, canRedo: Boolean,
-    onClose: () -> Unit, onPan: () -> Unit, onBrush: (BrushStyle) -> Unit, onBrushChange: (BrushStyle) -> Unit, onBrushSettings: () -> Unit,
-    onErase: () -> Unit, onUndo: () -> Unit, onRedo: () -> Unit, onBookmark: () -> Unit, onSelect: () -> Unit, onMore: () -> Unit,
-    modifier: Modifier = Modifier,
+internal fun readerBrushes(presets: List<BrushStyle>, selected: BrushStyle, pencil: Boolean): List<ReaderBrushSlot> {
+    val kinds = if (pencil) readerBrushTypes else readerBrushTypes.filter { it.first != "Pencil" }
+    val slots = kinds.map { (label, types) ->
+        val brush = selected.takeIf { !it.eraser && it.name in types }
+            ?: types.firstNotNullOfOrNull { type -> presets.firstOrNull { it.name == type && !it.eraser } }
+            ?: brushes.first { it.name == types.first() }
+        ReaderBrushSlot(label, brush)
+    }
+    val extra = selected.takeIf { pen -> !pen.eraser && slots.none { it.brush.presetId == pen.presetId } }
+    return slots + listOfNotNull(extra?.let { ReaderBrushSlot(it.name, it) })
+}
+
+/** [ReaderAction]'s compact layout for drawing tools: the selected tool gets a sage pill and a sage label. */
+@Composable private fun ReaderToolAction(
+    label: String, tag: String, description: String, modifier: Modifier, active: Boolean,
+    onClick: () -> Unit, onLongClick: (() -> Unit)? = null, icon: @Composable (tint: Color) -> Unit,
 ) {
-    var settingsOpen by remember { mutableStateOf(false) }
-    val accent: (Boolean) -> Color = { on -> if (on) FolioBrand.Sage else ChromeInk }
-    val maxBrushes = if (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 600) 3 else 5
-    Surface(modifier.testTag("reader-drawing-toolbar"), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, ChromeLine),
-        color = Color(0xFFFAFAFA), shadowElevation = 4.dp) {
-        Row(Modifier.height(54.dp).horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            InkToolButton(InkIcon.Collapse, "Close drawing toolbar", onClose, buttonSize = 44.dp)
-            ChromeDivider()
-            InkToolButton(InkIcon.Hand, "Pan and zoom", { settingsOpen = false; onPan() }, selected = tool == "Read", buttonSize = 44.dp, tint = accent(tool == "Read"))
-            Spacer(Modifier.width(4.dp))
-            BrushPresetBar(brushes.presets, brushes.selected.presetId, highlighted = tool == "Pen", reselectOpensSettings = tool == "Pen",
-                maxVisible = maxBrushes, settingsOpen = settingsOpen, onSettingsOpenChange = { open -> settingsOpen = open; if (open) onBrushSettings() },
-                onSelect = { brush -> settingsOpen = false; onBrush(brush) }, onMove = brushes::move) {
-                BrushSettings(brushes.selected, brushes.options, onBrushChange,
-                    onAdd = { onBrush(brushes.add(brushes.selected)) }, onDelete = { if (brushes.delete()) onBrush(brushes.selected) })
+    val ink = MaterialTheme.colorScheme.onSurface
+    Column(modifier.testTag(tag).heightIn(min = 50.dp).combinedClickable(role = Role.Button, onClick = onClick, onLongClick = onLongClick)
+        .semantics(mergeDescendants = true) { contentDescription = description; selected = active },
+        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Box(Modifier.padding(bottom = 1.dp).size(width = 38.dp, height = 28.dp).clip(RoundedCornerShape(14.dp))
+            .background(if (active) FolioBrand.Sage.copy(alpha = .16f) else Color.Transparent)
+            .then(if (active) Modifier.border(1.5.dp, FolioBrand.Sage, RoundedCornerShape(14.dp)) else Modifier),
+            contentAlignment = Alignment.Center) { icon(if (active) FolioBrand.Sage else ink) }
+        Text(label, fontSize = 10.5.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            color = if (active) FolioBrand.Sage else ink, fontWeight = if (active) FontWeight.SemiBold else null)
+    }
+}
+
+/**
+ * The reader pens in the top bar. Tap picks a pen and starts drawing; tapping the pen
+ * in use again ([onStopDrawing]) returns to reading. Long-press picks it and opens its settings (width, colour,
+ * type, add or delete a preset) from the shared [brushes].
+ */
+@Composable internal fun ReaderBrushButtons(
+    slots: List<ReaderBrushSlot>, brushes: BrushPresetsState, drawing: Boolean,
+    onBrush: (BrushStyle) -> Unit, onBrushChange: (BrushStyle) -> Unit, onStopDrawing: () -> Unit,
+) {
+    var settingsFor by remember { mutableStateOf<String?>(null) }
+    slots.forEach { slot ->
+        val active = drawing && slot.brush.presetId == brushes.selected.presetId
+        Box {
+            ReaderToolAction(slot.label, "reader-brush-${stableControlSlug(slot.label)}",
+                "${slot.label}, ${slot.brush.label}. Long press for pen settings", Modifier.width(if (slot.label.length > 6) 52.dp else 48.dp), active,
+                onClick = { if (active) onStopDrawing() else onBrush(slot.brush) },
+                onLongClick = { onBrush(slot.brush); settingsFor = slot.brush.presetId }) {
+                BrushGlyph(slot.brush.name, slot.brush.color, Modifier.size(width = 19.dp, height = 22.dp))
             }
-            Spacer(Modifier.width(4.dp))
-            InkToolButton(InkIcon.Eraser, "Eraser", { settingsOpen = false; onErase() }, selected = tool == "Eraser", buttonSize = 44.dp, tint = accent(tool == "Eraser"))
-            ChromeDivider()
-            InkToolButton(InkIcon.Undo, "Undo ink", onUndo, enabled = canUndo, buttonSize = 44.dp)
-            InkToolButton(InkIcon.Redo, "Redo ink", onRedo, enabled = canRedo, buttonSize = 44.dp)
-            ChromeDivider()
-            InkToolButton(InkIcon.ReaderBookmark, "Bookmark page", onBookmark, selected = bookmarked, enabled = canBookmark, buttonSize = 44.dp, tint = accent(bookmarked))
-            InkToolButton(InkIcon.Text, "Select text", onSelect, buttonSize = 44.dp)
-            InkToolButton(InkIcon.More, "More drawing tools", onMore, buttonSize = 44.dp)
+            DropdownMenu(settingsFor == slot.brush.presetId, onDismissRequest = { settingsFor = null },
+                modifier = Modifier.penPressureFilter().width(360.dp).heightIn(max = 900.dp)) {
+                BrushSettings(brushes.selected, brushes.options, onBrushChange,
+                    onAdd = { val added = brushes.add(brushes.selected); onBrush(added); settingsFor = added.presetId },
+                    onDelete = { if (brushes.delete()) { onBrush(brushes.selected); settingsFor = null } }, editHint = READER_PEN_EDIT_HINT)
+            }
         }
     }
 }
+
+/** The eraser in the same compact style as the reader pens; tapping it while erasing returns to reading. */
+@Composable internal fun ReaderEraserAction(active: Boolean, onClick: () -> Unit) =
+    ReaderToolAction("Eraser", "reader-eraser", "Eraser", Modifier.width(48.dp), active, onClick) { tint ->
+        InkSymbol(InkIcon.Eraser, Modifier.size(22.dp), tint)
+    }
 
 @Composable internal fun ReaderFormatRow(label: String, content: @Composable RowScope.() -> Unit) {
     val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 600

@@ -206,6 +206,25 @@ class ReaderTest {
         }
     }
 
+    @Test fun readerPensComeFromTheNotebookPresetsAndKeepThePenInUseVisible() {
+        val yellow=android.graphics.Color.argb(80,255,200,0)
+        val presets=brushes.filterNot{it.eraser}.map{if(it.name=="Highlighter")it.copy(color=yellow,width=20f,presetId="my-highlighter") else it}
+        val pen=presets.first{it.name=="Pen"}
+        val tablet=readerBrushes(presets,pen,pencil=true)
+        assertEquals(listOf("Pen","Highlight","Pencil"),tablet.map{it.label})
+        assertEquals("The user's own highlighter colour and width carry over","my-highlighter",tablet[1].brush.presetId)
+        assertEquals(yellow,tablet[1].brush.color); assertEquals(20f,tablet[1].brush.width)
+        assertEquals("Phones leave the Pencil out",listOf("Pen","Highlight"),readerBrushes(presets,pen,pencil=false).map{it.label})
+        val pencil=presets.first{it.name=="Pencil"}
+        assertEquals("The pen in use stays visible on a phone",listOf("Pen","Highlight","Pencil"),readerBrushes(presets,pencil,pencil=false).map{it.label})
+        val calligraphy=presets.first{it.name=="Calligraphy"}
+        assertEquals(calligraphy,readerBrushes(presets,calligraphy,pencil=true).last().brush)
+        val secondPen=pen.copy(presetId="pen-2",label="Pen 2",color=android.graphics.Color.RED)
+        assertEquals("The selected pen fills its slot",secondPen,readerBrushes(presets+secondPen,secondPen,pencil=false).first().brush)
+        val noHighlighter=presets.filterNot{it.name=="Highlighter"}
+        assertEquals("A marker stands in for a missing highlighter","Marker",readerBrushes(noHighlighter,pen,pencil=false)[1].brush.name)
+        assertEquals("Without any preset of the type the catalog default is used","Highlighter",readerBrushes(listOf(pen),pen,pencil=false)[1].brush.name)
+    }
     @Test fun rejectsEpubPathTraversalWithoutAddingDocument()=runBlocking {
         val file=File(directory,"bad.epub")
         ZipOutputStream(file.outputStream()).use{zip->listOf("META-INF/container.xml","../escape").forEach{zip.putNextEntry(ZipEntry(it));zip.write("bad".toByteArray());zip.closeEntry()}}
