@@ -141,6 +141,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
             }
             // Models and nested lists are immutable snapshots from the editor.
             notebooks = updated.toList()
+            changedNotes = true
             revision += 1
             val snapshot = Snapshot(revision, notebooks, library)
             isSaving = true
@@ -157,14 +158,26 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
         }
     }
 
-    /** Reload changes written by the reader's separate activity-scoped notebook editor. */
-    fun reload(): Unit {
+    /** True once this model has saved any notebook change (the reader reports it to the library). */
+    var changedNotes = false
+        private set
+
+    /** Runs [action] on the main thread after every write queued so far has reached the database. */
+    fun afterPendingWrites(action: () -> Unit) {
+        try { worker.execute { main.post(action) } } catch (_: java.util.concurrent.RejectedExecutionException) { main.post(action) }
+    }
+
+    /**
+     * Reload changes written by the reader's separate activity-scoped notebook editor. With [showLoading] off the
+     * current list stays on screen while the library is read again.
+     */
+    fun reload(showLoading: Boolean = true): Unit {
         onMain {
             if (isSaving) {
-                main.postDelayed({ reload() }, 100)
+                main.postDelayed({ reload(showLoading) }, 100)
                 return@onMain
             }
-            loading = true
+            if (showLoading) loading = true
             worker.execute {
                 val loaded = storage.load()
                 val failure = storage.loadError

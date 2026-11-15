@@ -148,7 +148,9 @@ internal class NotebookStorage(context: Context) {
     val databaseFile: File = context.getDatabasePath("knotes.db")
     private val helper = Database(context.applicationContext)
     private val cachedNotes = mutableMapOf<String, String>()
-    private val cachedPages = mutableMapOf<String, String>()
+    /** Last stored row of each page. Unchanged pages reuse the same payload instance, so comparing rows is cheap. */
+    private data class StoredPage(val notebookId: String, val position: Int, val payload: String)
+    private val cachedPages = mutableMapOf<String, StoredPage>()
     private val serializedPages = mutableMapOf<String, Pair<NotebookPage, String>>()
 
     /** Non-null means existing storage could not be read; save is blocked to preserve it. */
@@ -172,7 +174,7 @@ internal class NotebookStorage(context: Context) {
                     while (pageRows.moveToNext()) {
                         val pagePayload = readPagePayload(db, pageRows.getString(0), pageRows.getLong(1))
                         pages.put(JSONObject(pagePayload))
-                        cachedPages[pageRows.getString(0)] = "$id:${pageRows.getInt(2)}:$pagePayload"
+                        cachedPages[pageRows.getString(0)] = StoredPage(id, pageRows.getInt(2), pagePayload)
                     }
                 }
                 cachedNotes[id] = payload
@@ -217,7 +219,7 @@ internal class NotebookStorage(context: Context) {
         val db = helper.writableDatabase
         migrateLegacy(db)
         val nextNotes = mutableMapOf<String, String>()
-        val nextPages = mutableMapOf<String, String>()
+        val nextPages = mutableMapOf<String, StoredPage>()
         db.beginTransaction()
         try {
             notebooks.forEach { note ->
@@ -240,8 +242,9 @@ internal class NotebookStorage(context: Context) {
                         writeNote(note.copy(pages = listOf(page))).getJSONArray("pages").getJSONObject(0).toString()
                             .also { serializedPages[page.id] = page to it }
                     }
-                    // Include order and ownership so page moves also update correctly.
-                    val cacheValue = "${note.id}:$index:$payload"
+                    // Include order and ownership so page moves also update correctly. Building a "notebook:index:payload"
+                    // string here copied and compared every page of the library on each stroke.
+                    val cacheValue = StoredPage(note.id, index, payload)
                     nextPages[page.id] = cacheValue
                     if (cachedPages[page.id] != cacheValue) {
                         db.replaceOrThrow("pages", null, ContentValues().apply {

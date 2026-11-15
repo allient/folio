@@ -77,7 +77,7 @@ internal object InkGeometry {
             }
             // Include the ink's width so a thick nib is erased when its visible edge is touched.
             val pressure = box.pressure.coerceIn(0f, 1f)
-            val factor = if (stroke.engine == JetpackInkEngine.FORMAT) when (stroke.brush) {
+            val factor = if (JetpackInkEngine.current(stroke.engine)) when (stroke.brush) {
                 "Pen" -> .2f + 1.6f * pressure
                 "Pencil" -> .15f + 1.3f * pressure
                 "Fountain pen" -> .15f + 1.95f * pressure

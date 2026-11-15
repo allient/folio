@@ -46,7 +46,7 @@
         "id": { "type": "string", "minLength": 1 },
         "layerId": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
-        "engine": { "type": "string", "description": "Rendering identifier. Existing engines include legacy, jetpack-ink-v1, jetpack-ink-v2, shape-v1 and fill-cut-v1. Filled fill-cut-v1 strokes are compound winding polygons without a separate outline; closed contours are joined by zero-area bridges to preserve vector holes." },
+        "engine": { "type": "string", "description": "Rendering identifier. Existing engines include legacy, jetpack-ink-v1 to jetpack-ink-v5, shape-v1 and fill-cut-v1. jetpack-ink-v5 draws translucent strokes in passes so they darken where they cross themselves. Filled fill-cut-v1 strokes are compound winding polygons without a separate outline; closed contours are joined by zero-area bridges to preserve vector holes." },
         "filled": { "type": "boolean" },
         "lineStyle": { "type": "string", "enum": ["solid", "dotted", "dashed", "dashdot"], "default": "solid", "description": "Outline pattern for vector shapes." },
         "brush": { "type": "string" },

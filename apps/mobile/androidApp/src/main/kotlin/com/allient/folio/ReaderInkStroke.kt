@@ -66,7 +66,7 @@ internal object ReaderInk {
         val pressures = pressures(anchor, points.size)
         val times = times(anchor, points.size)
         return InkStroke(brush.name, color, brush.width, points.mapIndexed { i, p -> InkPoint(p.x, strokeY(p.y, aspect), pressures[i], times[i]) },
-            id = id, engine = anchor.optString("engine").ifEmpty { JetpackInkEngine.FORMAT },
+            id = id, engine = anchor.optString("engine").ifEmpty { JetpackInkEngine.V4_FORMAT },
             texture = brush.texture, grain = brush.grain, angle = brush.angle, variant = brush.variant)
     }
 }

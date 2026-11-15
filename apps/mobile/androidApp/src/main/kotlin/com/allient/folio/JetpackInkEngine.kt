@@ -2,6 +2,9 @@ package com.allient.folio
 
 import android.annotation.SuppressLint
 import android.graphics.Canvas
+import android.graphics.RenderNode
+import android.os.Build
+import androidx.annotation.RequiresApi
 import android.graphics.Matrix
 import android.util.LruCache
 import androidx.ink.brush.Brush
@@ -41,21 +44,27 @@ internal class JetpackInkEngine {
     private var elapsed = -1L
     private val natural = NaturalMediaRenderer()
     private val livePoints = mutableListOf<InkPoint>()
+    // Translucent v5 ink: finished passes of the live stroke, the current pass's samples and times, and the splitter.
+    private val livePasses = mutableListOf<Pass>()
+    private val passPoints = mutableListOf<InkPoint>()
+    private val passTimes = mutableListOf<Long>()
+    private var splitter: InkPassSplitter? = null
+    private var passOffset = 0 // stroke index of passPoints[0]
 
     fun brushFor(style: BrushStyle, format: String = FORMAT): Brush {
         val key = BrushKey(style, format)
         return brushes[key] ?: Brush.createWithColorIntArgb(
-            family = if (format == FORMAT && style.name in listOf("Calligraphy", "Fountain pen")) {
+            family = if (current(format) && style.name in listOf("Calligraphy", "Fountain pen")) {
                 BrushFamily(tip = BrushTip(scaleX = if (style.name == "Calligraphy") .2f else .5f, scaleY = 1f, rotationDegrees = if (style.variant.isBlank()) -35f else style.angle,
                     behaviors = listOf(pressureBehavior(TargetNode.Target.SIZE_MULTIPLIER, .8f, 1.1f))),
                     inputModel = StockBrushes.pressurePen(StockBrushes.PressurePenVersion.V1).inputModel)
-            } else if (format in listOf(FORMAT, V3_FORMAT) && style.name in naturalFamilies) {
+            } else if ((current(format) || format == V3_FORMAT) && style.name in naturalFamilies) {
                 naturalFamilies.getValue(style.name)
             } else if (format == V2_FORMAT && style.name in expressiveFamilies) {
                 expressiveFamilies.getValue(style.name)
             } else when (style.name) {
                 "Fineliner", "Marker" -> StockBrushes.marker(StockBrushes.MarkerVersion.V1)
-                "Gel pen" -> if (format == FORMAT) StockBrushes.marker(StockBrushes.MarkerVersion.V1) else StockBrushes.pressurePen(StockBrushes.PressurePenVersion.V1)
+                "Gel pen" -> if (current(format)) StockBrushes.marker(StockBrushes.MarkerVersion.V1) else StockBrushes.pressurePen(StockBrushes.PressurePenVersion.V1)
                 "Highlighter" -> StockBrushes.highlighter(version = StockBrushes.HighlighterVersion.V1)
                 else -> StockBrushes.pressurePen(StockBrushes.PressurePenVersion.V1)
             }, colorIntArgb = style.color, size = style.width.coerceAtLeast(.1f), epsilon = .1f,
@@ -74,9 +83,86 @@ internal class JetpackInkEngine {
 
     fun append(point: InkPoint, style: BrushStyle) {
         if (NaturalMediaRenderer.supports(style.name)) { liveStyle = style; livePoints += point; return }
-        if (liveStyle == null) { live.start(brushFor(style)); liveStyle = style; elapsed = -1L }
+        if (liveStyle == null) {
+            val passes = drawsInPasses(style, FORMAT)
+            // The current pass is drawn opaque in a layer that applies the alpha once, like each saved pass.
+            live.start(brushFor(if (passes) opaque(style) else style)); liveStyle = style; elapsed = -1L
+            splitter = if (passes) InkPassSplitter(passStep(style.width)) else null
+        }
         elapsed = maxOf(elapsed + 1, point.elapsedMillis)
-        batch.append(point, elapsed, style)
+        val passSplitter = splitter
+        if (passSplitter == null) { batch.append(point, elapsed, style); return }
+        passPoints += point; passTimes += elapsed
+        val start = passSplitter.add(point.x * DOCUMENT_WIDTH, point.y * DOCUMENT_HEIGHT)
+        val local = start - passOffset
+        if (start < 0 || local <= 0) { batch.append(point, elapsed, style); return }
+        // A pass ended at an earlier sample: save it with the real colour and restart the live pass from that sample.
+        livePasses += Pass(passStroke(passPoints.subList(0, local + 1), passTimes.subList(0, local + 1), style, FORMAT),
+            if (passOffset > 0) passPoints[0] else null)
+        val keptPoints = passPoints.subList(local, passPoints.size).toList(); val keptTimes = passTimes.subList(local, passTimes.size).toList()
+        passPoints.clear(); passPoints += keptPoints; passTimes.clear(); passTimes += keptTimes
+        passOffset = start
+        batch.clear(); live.start(brushFor(opaque(style)))
+        for (index in keptPoints.indices) batch.append(keptPoints[index], keptTimes[index], style)
+    }
+
+    /** One pass of a translucent stroke; [joint] is the sample it shares with the previous pass. */
+    private data class Pass(val stroke: Stroke, val joint: InkPoint?)
+    private val jointPath = android.graphics.Path()
+
+    /**
+     * Two passes meet with overlapping round ends, which left a dark dot at every turn. A pass is drawn without the
+     * disc around the sample it shares with the previous pass, so the turn is inked once; real overlaps still darken.
+     */
+    private fun clipJoint(canvas: Canvas, joint: InkPoint?, width: Float) {
+        if (joint == null) return
+        jointPath.rewind()
+        jointPath.addCircle(joint.x * DOCUMENT_WIDTH, joint.y * DOCUMENT_HEIGHT, width * .55f, android.graphics.Path.Direction.CW)
+        if (android.os.Build.VERSION.SDK_INT >= 26) canvas.clipOutPath(jointPath)
+        else @Suppress("DEPRECATION") canvas.clipPath(jointPath, android.graphics.Region.Op.DIFFERENCE)
+    }
+
+    private fun drawPass(canvas: Canvas, pass: Pass, width: Float) {
+        if (pass.joint == null) { renderer.draw(canvas, pass.stroke, transform); return }
+        canvas.save(); clipJoint(canvas, pass.joint, width); renderer.draw(canvas, pass.stroke, transform); canvas.restore()
+    }
+
+    private var passNode: Any? = null // RenderNode (API 29+) holding the live stroke's finished passes
+    private var passNodeKey: List<Any> = emptyList()
+
+    @RequiresApi(29)
+    private fun livePassNode(width: Int, height: Int, zoom: Float, inkWidth: Float): RenderNode {
+        val node = passNode as? RenderNode ?: RenderNode("Folio live passes").also { passNode = it }
+        val key = listOf(livePasses.size, width, height, zoom)
+        if (key != passNodeKey || !node.hasDisplayList()) {
+            // Generous bounds: a render node clips, and infinite-canvas ink can sit outside the first sheet.
+            node.setPosition(-width * 8, -height * 8, width * 9, height * 9)
+            val recording = node.beginRecording()
+            try {
+                recording.translate(width * 8f, height * 8f)
+                recording.scale(width / DOCUMENT_WIDTH, height / DOCUMENT_HEIGHT)
+                transform.setScale(width / DOCUMENT_WIDTH * zoom, height / DOCUMENT_HEIGHT * zoom)
+                for (pass in livePasses) drawPass(recording, pass, inkWidth)
+            } finally { node.endRecording() }
+            passNodeKey = key
+        }
+        return node
+    }
+
+    /** True when the live stroke must be drawn here, in passes, instead of by Ink's front-buffered wet layer. */
+    fun drawsLiveInPasses(style: BrushStyle) = drawsInPasses(style, FORMAT)
+
+    private fun opaque(style: BrushStyle) = style.copy(color = style.color or (0xFF shl 24))
+    private fun passStep(width: Float) = (width * .6f).coerceAtLeast(1f)
+
+    /** Translucent single-coat v5 ink is drawn in passes (see [InkPassSplitter]). */
+    private fun drawsInPasses(style: BrushStyle, format: String) = format == FORMAT && !NaturalMediaRenderer.supports(style.name) &&
+        android.graphics.Color.alpha(style.color) < 255 && brushFor(style, format).family.coats.size == 1
+
+    private fun passStroke(points: List<InkPoint>, times: List<Long>, style: BrushStyle, format: String): Stroke {
+        val inputs = MutableStrokeInputBatch()
+        for (index in points.indices) inputs.append(points[index], times[index], style, format)
+        return Stroke(brushFor(style, format), inputs)
     }
 
     private fun updateLive() {
@@ -94,7 +180,19 @@ internal class JetpackInkEngine {
         canvas.save()
         canvas.scale(width / DOCUMENT_WIDTH, height / DOCUMENT_HEIGHT)
         transform.setScale(width / DOCUMENT_WIDTH * zoom, height / DOCUMENT_HEIGHT * zoom)
-        renderer.draw(canvas, live, transform)
+        if (splitter == null) renderer.draw(canvas, live, transform)
+        else {
+            val style = liveStyle!!
+            // Finished passes are recorded once, not redrawn for every frame of a fast stroke.
+            if (Build.VERSION.SDK_INT >= 29 && canvas.isHardwareAccelerated) {
+                val node = livePassNode(width, height, zoom, style.width)
+                canvas.restore(); canvas.drawRenderNode(node); canvas.save(); canvas.scale(width / DOCUMENT_WIDTH, height / DOCUMENT_HEIGHT)
+            } else for (pass in livePasses) drawPass(canvas, pass, style.width)
+            canvas.save(); if (passOffset > 0) clipJoint(canvas, passPoints.firstOrNull(), style.width)
+            canvas.saveLayerAlpha(null, android.graphics.Color.alpha(style.color))
+            renderer.draw(canvas, live, transform)
+            canvas.restore(); canvas.restore()
+        }
         canvas.restore()
     }
 
@@ -104,24 +202,37 @@ internal class JetpackInkEngine {
         if (liveStyle == null) return
         if (NaturalMediaRenderer.supports(liveStyle!!.name)) { clearLive(); return }
         updateLive(); live.finishInput(); live.updateShape()
-        completed.put(source.id, Cached(source, live.toImmutable()))
+        // The live pass used an opaque brush, so a stroke in passes keeps the passes built while drawing and adds its
+        // last pass with the real colour; rebuilding the whole stroke on lift made its end appear late.
+        if (splitter == null) completed.put(source.id, Cached(source, live.toImmutable()))
+        else if (passPoints.isNotEmpty()) {
+            val last = Pass(passStroke(passPoints, passTimes, liveStyle!!, FORMAT), if (passOffset > 0) passPoints[0] else null)
+            passCache.put(source.id, Passes(source, livePasses + last))
+        }
         clearLive()
     }
 
     // start() resets the native stroke on reuse. clear() is restricted in Ink 1.0.
-    fun clearLive() { batch.clear(); livePoints.clear(); liveStyle = null; elapsed = -1L }
+    fun clearLive() { batch.clear(); livePoints.clear(); liveStyle = null; elapsed = -1L; livePasses.clear(); passPoints.clear(); passTimes.clear(); splitter = null; passOffset = 0; passNodeKey = emptyList() }
 
     fun draw(canvas: Canvas, source: InkStroke, width: Float, height: Float, zoom: Float = 1f) {
         if (source.points.isEmpty()) return
-        if (source.engine == FORMAT && NaturalMediaRenderer.supports(source.brush)) {
+        if (current(source.engine) && NaturalMediaRenderer.supports(source.brush)) {
             canvas.save(); canvas.scale(width / DOCUMENT_WIDTH, height / DOCUMENT_HEIGHT)
             natural.draw(canvas, source.points, BrushStyle(source.brush, source.width, source.color,
                 texture = source.texture, grain = source.grain, angle = source.angle, variant = source.variant))
             canvas.restore(); return
         }
+        val style = BrushStyle(source.brush, source.width, source.color, angle = source.angle)
+        if (drawsInPasses(style, source.engine)) {
+            canvas.save()
+            canvas.scale(width / DOCUMENT_WIDTH, height / DOCUMENT_HEIGHT)
+            transform.setScale(width / DOCUMENT_WIDTH * zoom, height / DOCUMENT_HEIGHT * zoom)
+            for (pass in passes(source, style)) drawPass(canvas, pass, source.width)
+            canvas.restore(); return
+        }
         val cached = completed[source.id]
         val ink = if (cached != null && (cached.source === source || cached.source == source)) cached.ink else {
-            val style = BrushStyle(source.brush, source.width, source.color, angle = source.angle)
             val inputs = MutableStrokeInputBatch()
             var time = -1L
             for (point in source.points) { time = maxOf(time + 1, point.elapsedMillis); inputs.append(point, time, style, source.engine) }
@@ -134,14 +245,39 @@ internal class JetpackInkEngine {
         canvas.restore()
     }
 
-    fun release() { clearLive(); live = InProgressStroke(); completed.evictAll(); brushes.evictAll() }
+    private data class Passes(val source: InkStroke, val strokes: List<Pass>)
+    private val passCache = object : LruCache<String, Passes>(40_000) {
+        override fun sizeOf(key: String, value: Passes) = value.source.points.size.coerceAtLeast(256)
+    }
+
+    private fun passes(source: InkStroke, style: BrushStyle): List<Pass> {
+        passCache[source.id]?.let { if (it.source === source || it.source == source) return it.strokes }
+        val points = source.points
+        val times = ArrayList<Long>(points.size)
+        var time = -1L
+        for (point in points) { time = maxOf(time + 1, point.elapsedMillis); times += time }
+        val starts = inkPassStarts(FloatArray(points.size) { points[it].x * DOCUMENT_WIDTH }, FloatArray(points.size) { points[it].y * DOCUMENT_HEIGHT },
+            passStep(source.width))
+        val strokes = starts.indices.map { index ->
+            val end = if (index + 1 < starts.size) starts[index + 1] + 1 else points.size
+            Pass(passStroke(points.subList(starts[index], end), times.subList(starts[index], end), style, source.engine),
+                if (index > 0) points[starts[index]] else null)
+        }
+        return strokes.also { passCache.put(source.id, Passes(source, it)) }
+    }
+
+    fun release() { clearLive(); live = InProgressStroke(); completed.evictAll(); passCache.evictAll(); brushes.evictAll() }
 
     companion object {
         const val LEGACY_FORMAT = "jetpack-ink-v1"
         const val V2_FORMAT = "jetpack-ink-v2"
         const val V3_FORMAT = "jetpack-ink-v3"
-        const val FORMAT = "jetpack-ink-v4"
-        fun supports(format: String) = format in listOf(FORMAT, V3_FORMAT, V2_FORMAT, LEGACY_FORMAT)
+        const val V4_FORMAT = "jetpack-ink-v4"
+        /** v5 = v4 plus translucent strokes drawn in passes, so they darken where they cross themselves. */
+        const val FORMAT = "jetpack-ink-v5"
+        fun supports(format: String) = format in listOf(FORMAT, V4_FORMAT, V3_FORMAT, V2_FORMAT, LEGACY_FORMAT)
+        /** v4 and v5 share brushes; v5 only changes how translucent strokes are composited. */
+        fun current(format: String) = format == FORMAT || format == V4_FORMAT
 
         private fun pressureBehavior(target: TargetNode.Target, low: Float, high: Float) = BrushBehavior(
             listOf(TargetNode(target = target, targetModifierRangeStart = low,

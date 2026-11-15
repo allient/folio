@@ -112,8 +112,11 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
     val appVersion = remember(context) { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "unknown" }
     val dateFormat = remember { java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US) }
     var pendingReaderFolderId by rememberSaveable { mutableStateOf<String?>(null) }
-    val readBook = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        reader.refresh(); repository.reload()
+    val readBook = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        // Re-reading every notebook took seconds behind a full-screen spinner. Only reload when the reader's notebook
+        // editor saved something, and keep the library on screen meanwhile.
+        reader.refresh()
+        if (result.data?.getBooleanExtra(ReaderActivity.EXTRA_NOTEBOOKS_CHANGED, true) != false) repository.reload(showLoading = false)
         // Closing the reader is a natural pause: back up its notes and highlights soon, if anything changed.
         LocalBackupScheduler.soon(context)
     }
@@ -428,7 +431,6 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                         }
                     },
                     onNotebookChange = { changed -> repository.saveNotes(repository.notebooks.map { if (it.id == changed.id) changed else it }) },
-                    isSaving = repository.isSaving,
                     saveError = repository.saveError,
                     startInFocusMode = homePreferences.startFullscreen,
                 )

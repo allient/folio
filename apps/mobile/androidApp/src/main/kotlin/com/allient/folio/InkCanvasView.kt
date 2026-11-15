@@ -330,11 +330,6 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     var onVerticalFingerScroll: ((Float) -> Unit)? = null
     var singlePageFingerSwipeEnabled: Boolean = false
     var onHorizontalFingerSwipe: ((Int) -> Unit)? = null
-    /** Upward finger pull in pixels while a page-swipe drag is vertical; 0 when the pull ends. Used for pull-up-to-add-page. */
-    var onFingerPull: ((Float) -> Unit)? = null
-    private var fingerPulling = false
-    private var twoFingerPull = 0f
-    private fun endFingerPull() { twoFingerPull = 0f; if (fingerPulling) { fingerPulling = false; onFingerPull?.invoke(0f) } }
     /**
      * Live horizontal page drag in pixels (negative = toward the next page); `released` is true once when the finger lifts.
      * When set, it replaces the instant [onHorizontalFingerSwipe] page turn (one finger with finger drawing off, two fingers otherwise).
@@ -670,7 +665,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
 
     private fun resetFrontInk() { if (Build.VERSION.SDK_INT >= 29) frontInk?.reset() }
     private fun canUseFrontInk() = Build.VERSION.SDK_INT >= 29 && isHardwareAccelerated && frontInk != null &&
-        !NaturalMediaRenderer.supports(activeBrush.name) &&
+        !NaturalMediaRenderer.supports(activeBrush.name) && !ink.drawsLiveInPasses(activeBrush) &&
         mode == CanvasMode.Write && !activeBrush.eraser && editable(activeLayerId) &&
         layers.lastOrNull { it.visible }?.id == activeLayerId && texts.none { it.layerId == activeLayerId }
 
@@ -702,7 +697,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     }
     override fun onDetachedFromWindow() {
         removeCallbacks(addPinRunnable)
-        endFingerPull(); endPageDrag(false)
+        endPageDrag(false)
         cancelLongPressPicker()
         finishGesture()
         if (Build.VERSION.SDK_INT >= 29) frontInk?.detach()
@@ -932,7 +927,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             if (previousEdits != null) strokes = previousEdits
             lastEraserPoint = null; eraseGesture = false; eraserCursor = null
             draggingObject = false; resizingImage = false; rotatingObject = false; objectHandle = -1; resizingSelection = false; rotatingSelection = false; stretchAxis = 0
-            horizontalSwipeTracking = false; horizontalSwipeConsumed = false; endFingerPull(); endPageDrag(false)
+            horizontalSwipeTracking = false; horizontalSwipeConsumed = false; endPageDrag(false)
             activePointerId = MotionEvent.INVALID_POINTER_ID; multitouch = false; postInvalidateOnAnimation(); return true
         }
         // Finger gestures navigate only. A palm landing beside an active pen must not move the page.
@@ -966,12 +961,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                     } else pageDragX += rawDeltaX
                     onPageDrag?.invoke(pageDragX, false)
                 } else if (!infiniteCanvas && twoFingerVerticalScroll && kotlin.math.abs(deltaY) > kotlin.math.abs(deltaX) * 1.15f && kotlin.math.abs(deltaY) > scrollThreshold) {
-                    onVerticalFingerScroll?.invoke(-deltaY); fingerPulling = true
-                } else if (!infiniteCanvas && !twoFingerVerticalScroll && onFingerPull != null && zoomValue <= 1.01f &&
-                    (twoFingerPull > 0f || (deltaY < 0f && kotlin.math.abs(deltaY) > kotlin.math.abs(deltaX) * 1.15f))) {
-                    // Single-page layout, not zoomed in: a two-finger pull up feeds pull-to-add-page (works with finger drawing on).
-                    twoFingerPull = (twoFingerPull - deltaY).coerceAtLeast(0f); fingerPulling = true
-                    onFingerPull?.invoke(twoFingerPull.coerceAtLeast(.5f))
+                    onVerticalFingerScroll?.invoke(-deltaY)
                 } else {
                     panX += deltaX
                     panY += deltaY
@@ -981,7 +971,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             return true
         }
         if (multitouch) {
-            if (event.actionMasked == MotionEvent.ACTION_UP) { multitouch = false; endFingerPull(); endPageDrag(true) }
+            if (event.actionMasked == MotionEvent.ACTION_UP) { multitouch = false; endPageDrag(true) }
             return true
         }
         val index = event.actionIndex.coerceIn(0, event.pointerCount - 1)
@@ -1094,19 +1084,16 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                     val threshold = dp(56f)
                     if (onPageDrag != null && (pageDragging || (kotlin.math.abs(dx) > ViewConfiguration.get(context).scaledTouchSlop &&
                             kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.35f))) {
-                        if (!pageDragging) { endFingerPull(); pageDragging = true }
+                        pageDragging = true
                         pageDragX = rawX(event, pointer) - pageDragStartRawX; onPageDrag?.invoke(pageDragX, false); return true
                     }
                     if (kotlin.math.abs(dx) >= threshold && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.35f) {
-                        endFingerPull()
                         horizontalSwipeConsumed = true; horizontalSwipeTracking = false
                         activePoints.clear(); ink.clearLive(); if (Build.VERSION.SDK_INT >= 29) frontInk?.cancelActive()
                         shapeStart = null; shapeEnd = null; activePointerId = MotionEvent.INVALID_POINTER_ID
                         onHorizontalFingerSwipe?.invoke(if (dx < 0f) 1 else -1)
                         postInvalidateOnAnimation(); return true
                     }
-                    if (-dy > kotlin.math.abs(dx) * 1.35f) { fingerPulling = true; onFingerPull?.invoke(-dy) }
-                    else endFingerPull()
                     return true
                 }
                 for (history in 0 until event.historySize) sample(
@@ -1122,7 +1109,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 cancelLongPressPicker()
                 // ACTION_UP coordinates may jump while the pen leaves proximity; never append them.
                 finishGesture()
-                horizontalSwipeTracking = false; horizontalSwipeConsumed = false; endFingerPull(); endPageDrag(true)
+                horizontalSwipeTracking = false; horizontalSwipeConsumed = false; endPageDrag(true)
                 if (event.actionMasked == MotionEvent.ACTION_UP) performClick()
             }
         }

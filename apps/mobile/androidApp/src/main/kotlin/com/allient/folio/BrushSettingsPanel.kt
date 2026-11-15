@@ -45,7 +45,8 @@ import kotlin.math.roundToInt
 /** Brush preset editor (type, variant, size, opacity, pressure, texture, colour); [onPickFromPage] null hides page picking. */
 @Composable
 internal fun BrushSettings(brush: BrushStyle, presets: List<BrushStyle>, onChange: (BrushStyle) -> Unit,
-    onAdd: () -> Unit, onDelete: () -> Unit, onPickFromPage: (((Int) -> Unit) -> Unit)? = null) {
+    onAdd: () -> Unit, onDelete: () -> Unit, onPickFromPage: (((Int) -> Unit) -> Unit)? = null,
+    editHint: String = "Tap the selected brush again to edit.") {
     val widthPx = brush.width
     var advanced by remember { mutableStateOf(false) }
     var showColorPicker by remember(brush.presetId) { mutableStateOf(false) }
@@ -155,6 +156,6 @@ internal fun BrushSettings(brush: BrushStyle, presets: List<BrushStyle>, onChang
                 InkSymbol(InkIcon.Eyedropper, Modifier.size(14.dp)); Spacer(Modifier.width(5.dp)); Text("Pick from page", fontSize = 10.sp, maxLines = 1)
             }
         }
-        Text("Tap the selected brush again to edit. + creates an independent preset.", fontSize = 10.sp, color = ChromeMuted)
+        Text("$editHint + creates an independent preset.", fontSize = 10.sp, color = ChromeMuted)
     }
 }

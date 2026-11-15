@@ -264,6 +264,8 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     var onPageTap: (x: Float, y: Float, width: Float, height: Float) -> Boolean = { _, _, _, _ -> false }
     var gestures = ReaderGesturePreferences()
     var onShowControls: () -> Unit = {}
+    /** A short finger tap in the middle of the page while a pen or the eraser is active: shows or hides the drawing bar. */
+    var onDrawingTap: () -> Unit = {}
     var onError: (String) -> Unit = {}
     var annotations: List<ReaderAnnotation> = emptyList()
     /** [stroke] is set for notebook-brush ink and drawn by [NotebookRenderer]; legacy ink keeps the polyline. */
@@ -385,13 +387,10 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     private var selectionFrom = PointF()
     private var selectionTo = PointF()
     private var draggingHandle = -1
-    /** Set when a held stylus turns an automatic pen stroke into a text selection; lasts for the rest of that gesture. */
+    /** Set when a gesture must run as another tool for its whole length (for example a stylus grabbing a selection handle). */
     private var gestureToolOverride: String? = null
-    private var gestureStylusAutoPen = false
     private val longPress = Runnable {
         if (drawing && tool == "Read") {
-            // A stylus that stays still is selecting, not writing: drop the dot it started and continue as a Read gesture.
-            if (gestureStylusAutoPen) { gestureToolOverride = "Read"; clearStroke() }
             selecting = true
             parent?.requestDisallowInterceptTouchEvent(true)
             performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
@@ -669,9 +668,8 @@ internal class PdfPageReaderView(context: Context) : View(context) {
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) gestureToolOverride = null
-        val stylusAutoPen = gestures.stylusWriting && (event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS || event.getToolType(0) == MotionEvent.TOOL_TYPE_ERASER) && this.tool == "Read"
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) gestureStylusAutoPen = stylusAutoPen
-        val tool = gestureToolOverride ?: if (stylusAutoPen) "Pen" else this.tool
+        // Nothing is drawn unless a pen was picked: reading mode never inks, whatever touches the page.
+        val tool = gestureToolOverride ?: this.tool
         // Compose draws the reader controls over this full-screen native view. Yield
         // those edge bands on ACTION_DOWN so the controls receive the gesture instead
         // of the page reader consuming it underneath.
@@ -696,7 +694,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                         selectionTo = PointF(groups.last().maxOf { it.x }, groups.last().map { it.y }.average().toFloat())
                     }
                 }
-                if ((tool == "Read" || stylusAutoPen) && gestures.clickLongPress && draggingHandle < 0) postDelayed(longPress, android.view.ViewConfiguration.getLongPressTimeout().toLong() + if (stylusAutoPen) 300L else 0L)
+                if (tool == "Read" && gestures.clickLongPress && draggingHandle < 0) postDelayed(longPress, android.view.ViewConfiguration.getLongPressTimeout().toLong())
                 cropHandle = -1
                 if (tool == "MarqueeCrop") cropSelection?.let { rect ->
                     val b = bounds()
@@ -793,6 +791,13 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                 if (gestures.slide && !pageTapHandled && drawing && tool == "Read" && !scrolling && zoom <= 1.01f) {
                     val threshold = max(dp(48f), width * .12f)
                     if (abs(dx) >= threshold && abs(dx) > abs(dy) * 1.25f) onPageTurn((dx < 0f) != rtl)
+                }
+                // While writing, a short finger tap in the middle toggles the drawing bar instead of leaving a dot. A stylus tap
+                // stays ink, so the dot of an "i" still works.
+                if (drawing && (tool == "Pen" || tool == "Eraser") && isTap && !held && event.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER &&
+                    event.x in width * .28f..width * .72f && event.y in height * .28f..height * .72f) {
+                    clearStroke(); selecting = false; draggingHandle = -1; drawing = false; invalidate(); performClick()
+                    onDrawingTap(); return true
                 }
                 // A single touch point becomes a dot: the brush engine and the saved anchor both need at least two points.
                 if (drawing && tool == "Pen" && stroke.size == 1) { stroke += stroke[0]; strokePressures += strokePressures[0]; strokeTimes += strokeTimes[0] + 8L }

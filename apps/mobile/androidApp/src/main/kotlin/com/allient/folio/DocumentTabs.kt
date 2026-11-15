@@ -38,7 +38,7 @@ internal fun DocumentTabs(
     val tabShape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
     // Unfocused tabs: a clear grey between the bar and the white active tab, in any theme.
     val inactiveTab = androidx.compose.ui.graphics.lerp(colors.surface, colors.onSurface, 0.16f)
-    Row(Modifier.fillMaxWidth().height(28.dp).background(colors.surfaceVariant).padding(start = 6.dp, end = 6.dp, top = 3.dp), verticalAlignment = Alignment.Bottom) {
+    Row(Modifier.fillMaxWidth().height(32.dp).background(colors.surfaceVariant).padding(start = 6.dp, end = 6.dp, top = 3.dp), verticalAlignment = Alignment.Bottom) {
         androidx.compose.foundation.lazy.LazyRow(Modifier.weight(1f).fillMaxHeight().testTag("$tagPrefix-tabs"), state = listState,
             horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.Bottom) {
             items(tabs.size, key = { tabs[it].id }) { index ->
@@ -48,7 +48,7 @@ internal fun DocumentTabs(
                     verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) { onSelect(book.id) }
                         .testTag("$tagPrefix-tab-${book.id}").semantics { selected = active; contentDescription = "Switch to ${book.title}" }.padding(start = 14.dp), contentAlignment = Alignment.CenterStart) {
-                        Text(book.title, fontSize = 11.sp, color = if (active) colors.onSurface else colors.onSurfaceVariant,
+                        Text(book.title, fontSize = 12.sp, color = if (active) colors.onSurface else colors.onSurfaceVariant,
                             fontWeight = if (active) FontWeight.Medium else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     IconButton(onClick = { onClose(book.id) }, modifier = Modifier.size(24.dp).testTag("$closeTagPrefix-${book.id}").semantics { contentDescription = "Close ${book.title}" }) {
