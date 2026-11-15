@@ -1,7 +1,6 @@
-Folio 1.0.5
-- Desliza para pasar las páginas del cuaderno con una animación fluida; más allá de la última, añades una.
-- Selecciona y elimina varias páginas a la vez. Importa un PDF o EPUB como cuaderno.
-- Lector: los lápices del cuaderno, una barra de selección movible con selección por palabra (también con el lápiz), más colores y un selector de color.
-- Escritura más fluida: sin parpadeo al levantar el lápiz.
-- Nueva pantalla Acerca de, con enlaces a la web y a GitHub.
-- Íconos nuevos.
+Folio 1.0.6
+- Autoguardado más rápido en cuadernos grandes: sin lentitud al crecer las páginas.
+- Los resaltadores se oscurecen donde el trazo se cruza, al escribir y al levantar el lápiz.
+- Lector: pluma, resaltador y lápiz a un toque en la barra superior; toca el centro de la página para mostrarla u ocultarla. No se dibuja nada hasta elegir un lápiz.
+- Salir del lector es mucho más rápido.
+- Menú Más más limpio y pestañas un poco más altas.
