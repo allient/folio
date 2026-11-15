@@ -2,6 +2,9 @@ package com.allient.folio
 
 import android.annotation.SuppressLint
 import android.graphics.Canvas
+import android.graphics.RenderNode
+import android.os.Build
+import androidx.annotation.RequiresApi
 import android.graphics.Matrix
 import android.util.LruCache
 import androidx.ink.brush.Brush
@@ -124,6 +127,28 @@ internal class JetpackInkEngine {
         canvas.save(); clipJoint(canvas, pass.joint, width); renderer.draw(canvas, pass.stroke, transform); canvas.restore()
     }
 
+    private var passNode: Any? = null // RenderNode (API 29+) holding the live stroke's finished passes
+    private var passNodeKey: List<Any> = emptyList()
+
+    @RequiresApi(29)
+    private fun livePassNode(width: Int, height: Int, zoom: Float, inkWidth: Float): RenderNode {
+        val node = passNode as? RenderNode ?: RenderNode("Folio live passes").also { passNode = it }
+        val key = listOf(livePasses.size, width, height, zoom)
+        if (key != passNodeKey || !node.hasDisplayList()) {
+            // Generous bounds: a render node clips, and infinite-canvas ink can sit outside the first sheet.
+            node.setPosition(-width * 8, -height * 8, width * 9, height * 9)
+            val recording = node.beginRecording()
+            try {
+                recording.translate(width * 8f, height * 8f)
+                recording.scale(width / DOCUMENT_WIDTH, height / DOCUMENT_HEIGHT)
+                transform.setScale(width / DOCUMENT_WIDTH * zoom, height / DOCUMENT_HEIGHT * zoom)
+                for (pass in livePasses) drawPass(recording, pass, inkWidth)
+            } finally { node.endRecording() }
+            passNodeKey = key
+        }
+        return node
+    }
+
     /** True when the live stroke must be drawn here, in passes, instead of by Ink's front-buffered wet layer. */
     fun drawsLiveInPasses(style: BrushStyle) = drawsInPasses(style, FORMAT)
 
@@ -158,7 +183,11 @@ internal class JetpackInkEngine {
         if (splitter == null) renderer.draw(canvas, live, transform)
         else {
             val style = liveStyle!!
-            for (pass in livePasses) drawPass(canvas, pass, style.width)
+            // Finished passes are recorded once, not redrawn for every frame of a fast stroke.
+            if (Build.VERSION.SDK_INT >= 29 && canvas.isHardwareAccelerated) {
+                val node = livePassNode(width, height, zoom, style.width)
+                canvas.restore(); canvas.drawRenderNode(node); canvas.save(); canvas.scale(width / DOCUMENT_WIDTH, height / DOCUMENT_HEIGHT)
+            } else for (pass in livePasses) drawPass(canvas, pass, style.width)
             canvas.save(); if (passOffset > 0) clipJoint(canvas, passPoints.firstOrNull(), style.width)
             canvas.saveLayerAlpha(null, android.graphics.Color.alpha(style.color))
             renderer.draw(canvas, live, transform)
@@ -173,13 +202,18 @@ internal class JetpackInkEngine {
         if (liveStyle == null) return
         if (NaturalMediaRenderer.supports(liveStyle!!.name)) { clearLive(); return }
         updateLive(); live.finishInput(); live.updateShape()
-        // A stroke in passes is rebuilt by draw() with its real colour; the live pass used an opaque brush.
+        // The live pass used an opaque brush, so a stroke in passes keeps the passes built while drawing and adds its
+        // last pass with the real colour; rebuilding the whole stroke on lift made its end appear late.
         if (splitter == null) completed.put(source.id, Cached(source, live.toImmutable()))
+        else if (passPoints.isNotEmpty()) {
+            val last = Pass(passStroke(passPoints, passTimes, liveStyle!!, FORMAT), if (passOffset > 0) passPoints[0] else null)
+            passCache.put(source.id, Passes(source, livePasses + last))
+        }
         clearLive()
     }
 
     // start() resets the native stroke on reuse. clear() is restricted in Ink 1.0.
-    fun clearLive() { batch.clear(); livePoints.clear(); liveStyle = null; elapsed = -1L; livePasses.clear(); passPoints.clear(); passTimes.clear(); splitter = null; passOffset = 0 }
+    fun clearLive() { batch.clear(); livePoints.clear(); liveStyle = null; elapsed = -1L; livePasses.clear(); passPoints.clear(); passTimes.clear(); splitter = null; passOffset = 0; passNodeKey = emptyList() }
 
     fun draw(canvas: Canvas, source: InkStroke, width: Float, height: Float, zoom: Float = 1f) {
         if (source.points.isEmpty()) return
