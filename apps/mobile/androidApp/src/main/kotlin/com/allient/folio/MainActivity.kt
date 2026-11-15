@@ -428,7 +428,6 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                         }
                     },
                     onNotebookChange = { changed -> repository.saveNotes(repository.notebooks.map { if (it.id == changed.id) changed else it }) },
-                    isSaving = repository.isSaving,
                     saveError = repository.saveError,
                     startInFocusMode = homePreferences.startFullscreen,
                 )

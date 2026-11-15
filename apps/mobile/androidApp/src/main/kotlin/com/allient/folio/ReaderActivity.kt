@@ -991,7 +991,6 @@ class ReaderActivity : AppCompatActivity() {
                             }
                         },
                         onNotebookChange={changed -> notebookRepository.saveNotes(notebookRepository.notebooks.map { if(it.id==changed.id) changed else it })},
-                        isSaving=notebookRepository.isSaving,
                         saveError=notebookRepository.saveError,
                         backLabel="Back to reading",
                     )

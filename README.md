@@ -41,7 +41,7 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 
 **Pages, or no edges at all**
 - 35 page templates, from lined and Cornell to planners, Kanban and music staff.
-- Swipe the page left or right to turn it, with a smooth slide and a visible page edge. On the last page, swipe left and release to add a page (or tap **+** in the top bar); you can also pull up past it and hold. Page+ shows each paper as a card. Nothing is added by accident.
+- Swipe the page left or right to turn it, with a smooth slide and a visible page edge. On the last page, swipe left and release to add a page (or tap **+** in the top bar). Page+ shows each paper as a card. Nothing is added by accident.
 - In the page manager, tap **Select** (or long-press a page) to delete several pages at once.
 - Open a PDF or EPUB as a notebook (**+ → Import PDF/EPUB as notebook**) to write on its pages. A PDF page becomes a picture; an EPUB becomes pages of typed text (images and styling are left out), each chapter starting on a new page.
 - An infinite canvas with pins and a minimap.

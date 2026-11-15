@@ -10,10 +10,9 @@ Adding and moving between pages should need no menu. This page describes what th
 In **Single Page** layout the page follows your finger.
 
 - **Swipe left or right** to turn the page. The next or previous page slides in beside it with a grey gutter and a thin edge line, so the page limits are easy to see. A short fast flick also turns the page.
-- **On the last page**, swipe left. A panel reads **Swipe to add page**; past about a quarter of the screen it changes to **Release to add page** with a vibration. Let go and the new page slides in. Let go early and the page springs back.
+- **On the last page**, swipe left. The new blank page slides in from the right with a **Swipe to add page** hint; past about a quarter of the screen it changes to **Release to add page** with a vibration. Let go and the same page finishes sliding in. Let go early and the page springs back.
 - **With "Write with finger" on**, one finger writes, so use **two fingers** to swipe. With it off, one finger swipes.
 - **The `+` button** in the top bar replaces the `›` arrow on the last page and adds a page at the end.
-- **Pull up** past the last page and hold (`PULL_TO_ADD_HOLD_MS`) to add a page too.
 - **Page+** shows each paper (Blank, Ruled, Grid, Daily planner) as a card with a preview.
 
 Writing never adds pages on its own.

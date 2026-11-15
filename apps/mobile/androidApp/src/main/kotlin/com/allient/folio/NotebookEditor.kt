@@ -3,10 +3,6 @@ package com.allient.folio
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.unit.Velocity
 import androidx.compose.material3.FilterChip
 import android.content.Context
 import android.graphics.Canvas as AndroidCanvas
@@ -158,7 +154,6 @@ internal fun NotebookEditor(
     onNotebookChange: (Notebook) -> Unit,
     repository: NotebookViewModel,
     onNavigateNotebook: (String, String?) -> Unit = { _, _ -> },
-    isSaving: Boolean = false,
     saveError: String? = null,
     backLabel: String = "Back to notebooks",
     startInFocusMode: Boolean = false,
@@ -274,10 +269,6 @@ internal fun NotebookEditor(
     val pageListState = rememberLazyListState(initialFirstVisibleItemIndex = safeIndex)
     val savedPage = notebook.pages[safeIndex]
     var page by remember(savedPage.id) { mutableStateOf(savedPage) }
-    // Adding pages without the Page+ sheet: writing near the bottom of the last page, or pulling up past it and holding.
-    var pullPx by remember { mutableFloatStateOf(0f) }
-    var pullProgress by remember { mutableFloatStateOf(0f) }
-    var pullConsumed by remember { mutableStateOf(false) }
     var slideInPageId by remember { mutableStateOf<String?>(null) }
     val editingText = page.texts.firstOrNull { it.id == editingTextId }
     var undoStack by remember(savedPage.id) { mutableStateOf(emptyList<NotebookPage>()) }
@@ -414,23 +405,6 @@ internal fun NotebookEditor(
         if (navigate) { slideInPageId = added.id; pageIndex = insertAt }
         return added
     }
-    // Pull up past the last page and hold: a ring fills for PULL_TO_ADD_HOLD_MS, then the page is added.
-    val pullThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { 56.dp.toPx() }
-    val pullArmed = pullPx >= pullThresholdPx && !pullConsumed
-    LaunchedEffect(pullArmed) {
-        pullProgress = 0f
-        if (!pullArmed) return@LaunchedEffect
-        val start = System.currentTimeMillis()
-        while (true) {
-            pullProgress = pullToAddProgress(System.currentTimeMillis() - start)
-            if (pullProgress >= 1f) {
-                pullConsumed = true; pullPx = 0f; pullProgress = 0f
-                insertTemplatePage(page.template, "Last Page")
-                break
-            }
-            delay(16)
-        }
-    }
     // Single-page layout: the page follows a sideways drag. Released past the threshold it slides to the next or previous
     // page; on the last page, dragging left reveals "Release to add page" and adds one.
     val pageShift = remember { Animatable(0f) }
@@ -494,10 +468,6 @@ internal fun NotebookEditor(
                 } else pageShift.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = .85f, stiffness = androidx.compose.animation.core.Spring.StiffnessMedium))
             } finally { pageTurning = false; addingPage = false }
         }
-    }
-    fun onFingerPull(distance: Float) {
-        if (distance <= 0f) { pullPx = 0f; pullConsumed = false; return }
-        if (!pullConsumed && !notebook.infiniteCanvas && safeIndex == notebook.pages.lastIndex) pullPx = distance
     }
     fun openToolPanel(name: String) {
         if (notebook.infiniteCanvas && name in listOf("templates", "page layout", "page+", "pages")) { sheet = "pins"; return }
@@ -1501,18 +1471,7 @@ internal fun NotebookEditor(
                     if (effectivePageLayout == "Scroll") {
                         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
                             val pageHeight = maxHeight
-                            val pullConnection = remember(pageListState) { object : NestedScrollConnection {
-                                override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                                    if (pullPx <= 0f || available.y <= 0f) return Offset.Zero
-                                    val used = kotlin.math.min(pullPx, available.y); onFingerPull(pullPx - used); return Offset(0f, used)
-                                }
-                                override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
-                                    if (source != NestedScrollSource.UserInput || available.y >= 0f || pageListState.canScrollForward) return Offset.Zero
-                                    onFingerPull(pullPx - available.y); return available
-                                }
-                                override suspend fun onPreFling(available: Velocity): Velocity { onFingerPull(0f); return Velocity.Zero }
-                            } }
-                            LazyColumn(state = pageListState, modifier = Modifier.fillMaxSize().nestedScroll(pullConnection), userScrollEnabled = !fingerDrawing && (notebook.infiniteCanvas || singleFingerSwipe)) {
+                            LazyColumn(state = pageListState, modifier = Modifier.fillMaxSize(), userScrollEnabled = !fingerDrawing && (notebook.infiniteCanvas || singleFingerSwipe)) {
                                 items(notebook.pages, key = { it.id }) { model ->
                                     val index = notebook.pages.indexOfFirst { it.id == model.id }
                                     Column(Modifier.fillMaxWidth().animateItem()) {
@@ -1528,13 +1487,7 @@ internal fun NotebookEditor(
                                         eraseActiveLayerOnly = eraseActiveLayerOnly, lassoKind = lassoKind, fingerDrawing = fingerDrawing, pinchToZoom = pinchToZoom,
                                         activeLayerId = if (model.id == page.id) activeLayer else model.layers.firstOrNull()?.id ?: "ink",
                                         selectedIds = if (model.id == page.id) selectedIds else emptySet(),
-                                        onVerticalFingerScroll = { delta ->
-                                            val used = pageListState.dispatchRawDelta(delta)
-                                            // Two-finger scrolling past the last page feeds pull-to-add-page.
-                                            if (delta > 0f && !pageListState.canScrollForward) onFingerPull(pullPx + delta - used)
-                                            else if (delta < 0f && pullPx > 0f) onFingerPull((pullPx + delta).coerceAtLeast(.5f))
-                                        },
-                                        onFingerPull = { if (it <= 0f) onFingerPull(0f) },
+                                        onVerticalFingerScroll = { delta -> pageListState.dispatchRawDelta(delta) },
                                         pageSwipeEnabled = effectivePageLayout == "Single Page" && !notebook.infiniteCanvas && horizontalPageSwipe,
                                         longPressSelectEnabled = longPressSelectEnabled && fingerDrawing,
                                         onLongPressSelection = { isObject -> if (model.id == page.id) { mode = if (isObject) CanvasMode.Objects else CanvasMode.MoveSelection; sheet = null } },
@@ -1579,19 +1532,22 @@ internal fun NotebookEditor(
                         if (shiftSign != 0f) Box(Modifier.fillMaxSize().background(Color(0xFFE4E7E4)))
                         landingSnapshot?.let { androidx.compose.foundation.Image(it, null, Modifier.fillMaxSize(), contentScale = androidx.compose.ui.layout.ContentScale.FillBounds) }
                         val onLastPage = safeIndex >= notebook.pages.lastIndex
+                        // On the last page the incoming neighbour is the blank page a release would add, so releasing just
+                        // finishes the same slide instead of swapping a placeholder for the page.
                         val neighbourSnapshot = when {
-                            shiftSign < 0f -> if (onLastPage && !addingPage) null else nextSnapshot
+                            shiftSign < 0f -> nextSnapshot
                             shiftSign > 0f -> previousSnapshot
                             else -> null
-                        }
-                        if (shiftSign < 0f && onLastPage && !addingPage) {
-                            AddPageReveal({ -pageShift.value }, pageTurnThresholdPx, Modifier.align(Alignment.CenterEnd))
                         }
                         if (neighbourSnapshot != null) {
                             androidx.compose.foundation.Image(neighbourSnapshot, null, Modifier.fillMaxSize().graphicsLayer {
                                 val shift = pageShift.value
                                 translationX = shift + if (shift < 0f) size.width + pageGapPx else -size.width - pageGapPx
                             }.pageEdges { true }.testTag("page-drag-neighbour"), contentScale = androidx.compose.ui.layout.ContentScale.FillBounds)
+                        }
+                        androidx.compose.animation.AnimatedVisibility(shiftSign < 0f && onLastPage && !addingPage, Modifier.align(Alignment.CenterEnd),
+                            enter = androidx.compose.animation.fadeIn(tween(90)), exit = androidx.compose.animation.fadeOut(tween(180))) {
+                            AddPageReveal({ -pageShift.value - pageGapPx }, pageTurnThresholdPx - pageGapPx, overPage = neighbourSnapshot != null)
                         }
                         key(page.id) {
                             AndroidView(factory = { ctx -> InkCanvasView(ctx) { updated -> applyPage(page.copy(strokes = updated)) }.also { canvas = it } },
@@ -1636,7 +1592,6 @@ internal fun NotebookEditor(
                                         val destination = safeIndex + delta
                                         if (destination in notebook.pages.indices) { view.flushInput(); pageIndex = destination }
                                     }
-                                    view.onFingerPull = ::onFingerPull
                                     view.onPageDrag = if (!notebook.infiniteCanvas) ::onPageDrag else null
                                     // Live erasing and drags are published once at gesture completion.
                                     if (!view.hasPendingEdits) { view.texts = page.texts; view.images = page.images; view.blocks = page.blocks; view.strokes = page.strokes }
@@ -1650,7 +1605,6 @@ internal fun NotebookEditor(
                                 .pageEdges { pageShift.value != 0f })
                         }
                     }
-                    PageAddOverlays(pullPx, pullThresholdPx, pullProgress, Modifier.align(Alignment.BottomCenter))
                     zoomBox?.let { box ->
                         fun moveBox(next: android.graphics.RectF) { zoomBox = next }
                         fun step(direction: Int) {
@@ -1942,7 +1896,6 @@ private fun NotebookPageCanvas(
     activeLayerId: String,
     selectedIds: Set<String>,
     onVerticalFingerScroll: (Float) -> Unit,
-    onFingerPull: (Float) -> Unit = {},
     onCanvas: (InkCanvasView) -> Unit,
     onPageChange: (NotebookPage) -> Unit,
     onSelection: (Set<String>) -> Unit,
@@ -1978,7 +1931,7 @@ private fun NotebookPageCanvas(
                 view.longPressSelectEnabled = longPressSelectEnabled
                 view.onLongPressSelection = { isObject -> if (isActive) onLongPressSelection(isObject) }
                 view.onEmbeddedAction = { item -> if (isActive) onEmbeddedAction(item) }
-                view.onVerticalFingerScroll = onVerticalFingerScroll; view.onFingerPull = onFingerPull
+                view.onVerticalFingerScroll = onVerticalFingerScroll
                 if (!view.hasPendingEdits) { view.texts = model.texts; view.images = model.images; view.strokes = model.strokes }
                 view.selectedStrokeIds = selectedIds
                 view.onSelectionChanged = { onSelection(it) }
@@ -2120,7 +2073,6 @@ internal fun VariableWidthSlider(value: Float, minimum: Float, maximum: Float, m
     }
 }
 
-/** Pull-up-to-add ring and the "page added" hint, shown at the bottom of the page area. */
 /** Thin vertical lines on the left and right page edges while [visible] (read at draw time). */
 private fun Modifier.pageEdges(visible: () -> Boolean) = drawWithContent {
     drawContent()
@@ -2132,7 +2084,7 @@ private fun Modifier.pageEdges(visible: () -> Boolean) = drawWithContent {
 }
 
 @Composable
-private fun AddPageReveal(revealPxOf: () -> Float, thresholdPx: Float, modifier: Modifier) {
+private fun AddPageReveal(revealPxOf: () -> Float, thresholdPx: Float, overPage: Boolean, modifier: Modifier = Modifier) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val revealPx = revealPxOf().coerceAtLeast(0f)
     val armed = revealPx >= thresholdPx
@@ -2141,7 +2093,8 @@ private fun AddPageReveal(revealPxOf: () -> Float, thresholdPx: Float, modifier:
     val progress = (revealPx / thresholdPx).coerceIn(0f, 1f)
     val scale by androidx.compose.animation.core.animateFloatAsState(if (armed) 1.08f else .72f + .28f * progress, label = "add-page-scale")
     val sage = Color(0xFF2F7A68)
-    Box(modifier.fillMaxHeight().width(with(density) { revealPx.toDp() }).clipToBounds().background(Color(0xFFEDF1EE)).testTag("add-page-reveal"),
+    Box(modifier.fillMaxHeight().width(with(density) { revealPx.toDp() }).clipToBounds()
+        .background(if (overPage) Color(0xFF2F7A68).copy(alpha = .06f + .06f * progress) else Color(0xFFEDF1EE)).testTag("add-page-reveal"),
         contentAlignment = Alignment.Center) {
         Column(Modifier.requiredWidth(200.dp).graphicsLayer { alpha = progress }, horizontalAlignment = Alignment.CenterHorizontally) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2157,20 +2110,3 @@ private fun AddPageReveal(revealPxOf: () -> Float, thresholdPx: Float, modifier:
     }
 }
 
-@Composable
-private fun PageAddOverlays(pullPx: Float, thresholdPx: Float, progress: Float, modifier: Modifier) {
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    if (pullPx > with(density) { 8.dp.toPx() }) {
-        val lift = with(density) { (pullPx.coerceAtMost(thresholdPx * 2f) * .4f).toDp() }
-        androidx.compose.material3.Surface(modifier.padding(bottom = 28.dp + lift).testTag("pull-to-add-page"), shape = RoundedCornerShape(24.dp), color = ChromeInk.copy(alpha = .94f), shadowElevation = 6.dp) {
-            Row(Modifier.padding(start = 10.dp, end = 18.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(34.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(progress = { if (pullPx >= thresholdPx) progress else (pullPx / thresholdPx).coerceIn(0f, 1f) * .08f },
-                        modifier = Modifier.fillMaxSize(), color = Color(0xFF8FD3BE), trackColor = Color.White.copy(alpha = .18f), strokeWidth = 3.dp)
-                    Text("+", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
-                }
-                Text(if (pullPx < thresholdPx) "Pull up to add a page" else "Keep holding to add a page", color = Color.White, fontSize = 13.sp)
-            }
-        }
-    }
-}
