@@ -1155,7 +1155,20 @@ class ReaderActivity : AppCompatActivity() {
         super.onDestroy()
         ReaderWrites.scope.launch { session?.close();book?.close() }
     }
-    companion object { private const val READER_CONTAINER_ID=0x4b4e0001 }
+    private var finishRequested = false
+    /** Tells the library whether notebooks changed, and finishes once their writes are on disk so it reads them. */
+    override fun finish() {
+        if (finishRequested) return
+        finishRequested = true
+        val changed = !::notebookRepository.isInitialized || notebookRepository.changedNotes
+        setResult(RESULT_OK, Intent().putExtra(EXTRA_NOTEBOOKS_CHANGED, changed))
+        if (changed && ::notebookRepository.isInitialized) notebookRepository.afterPendingWrites(::finishNow) else finishNow()
+    }
+    private fun finishNow() = super.finish()
+    companion object {
+        private const val READER_CONTAINER_ID=0x4b4e0001
+        const val EXTRA_NOTEBOOKS_CHANGED = "com.allient.folio.extra.NOTEBOOKS_CHANGED"
+    }
 }
 
 
