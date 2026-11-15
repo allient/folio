@@ -665,7 +665,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
 
     private fun resetFrontInk() { if (Build.VERSION.SDK_INT >= 29) frontInk?.reset() }
     private fun canUseFrontInk() = Build.VERSION.SDK_INT >= 29 && isHardwareAccelerated && frontInk != null &&
-        !NaturalMediaRenderer.supports(activeBrush.name) &&
+        !NaturalMediaRenderer.supports(activeBrush.name) && !ink.drawsLiveInPasses(activeBrush) &&
         mode == CanvasMode.Write && !activeBrush.eraser && editable(activeLayerId) &&
         layers.lastOrNull { it.visible }?.id == activeLayerId && texts.none { it.layerId == activeLayerId }
 

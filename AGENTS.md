@@ -116,7 +116,7 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 ## Data invariants
 
 - Databases: `knotes.db` (notebooks, pages, settings; notebook JSON version 2) and `knotes-reader.db` (reader, WAL). **Never rename them**; they're private and renaming a live database risks the library.
-- Stroke engines are versioned (`jetpack-ink-v1`, `jetpack-ink-v2`, `shape-v1`, `fill-cut-v1`, …). Old ink must render unchanged; add a new version rather than changing an old one.
+- Stroke engines are versioned (`jetpack-ink-v1`, `jetpack-ink-v2`, `shape-v1`, `fill-cut-v1`, …). Old ink must render unchanged; add a new version rather than changing an old one. `jetpack-ink-v5` (current) draws translucent single-coat strokes in passes split at direction reversals (`InkPassSplitter`, shared), so a marker darkens where it crosses itself, live and saved alike; v4 and earlier stay flat.
 - `.folio` archives: ZIP with `manifest.json` and Zstandard-compressed JSON, format ID `application/vnd.folio.archive+zip`. Legacy `.knotes` archives and `Knotes-Backup-*.knotes` files must keep importing. JSON schemas are in `apps/docs/public/schemas`.
 - Imports must reject unsafe archive paths (zip-slip) and must never erase existing data.
 - Live boards live in `files/liveboards/` (`index.json`, `<id>.json` with Excalidraw's own `elements`/`appState` strings, `<id>.jpg` preview). Keep Excalidraw's JSON untouched so boards stay openable in Excalidraw.
