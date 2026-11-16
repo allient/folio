@@ -101,7 +101,7 @@ internal fun PressureDialog(
     fun curveOf(c: CurveChannel) = when (c) { CurveChannel.Pressure -> pressureCurve; CurveChannel.Velocity -> velocityCurve; CurveChannel.Tilt -> tiltCurve }
     fun enabledOf(c: CurveChannel) = when (c) { CurveChannel.Pressure -> pressureEnabled; CurveChannel.Velocity -> velocityEnabled; CurveChannel.Tilt -> tiltEnabled }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxWidth(.94f).widthIn(max = 520.dp).heightIn(max = screenHeight * .92f), shape = RoundedCornerShape(20.dp), color = Color.White) {
+        FolioDialogSurface(Modifier.fillMaxWidth(.94f).widthIn(max = 520.dp).heightIn(max = screenHeight * .92f)) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Global curves", modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.Medium, color = ChromeInk)
@@ -186,7 +186,7 @@ private fun CurveEditorDialog(
     val currentOnCurve by rememberUpdatedState(onCurve)
     fun apply(next: ResponseCurve) { if (next != current) { history = history + current; currentOnCurve(next) } }
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxWidth(.92f).widthIn(max = 460.dp), shape = RoundedCornerShape(20.dp), color = Color.White) {
+        FolioDialogSurface(Modifier.fillMaxWidth(.92f).widthIn(max = 460.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     InkToolButton(InkIcon.Undo, "Undo curve change", { history.lastOrNull()?.let { history = history.dropLast(1); currentOnCurve(it) } },

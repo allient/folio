@@ -102,6 +102,7 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 
 ### UI
 - Follow the brand kit: sage `#2F7A68`, ink `#1E2B28`, cream `#F6F1E6`, Geist (`FolioBrand`, `folioTypography()`). The editor keeps its fixed light colours.
+- **Theme and dialogs:** the accent colour and corner style from Preferences reach every screen through `FolioTheme` (`shared/.../FolioTheme.kt`), which builds the `MaterialTheme` colour scheme and shapes and provides `LocalHomeStyle`. Read `MaterialTheme.colorScheme` / `MaterialTheme.shapes` (or `LocalHomeStyle`), never a hardcoded accent. Custom dialogs use `FolioDialogSurface`; `AlertDialog`, menus and sheets follow the theme by default, so don't set their `containerColor`. The notebook editor canvas keeps its fixed light colours.
 - Support phones (~360–411 dp) and tablets. Touch targets are at least 48 dp. Dialogs and sheets scroll, and long text ellipsizes.
 - Notebook editors share the compact tab strip with the reader. **More → Show recent note tabs** saves visibility in `editor` preferences. Tabs show the current note plus up to 11 recent notebooks/canvases; closing tabs never deletes notes, and switching flushes ink. Tabs keep their position when selected (`stableDocumentTabOrder`, saved as `noteTabOrder`); new tabs go to the end. The "N ▾" button opens a drop-down with Hide tab bar, Close other tabs and per-tab options. The common `recentDocumentTabs` helper filters Trash/closed items.
 - Dialog, selection and search state survives rotation (`rememberSaveable`).

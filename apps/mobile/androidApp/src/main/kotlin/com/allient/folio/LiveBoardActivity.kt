@@ -113,7 +113,7 @@ class LiveBoardActivity : ComponentActivity() {
             }
         }
         setContent {
-            MaterialTheme(typography = folioTypography()) {
+            FolioTheme(HomePreferencesStore(this).read()) {
                 LiveBoards(store, web, mapper, intent.getStringExtra(EXTRA_BOARD_ID), onOpen = ::openBoard, onSave = ::saveBoard, onClose = ::finish,
                     onShareImage = ::shareImage, onShareFile = ::shareFile, onSession = ::openSessionDialog)
             }
@@ -328,15 +328,15 @@ private fun BoardScreen(
             Column(Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { renaming = true }.padding(horizontal = 6.dp, vertical = 2.dp)) {
                 Text(board.title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = FolioBrand.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (roomUrl != null) Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(7.dp).clip(CircleShape).background(FolioBrand.Sage))
-                    Text("  Live session", fontSize = 12.sp, color = FolioBrand.Sage, fontWeight = FontWeight.Medium)
+                    Box(Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                    Text("  Live session", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                 } else Text("Live board", fontSize = 12.sp, color = FolioBrand.Muted)
             }
             InkToolButton(InkIcon.Hand, if (fingers) "Fingers on: pan and zoom" else "Fingers off: pen only", { fingers = !fingers },
-                selected = fingers, buttonSize = 48.dp, tint = if (fingers) FolioBrand.Sage else FolioBrand.Ink)
+                selected = fingers, buttonSize = 48.dp, tint = if (fingers) MaterialTheme.colorScheme.primary else FolioBrand.Ink)
             InkToolButton(InkIcon.Pressure, "Pen on the board", { pressure = true }, buttonSize = 48.dp)
             Spacer(Modifier.width(6.dp))
-            Button(onClick = { share = true }, colors = ButtonDefaults.buttonColors(containerColor = FolioBrand.Sage),
+            Button(onClick = { share = true }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 contentPadding = PaddingValues(horizontal = 16.dp), modifier = Modifier.heightIn(min = 44.dp)) {
                 InkSymbol(InkIcon.Share, color = Color.White)
                 Spacer(Modifier.width(6.dp))
@@ -375,7 +375,6 @@ private fun ShareDialog(
     var copied by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = FolioBrand.Paper,
         title = { Text("Share board", color = FolioBrand.Ink) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -392,12 +391,12 @@ private fun ShareDialog(
                         Button(onClick = {
                             context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain")
                                 .putExtra(Intent.EXTRA_TEXT, "Join my Folio board: $roomUrl"), "Send live link"))
-                        }, colors = ButtonDefaults.buttonColors(containerColor = FolioBrand.Sage)) { Text("Send link…") }
+                        }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Send link…") }
                     }
                     TextButton(onClick = onSession) { Text("Stop session…", color = FolioBrand.Muted) }
                 } else {
                     Text("Start a session and send the link in your call. Others watch and draw from any browser; the session is end-to-end encrypted.", fontSize = 13.sp, color = FolioBrand.Muted)
-                    Button(onClick = onSession, colors = ButtonDefaults.buttonColors(containerColor = FolioBrand.Sage)) { Text("Start live session") }
+                    Button(onClick = onSession, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Start live session") }
                 }
                 HorizontalDivider(color = FolioBrand.Hairline)
                 SectionLabel("Join a session")
@@ -408,7 +407,7 @@ private fun ShareDialog(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { joinLink = clipboardText() }) { Text("Paste", color = FolioBrand.Ink) }
                     Button(onClick = { roomLink(joinLink)?.let(onJoin) }, enabled = roomLink(joinLink) != null,
-                        colors = ButtonDefaults.buttonColors(containerColor = FolioBrand.Sage)) { Text("Join") }
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Join") }
                 }
                 HorizontalDivider(color = FolioBrand.Hairline)
                 SectionLabel("Export")
@@ -418,7 +417,7 @@ private fun ShareDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = FolioBrand.Sage, fontWeight = FontWeight.SemiBold) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) } },
     )
 }
 
@@ -434,13 +433,12 @@ private fun TitleDialog(title: String, initial: String, action: String, onDismis
     var text by remember { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = FolioBrand.Paper,
         title = { Text(title, color = FolioBrand.Ink) },
         text = {
             OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("Untitled board") },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { onConfirm(text.trim()) }))
         },
-        confirmButton = { TextButton(onClick = { onConfirm(text.trim()) }) { Text(action, color = FolioBrand.Sage, fontWeight = FontWeight.SemiBold) } },
+        confirmButton = { TextButton(onClick = { onConfirm(text.trim()) }) { Text(action, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = FolioBrand.Ink) } },
     )
 }
@@ -454,7 +452,6 @@ private fun LiveBoardPressureDialog(mapper: PenPressureMapper, onPenSettings: ()
     fun save() = mapper.setBoard(min, max.coerceAtLeast(min), smooth, sensitivity)
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = FolioBrand.Paper,
         title = { Text("Pen on the board", color = FolioBrand.Ink) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -469,7 +466,7 @@ private fun LiveBoardPressureDialog(mapper: PenPressureMapper, onPenSettings: ()
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = FolioBrand.Sage, fontWeight = FontWeight.SemiBold) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) } },
         dismissButton = { TextButton(onClick = onPenSettings) { Text("Pen settings…", color = FolioBrand.Ink) } },
     )
 }
@@ -481,6 +478,6 @@ private fun LabeledSlider(label: String, value: Float, range: ClosedFloatingPoin
             Text(label, Modifier.weight(1f), fontSize = 14.sp, color = FolioBrand.Ink)
             Text(String.format(Locale.US, "%.2f", value), fontSize = 13.sp, color = FolioBrand.Muted)
         }
-        Slider(value, onChange, valueRange = range, colors = SliderDefaults.colors(thumbColor = FolioBrand.Sage, activeTrackColor = FolioBrand.Sage))
+        Slider(value, onChange, valueRange = range, colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary))
     }
 }

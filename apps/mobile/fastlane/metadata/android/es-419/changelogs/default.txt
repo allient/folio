@@ -1,3 +1,4 @@
 Folio 1.0.10
 - Lector: la página mantiene una franja fija arriba, así la barra superior ya no tapa las primeras líneas y el texto no salta al mostrar u ocultar la barra.
 - Biblioteca: un favorito ahora muestra una estrella amarilla rellena y un botón resaltado en los detalles.
+- El color de acento y el estilo de esquinas que elijas ahora se aplican a diálogos, menús y hojas, también en el lector y en las pizarras en vivo.

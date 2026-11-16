@@ -78,8 +78,7 @@ internal fun ReaderMarkEditor(
     val ink = MaterialTheme.colorScheme.onSurface
     val sage = Color(0xFF2F7A68)
     Dialog(onDismissRequest = onCancel, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.padding(16.dp).widthIn(max = 380.dp).fillMaxWidth().testTag("reader-mark-editor"), shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface, tonalElevation = 3.dp, shadowElevation = 12.dp) {
+        FolioDialogSurface(Modifier.padding(16.dp).widthIn(max = 380.dp).fillMaxWidth().testTag("reader-mark-editor")) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 22.dp, vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 Text(if (kind == AnnotationKind.UNDERLINE) "Edit underline" else "Edit highlight", fontSize = 20.sp, color = ink)
                 // Type

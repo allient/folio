@@ -1,5 +1,7 @@
 package com.allient.folio.home
 
+import com.allient.folio.FolioDialogSurface
+
 import com.allient.folio.penPressureFilter
 
 import androidx.compose.foundation.Canvas
@@ -857,7 +859,7 @@ private fun LibraryDetailsDialog(
     preview: @Composable (Modifier) -> Unit, onDismiss: () -> Unit, actions: List<DetailAction>,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxWidth(.94f).widthIn(max = 760.dp).heightIn(max = 740.dp), shape = RoundedCornerShape(28.dp), color = Color.White, tonalElevation = 6.dp) {
+        FolioDialogSurface(Modifier.fillMaxWidth(.94f).widthIn(max = 760.dp).heightIn(max = 740.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
                     Text("General", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)

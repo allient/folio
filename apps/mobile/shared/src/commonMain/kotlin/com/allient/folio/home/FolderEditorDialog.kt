@@ -69,9 +69,8 @@ fun FolderEditorDialog(
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         BoxWithConstraints(Modifier.fillMaxWidth().imePadding().padding(20.dp), contentAlignment = Alignment.Center) {
             val wide = maxWidth >= 540.dp
-            Surface(
+            com.allient.folio.FolioDialogSurface(
                 modifier = Modifier.widthIn(max = 740.dp).fillMaxWidth().heightIn(max = maxHeight).testTag("folder-editor"),
-                shape = RoundedCornerShape(28.dp), color = Color(0xFFFFFEFC), tonalElevation = 0.dp,
             ) {
                 Column {
                     Row(Modifier.fillMaxWidth().padding(start = 28.dp, top = 20.dp, end = 16.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {

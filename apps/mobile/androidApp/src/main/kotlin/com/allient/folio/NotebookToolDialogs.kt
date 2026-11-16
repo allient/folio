@@ -28,7 +28,7 @@ internal fun ToolDialog(title: String, onDismiss: () -> Unit, expanded: Boolean 
                         footer: (@Composable () -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
     val availableHeight = LocalConfiguration.current.screenHeightDp.dp * .94f
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = !expanded)) {
-        Surface(modifier = Modifier.semantics { testTagsAsResourceId = true }, shape = RoundedCornerShape(28.dp), color = androidx.compose.ui.graphics.Color.White) {
+        FolioDialogSurface(modifier = Modifier.semantics { testTagsAsResourceId = true }) {
             Column(Modifier.widthIn(max = if (expanded) 500.dp else 440.dp)
                 .then(if (expanded) Modifier.fillMaxWidth(.94f).height(availableHeight) else Modifier.heightIn(max = minOf(720.dp, availableHeight)))) {
                 Row(Modifier.fillMaxWidth().padding(start = 18.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
