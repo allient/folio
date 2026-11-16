@@ -41,6 +41,73 @@ class NotebookStorageTest {
 
     private fun storage() = NotebookStorage(isolated).also { stores.add(it) }
 
+    /** A page far larger than one 256K-character read chunk, with text that looks like stroke JSON and non-Latin-1 characters. */
+    private fun bigNotebook(infinite: Boolean = false): Notebook {
+        fun points(count: Int, offset: Int) = List(count) { i ->
+            val v = ((i * 37 + offset) % 100_000) / 100_000f
+            InkPoint(if (infinite) v * 4 - 2 else v, if (infinite) -v * 3 else 1 - v, (i % 97) / 100f, i * 4L)
+        }
+        val big = NotebookPage(strokes = List(40) { s -> InkStroke("Pen", 0xFF123456.toInt() - s, 2.5f, points(3_000, s), engine = JetpackInkEngine.FORMAT) },
+            texts = listOf(InkText(text = "\"points\":[{\"x\":1}] — ñandú 🖊️", layerId = "ink")))
+        val small = NotebookPage(strokes = listOf(InkStroke("Highlighter", 0x5AF7D33B, 16f, points(5, 1))), template = "grid")
+        return Notebook(title = "Huge ✍️", pages = if (infinite) listOf(big) else listOf(small, big, NotebookPage()), infiniteCanvas = infinite, canvasVersion = 1)
+    }
+
+    @Test fun largePagesLoadByStreamingExactlyLikeTheJsonReader() {
+        for (infinite in listOf(false, true)) {
+            val note = bigNotebook(infinite)
+            val store = storage(); store.load(); store.save(listOf(note)); store.close()
+            val loaded = storage().load().single()
+            // deserializeNotebook reads the same JSON with org.json objects, the path the streamed reader replaces.
+            assertEquals(deserializeNotebook(serializeNotebook(note)), loaded)
+            assertEquals(120_000, loaded.pages.sumOf { page -> page.strokes.sumOf { it.points.size } } - (if (infinite) 0 else 5))
+        }
+    }
+
+    @Test fun editsAfterReopeningAreSavedAndUnchangedPagesKeepTheirContent() {
+        val note = bigNotebook()
+        storage().apply { load(); save(listOf(note)); close() }
+        val reopened = storage()
+        val loaded = reopened.load().single()
+        val edited = loaded.copy(pages = loaded.pages.mapIndexed { index, page ->
+            if (index == 0) page.copy(strokes = page.strokes + InkStroke("Pen", 0xFF000000.toInt(), 3f, listOf(InkPoint(.5f, .5f, 1f), InkPoint(.6f, .6f, 1f)))) else page
+        })
+        reopened.save(listOf(edited)); reopened.close()
+        assertEquals(edited, storage().load().single())
+    }
+
+    private fun rawPages(update: (SQLiteDatabase) -> Unit) {
+        val db = SQLiteDatabase.openDatabase(isolated.getDatabasePath("knotes.db").path, null, SQLiteDatabase.OPEN_READWRITE)
+        try { update(db) } finally { db.close() }
+    }
+
+    @Test fun textAfterAPageIsIgnoredLikeBefore() {
+        val note = Notebook(title = "Tail", pages = listOf(NotebookPage(strokes = listOf(InkStroke("Pen", 0xFF000000.toInt(), 2f, listOf(InkPoint(.1f, .2f, .5f), InkPoint(.3f, .4f, .6f)))))))
+        storage().apply { load(); save(listOf(note)); close() }
+        rawPages { it.execSQL("UPDATE pages SET payload = payload || '  trailing'") }
+        val store = storage()
+        assertEquals(listOf(note), store.load())
+        assertNull(store.loadError)
+    }
+
+    @Test fun pointsThatAreNotObjectsAreSkippedInsteadOfBlockingTheLibrary() {
+        val note = Notebook(title = "Bad point", pages = listOf(NotebookPage(strokes = listOf(InkStroke("Pen", 0xFF000000.toInt(), 2f, listOf(InkPoint(.1f, .2f, .5f), InkPoint(.3f, .4f, .6f)))))))
+        storage().apply { load(); save(listOf(note)); close() }
+        rawPages { it.execSQL("UPDATE pages SET payload = replace(payload, '\"points\":[', '\"points\":[7,')") }
+        val loaded = storage().load().single()
+        assertEquals(note.pages.single().strokes.single().points, loaded.pages.single().strokes.single().points)
+    }
+
+    @Test fun generatedIdsAreSavedOnTheFirstSaveAndStayTheSame() {
+        val note = Notebook(title = "Ids", pages = listOf(NotebookPage(strokes = listOf(InkStroke("Pen", 0xFF000000.toInt(), 2f, listOf(InkPoint(.1f, .2f, .5f), InkPoint(.3f, .4f, .6f)))))))
+        storage().apply { load(); save(listOf(note)); close() }
+        rawPages { it.execSQL("UPDATE pages SET payload = replace(payload, '\"id\":\"${note.pages.single().strokes.single().id}\"', '\"id\":\"\"')") }
+        val first = storage().let { store -> store.load().also { store.save(it) } }
+        val strokeId = first.single().pages.single().strokes.single().id
+        assertNotEquals(note.pages.single().strokes.single().id, strokeId)
+        assertEquals(strokeId, storage().load().single().pages.single().strokes.single().id)
+    }
+
     @Test fun canvasModeCannotChangeAfterCreationAndRejectedSaveKeepsOriginal() {
         val note = Notebook(title = "Paged")
         val store = storage(); store.load(); store.save(listOf(note))

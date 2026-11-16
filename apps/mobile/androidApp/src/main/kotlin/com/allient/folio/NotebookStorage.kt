@@ -148,37 +148,65 @@ internal class NotebookStorage(context: Context) {
     val databaseFile: File = context.getDatabasePath("knotes.db")
     private val helper = Database(context.applicationContext)
     private val cachedNotes = mutableMapOf<String, String>()
-    /** Last stored row of each page. Unchanged pages reuse the same payload instance, so comparing rows is cheap. */
-    private data class StoredPage(val notebookId: String, val position: Int, val payload: String)
-    private val cachedPages = mutableMapOf<String, StoredPage>()
-    private val serializedPages = mutableMapOf<String, Pair<NotebookPage, String>>()
+    /**
+     * The page each row last held. A page that is the same (normally the same instance) in the same notebook and
+     * position is not written again. No serialized copy is kept: holding every page's JSON doubled the memory a large
+     * library needs.
+     */
+    private class SavedPage(val notebookId: String, val position: Int, val page: NotebookPage)
+    private val savedPages = mutableMapOf<String, SavedPage>()
 
     /** Non-null means existing storage could not be read; save is blocked to preserve it. */
     var loadError: String? = null
         private set
 
+    /**
+     * The reader's notebook editor has its own connection, so a page row can change between two of its read chunks.
+     * Such a torn read fails to parse; reading again then sees the finished write. Corrupt data fails every attempt.
+     */
     @Synchronized
-    fun load(): List<Notebook> = try {
+    fun load(): List<Notebook> {
+        val result = loadOnce()
+        if (loadError == null || loadErrorIsMemory) return result
+        // One retry only: a big corrupt library would otherwise take several times as long to fail.
+        Thread.sleep(300)
+        return loadOnce()
+    }
+    private var loadErrorIsMemory = false
+
+    private fun loadOnce(): List<Notebook> = try {
+        loadErrorIsMemory = false
         val db = helper.writableDatabase
         migrateLegacy(db)
         val notes = mutableListOf<Notebook>()
         cachedNotes.clear()
-        cachedPages.clear()
+        savedPages.clear()
         db.query("notebooks", arrayOf("id", "payload"), null, null, null, null, "updated_at DESC").use { rows ->
             while (rows.moveToNext()) {
                 val id = rows.getString(0)
                 val payload = rows.getString(1)
                 val json = JSONObject(payload)
-                val pages = JSONArray()
+                // Each page is streamed from SQLite and turned into a NotebookPage before the next one is read, so the
+                // peak is one page of compact points, not every page's JSON text and tree at once (that ran out of memory).
+                val pages = mutableListOf<NotebookPage>()
+                val rowIds = mutableListOf<Pair<String, Int>>()
                 db.query("pages", arrayOf("id", "length(payload)", "position"), "notebook_id = ?", arrayOf(id), null, null, "position ASC").use { pageRows ->
                     while (pageRows.moveToNext()) {
-                        val pagePayload = readPagePayload(db, pageRows.getString(0), pageRows.getLong(1))
-                        pages.put(JSONObject(pagePayload))
-                        cachedPages[pageRows.getString(0)] = StoredPage(id, pageRows.getInt(2), pagePayload)
+                        val pageJson = PageReader(db, pageRows.getString(0), pageRows.getLong(1)).use { readPageJson(it) }
+                        pages += readPage(pageJson, json)
+                        // A page whose elements got new random ids (none were stored) is written on the first save so the
+                        // ids stay the same from then on, as before.
+                        rowIds += (if (lacksIds(pageJson)) "" else pageRows.getString(0)) to pageRows.getInt(2)
                     }
                 }
                 cachedNotes[id] = payload
-                notes.add(readNote(json.put("pages", pages)))
+                val note = readNote(json, pages)
+                // Remember what each row holds. A page that migration replaced is not remembered, so it is written again.
+                rowIds.forEachIndexed { index, (rowId, position) ->
+                    val read = pages[index]
+                    if (rowId.isNotEmpty() && note.pages.getOrNull(index) === read) savedPages[rowId] = SavedPage(id, position, read)
+                }
+                notes.add(note)
             }
         }
         loadError = null
@@ -186,28 +214,43 @@ internal class NotebookStorage(context: Context) {
     } catch (error: Exception) {
         loadError = error.message ?: "Could not read saved notebooks"
         emptyList()
+    } catch (error: OutOfMemoryError) {
+        // Fail like any unreadable library (saving stays blocked, so nothing is overwritten) instead of crashing on every start.
+        loadErrorIsMemory = true
+        loadError = "Not enough memory to open your notebooks. Your notes are safe on this device."
+        emptyList()
     }
 
-    private fun readPagePayload(db: SQLiteDatabase, pageId: String, characterCount: Long): String {
-        require(characterCount in 1..Int.MAX_VALUE.toLong()) { "Invalid notebook page size" }
-        // SQLite CursorWindow cannot hold an arbitrarily large row. Read JSON in small
-        // substr chunks; SQLite length/substr both count characters, including Unicode.
-        val chunkCharacters = 16_384L
-        val text = StringBuilder(minOf(characterCount, chunkCharacters).toInt())
-        var offset = 1L
-        while (offset <= characterCount) {
-            db.rawQuery(
-                "SELECT substr(payload, ?, ?) FROM pages WHERE id = ?",
-                arrayOf(offset.toString(), chunkCharacters.toString(), pageId),
-            ).use { row ->
-                check(row.moveToFirst()) { "Notebook page disappeared while reading" }
-                val chunk = row.getString(0)
-                check(!chunk.isNullOrEmpty()) { "Notebook page could not be read completely" }
-                text.append(chunk)
+    /**
+     * Streams a page's JSON from SQLite in small substr chunks. SQLite's CursorWindow cannot hold an arbitrarily large
+     * row, and building the whole text first ran out of memory on large pages; length/substr count characters.
+     */
+    private class PageReader(private val db: SQLiteDatabase, private val pageId: String, private val characterCount: Long) : java.io.Reader() {
+        private var chunk = ""
+        private var index = 0
+        private var offset = 1L
+        init { require(characterCount in 1..Int.MAX_VALUE.toLong()) { "Invalid notebook page size" } }
+        override fun read(buffer: CharArray, start: Int, length: Int): Int {
+            if (length == 0) return 0
+            if (index >= chunk.length) {
+                if (offset > characterCount) return -1
+                db.rawQuery("SELECT substr(payload, ?, ?) FROM pages WHERE id = ?", arrayOf(offset.toString(), CHUNK.toString(), pageId)).use { row ->
+                    check(row.moveToFirst()) { "Notebook page disappeared while reading" }
+                    val next = row.getString(0)
+                    check(!next.isNullOrEmpty()) { "Notebook page could not be read completely" }
+                    chunk = next
+                }
+                index = 0; offset += CHUNK
             }
-            offset += chunkCharacters
+            val count = minOf(length, chunk.length - index)
+            chunk.toCharArray(buffer, start, index, index + count)
+            index += count
+            return count
         }
-        return text.toString()
+        override fun close() { chunk = "" }
+        // SQLite finds a substr offset by walking the row from its start, so small chunks made large pages quadratic
+        // (minutes for a heavy library). 256K characters stay well inside the 2 MB CursorWindow even as 3-byte UTF-8.
+        private companion object { const val CHUNK = 262_144L }
     }
 
     @Synchronized
@@ -219,7 +262,7 @@ internal class NotebookStorage(context: Context) {
         val db = helper.writableDatabase
         migrateLegacy(db)
         val nextNotes = mutableMapOf<String, String>()
-        val nextPages = mutableMapOf<String, StoredPage>()
+        val nextPages = mutableMapOf<String, SavedPage>()
         db.beginTransaction()
         try {
             notebooks.forEach { note ->
@@ -237,20 +280,16 @@ internal class NotebookStorage(context: Context) {
                     })
                 }
                 note.pages.forEachIndexed { index, page ->
-                    val cachedPage = serializedPages[page.id]
-                    val payload = if (cachedPage?.first == page) cachedPage.second else {
-                        writeNote(note.copy(pages = listOf(page))).getJSONArray("pages").getJSONObject(0).toString()
-                            .also { serializedPages[page.id] = page to it }
-                    }
-                    // Include order and ownership so page moves also update correctly. Building a "notebook:index:payload"
-                    // string here copied and compared every page of the library on each stroke.
-                    val cacheValue = StoredPage(note.id, index, payload)
-                    nextPages[page.id] = cacheValue
-                    if (cachedPages[page.id] != cacheValue) {
+                    // Include order and ownership so page moves also update correctly. The comparison is by identity for
+                    // untouched pages (data-class equals checks that first), so a stroke only serializes its own page.
+                    val saved = savedPages[page.id]
+                    if (saved == null || saved.notebookId != note.id || saved.position != index || saved.page != page) {
+                        val payload = writeNote(note.copy(pages = listOf(page))).getJSONArray("pages").getJSONObject(0).toString()
                         db.replaceOrThrow("pages", null, ContentValues().apply {
                             put("id", page.id); put("notebook_id", note.id); put("position", index); put("payload", payload)
                         })
                     }
+                    nextPages[page.id] = SavedPage(note.id, index, page)
                 }
             }
             db.query("pages", arrayOf("id"), null, null, null, null, null).use { rows ->
@@ -269,8 +308,7 @@ internal class NotebookStorage(context: Context) {
             db.endTransaction()
         }
         cachedNotes.clear(); cachedNotes.putAll(nextNotes)
-        cachedPages.clear(); cachedPages.putAll(nextPages)
-        serializedPages.keys.retainAll(nextPages.keys)
+        savedPages.clear(); savedPages.putAll(nextPages)
     }
 
     @Synchronized
@@ -374,54 +412,158 @@ internal class NotebookStorage(context: Context) {
             return readNote(root)
         }
 
-    private fun readNote(note: JSONObject): Notebook = Notebook(
+    private fun readPoints(stroke: JSONObject, note: JSONObject): List<InkPoint> {
+        val compact = stroke.opt("points") as? PointArrays
+            ?: return stroke.objects("points").map { point -> InkPoint(point.coordinate("x", note), point.coordinate("y", note), point.unit("pressure"), point.optLong("elapsedMillis", 0).coerceIn(0L, 86_400_000L)) }
+        // Same rules as the JSONObject path above: missing or non-finite values fall back to 0, then the same ranges.
+        val infinite = note.optBoolean("infiniteCanvas", false)
+        fun coordinate(value: Double) = finite(if (value.isNaN()) 0f else value.toFloat()).let { if (infinite) it.coerceIn(-100000f, 100000f) else it.coerceIn(0f, 1f) }
+        return List(compact.size) { i ->
+            InkPoint(coordinate(compact.x[i]), coordinate(compact.y[i]),
+                finite(if (compact.pressure[i].isNaN()) 0f else compact.pressure[i].toFloat()).coerceIn(0f, 1f),
+                compact.elapsed[i].coerceIn(0L, 86_400_000L))
+        }
+    }
+
+    /** True when the page or one of its layers, strokes, texts, images or blocks has no stored id (readPage makes one up). */
+    private fun lacksIds(page: JSONObject): Boolean {
+        fun missing(item: JSONObject) = item.optString("id", "").isBlank()
+        if (missing(page)) return true
+        return listOf("layers", "strokes", "texts", "images", "blocks").any { key ->
+            val items = page.optJSONArray(key) ?: return@any false
+            (0 until items.length()).any { items.optJSONObject(it)?.let(::missing) ?: false }
+        }
+    }
+
+    /** A stroke's points read straight from the stream: four primitives per point instead of a JSONObject and boxed numbers. */
+    private class PointArrays(val size: Int, val x: DoubleArray, val y: DoubleArray, val pressure: DoubleArray, val elapsed: LongArray)
+
+    /**
+     * Reads one page like JSONObject(text) would, except that each stroke's "points" become [PointArrays]. Values
+     * keep JSONObject's types (Integer, Long or Double for numbers, NULL for null) so every other field reads the same.
+     */
+    private fun readPageJson(input: java.io.Reader): JSONObject {
+        val reader = android.util.JsonReader(input).apply { isLenient = true }
+        fun number(text: String): Any = if (text.any { it == '.' || it == 'e' || it == 'E' }) text.toDouble()
+            else text.toLongOrNull()?.let { if (it in Int.MIN_VALUE..Int.MAX_VALUE) it.toInt() else it } ?: text.toDouble()
+        lateinit var value: (Int) -> Any
+        fun points(): Any {
+            var size = 0
+            var x = DoubleArray(64); var y = DoubleArray(64); var pressure = DoubleArray(64); var elapsed = LongArray(64)
+            reader.beginArray()
+            while (reader.hasNext()) {
+                if (size == x.size) { val n = size * 2; x = x.copyOf(n); y = y.copyOf(n); pressure = pressure.copyOf(n); elapsed = elapsed.copyOf(n) }
+                var px = Double.NaN; var py = Double.NaN; var pp = Double.NaN; var pt = 0L
+                if (reader.peek() != android.util.JsonToken.BEGIN_OBJECT) { reader.skipValue(); continue }
+                reader.beginObject()
+                while (reader.hasNext()) {
+                    val key = reader.nextName()
+                    // Numbers are read directly; a quoted number (never written by Folio) still converts like org.json does.
+                    val number = when (reader.peek()) {
+                        android.util.JsonToken.NUMBER -> reader.nextDouble()
+                        android.util.JsonToken.STRING -> reader.nextString().trim().toDoubleOrNull() ?: Double.NaN
+                        else -> { reader.skipValue(); Double.NaN }
+                    }
+                    when (key) {
+                        "x" -> px = number
+                        "y" -> py = number
+                        "pressure" -> pp = number
+                        "elapsedMillis" -> pt = if (number.isFinite()) number.toLong() else 0L
+                    }
+                }
+                reader.endObject()
+                x[size] = px; y[size] = py; pressure[size] = pp; elapsed[size] = pt; size++
+            }
+            reader.endArray()
+            return PointArrays(size, x, y, pressure, elapsed)
+        }
+        // depth 0 = the page, 1 = an element of its "strokes" array.
+        fun obj(depth: Int): JSONObject {
+            val result = JSONObject()
+            reader.beginObject()
+            while (reader.hasNext()) {
+                val key = reader.nextName()
+                when {
+                    depth == 1 && key == "points" && reader.peek() == android.util.JsonToken.BEGIN_ARRAY -> result.put(key, points())
+                    depth == 0 && key == "strokes" && reader.peek() == android.util.JsonToken.BEGIN_ARRAY -> {
+                        val strokes = JSONArray()
+                        reader.beginArray()
+                        while (reader.hasNext()) strokes.put(if (reader.peek() == android.util.JsonToken.BEGIN_OBJECT) obj(1) else value(-1))
+                        reader.endArray()
+                        result.put(key, strokes)
+                    }
+                    else -> result.put(key, value(-1))
+                }
+            }
+            reader.endObject()
+            return result
+        }
+        value = { depth ->
+            when (reader.peek()) {
+                android.util.JsonToken.BEGIN_OBJECT -> obj(depth)
+                android.util.JsonToken.BEGIN_ARRAY -> JSONArray().also { array -> reader.beginArray(); while (reader.hasNext()) array.put(value(-1)); reader.endArray() }
+                android.util.JsonToken.STRING -> reader.nextString()
+                android.util.JsonToken.NUMBER -> number(reader.nextString())
+                android.util.JsonToken.BOOLEAN -> reader.nextBoolean()
+                android.util.JsonToken.NULL -> { reader.nextNull(); JSONObject.NULL }
+                else -> throw org.json.JSONException("Unexpected JSON in notebook page: ${reader.peek()}")
+            }
+        }
+        // Like JSONObject(String), anything after the page's closing brace is ignored.
+        return obj(0)
+    }
+
+    private fun readPage(page: JSONObject, note: JSONObject): NotebookPage {
+        val layers = page.objects("layers").map { layer ->
+            InkLayer(layer.id(), layer.optString("name", "Layer"), layer.optBoolean("visible", true), layer.optBoolean("locked", false))
+        }.ifEmpty { listOf(InkLayer(id = "ink", name = "Layer 1")) }
+        // Older notes have implicit "ink" layers. Preserve orphaned content rather than hiding it.
+        val strokes = page.objects("strokes").map { stroke ->
+            InkStroke(
+                brush = stroke.optString("brush", "Pen"),
+                color = stroke.optInt("color", 0xFF252525.toInt()),
+                width = stroke.number("width", 3f, .01f, 256f),
+                points = readPoints(stroke, note),
+                id = stroke.id(), layerId = stroke.layer(), tags = stroke.strings("tags"), filled = stroke.optBoolean("filled", false), engine = stroke.optString("engine", "legacy"), lineStyle = stroke.optString("lineStyle", "solid"),
+                fillColor = if (stroke.has("fillColor") && !stroke.isNull("fillColor")) stroke.getInt("fillColor") else null,
+                texture = stroke.number("texture", .65f, 0f, 1f), grain = stroke.number("grain", 1f, .4f, 4f),
+                angle = stroke.number("angle", 0f, -180f, 180f), variant = stroke.optString("variant", ""),
+            )
+        }
+        val texts = page.objects("texts").map { text ->
+            InkText(text.id(), text.optString("text", ""), text.coordinate("x", note, .15f), text.coordinate("y", note, .15f),
+                text.number("size", 22f, 1f, 512f), text.optInt("color", 0xFF252525.toInt()), text.layer(),
+                text.optString("font", "Sans"), text.optBoolean("bold", false), text.optBoolean("italic", false),
+                text.optBoolean("underline", false), text.optString("alignment", "Start"), text.number("lineSpacing", 1f, .6f, 2.5f),
+                text.optString("kind", "plain"), text.optString("target", ""), text.number("boxWidth", .32f, .08f, 1f),
+                text.number("rotation", 0f, -360f, 360f), text.optBoolean("flipX", false), text.optBoolean("flipY", false), text.number("z", 3f, -1e6f, 1e6f))
+        }
+        val images = page.objects("images").map { image ->
+            InkImage(image.id(), image.optString("path", ""), image.coordinate("x", note, .1f), image.coordinate("y", note, .1f),
+                image.number("width", .6f, .001f, 1f), image.number("height", .4f, .001f, 1f), image.layer(),
+                image.number("rotation", 0f, -360f, 360f), image.optBoolean("flipX", false), image.optBoolean("flipY", false), image.number("z", 0f, -1e6f, 1e6f))
+        }
+        val blocks = page.objects("blocks").map { block ->
+            fun fractions(key: String) = block.optJSONArray(key)?.let { a -> (0 until a.length()).map { a.optDouble(it, 0.0).toFloat().coerceIn(.001f, 1f) } }.orEmpty()
+            InkBlock(block.id(), block.optString("kind", InkBlock.Table), block.coordinate("x", note, .2f), block.coordinate("y", note, .2f),
+                block.number("width", .5f, .01f, 4f), block.number("height", .3f, .01f, 4f), block.layer(), block.optInt("fill", 0),
+                block.optString("text", ""), block.number("textSize", 16f, 6f, 96f), fractions("rows"), fractions("columns"),
+                block.optBoolean("headerRow", true), block.optBoolean("headerColumn", true), block.number("borderWidth", 3f, 0f, 16f),
+                block.optInt("borderColor", 0xFF8E8E93.toInt()), block.optInt("headerFill", 0xFFC0C0C3.toInt()),
+                block.optJSONArray("merges")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optJSONArray(i)?.takeIf { it.length() == 4 }?.let { m -> List(4) { k -> m.optInt(k) } } } }.orEmpty(),
+                block.number("z", 1f, -1e6f, 1e6f))
+        }
+        val referencedLayers = (strokes.map { it.layerId } + texts.map { it.layerId } + images.map { it.layerId } + blocks.map { it.layerId }).distinct()
+        val recoveredLayers = referencedLayers.filter { id -> layers.none { it.id == id } }.map { InkLayer(id = it, name = "Recovered layer") }
+        return NotebookPage(page.id(), strokes, page.optString("template", "blank"), layers + recoveredLayers, texts, images, page.optString("outline", ""), blocks)
+    }
+
+    /** [pages], when given, were already read one by one (see load); otherwise they come from the note's "pages". */
+    private fun readNote(note: JSONObject, pages: List<NotebookPage>? = null): Notebook = Notebook(
         id = note.id(),
         title = note.optString("title", "Untitled note"),
         updatedAt = note.optLong("updatedAt", System.currentTimeMillis()).coerceAtLeast(0),
-        pages = note.objects("pages").map { page ->
-            val layers = page.objects("layers").map { layer ->
-                InkLayer(layer.id(), layer.optString("name", "Layer"), layer.optBoolean("visible", true), layer.optBoolean("locked", false))
-            }.ifEmpty { listOf(InkLayer(id = "ink", name = "Layer 1")) }
-            // Older notes have implicit "ink" layers. Preserve orphaned content rather than hiding it.
-            val strokes = page.objects("strokes").map { stroke ->
-                InkStroke(
-                    brush = stroke.optString("brush", "Pen"),
-                    color = stroke.optInt("color", 0xFF252525.toInt()),
-                    width = stroke.number("width", 3f, .01f, 256f),
-                    points = stroke.objects("points").map { point -> InkPoint(point.coordinate("x", note), point.coordinate("y", note), point.unit("pressure"), point.optLong("elapsedMillis", 0).coerceIn(0L, 86_400_000L)) },
-                    id = stroke.id(), layerId = stroke.layer(), tags = stroke.strings("tags"), filled = stroke.optBoolean("filled", false), engine = stroke.optString("engine", "legacy"), lineStyle = stroke.optString("lineStyle", "solid"),
-                    fillColor = if (stroke.has("fillColor") && !stroke.isNull("fillColor")) stroke.getInt("fillColor") else null,
-                    texture = stroke.number("texture", .65f, 0f, 1f), grain = stroke.number("grain", 1f, .4f, 4f),
-                    angle = stroke.number("angle", 0f, -180f, 180f), variant = stroke.optString("variant", ""),
-                )
-            }
-            val texts = page.objects("texts").map { text ->
-                InkText(text.id(), text.optString("text", ""), text.coordinate("x", note, .15f), text.coordinate("y", note, .15f),
-                    text.number("size", 22f, 1f, 512f), text.optInt("color", 0xFF252525.toInt()), text.layer(),
-                    text.optString("font", "Sans"), text.optBoolean("bold", false), text.optBoolean("italic", false),
-                    text.optBoolean("underline", false), text.optString("alignment", "Start"), text.number("lineSpacing", 1f, .6f, 2.5f),
-                    text.optString("kind", "plain"), text.optString("target", ""), text.number("boxWidth", .32f, .08f, 1f),
-                    text.number("rotation", 0f, -360f, 360f), text.optBoolean("flipX", false), text.optBoolean("flipY", false), text.number("z", 3f, -1e6f, 1e6f))
-            }
-            val images = page.objects("images").map { image ->
-                InkImage(image.id(), image.optString("path", ""), image.coordinate("x", note, .1f), image.coordinate("y", note, .1f),
-                    image.number("width", .6f, .001f, 1f), image.number("height", .4f, .001f, 1f), image.layer(),
-                    image.number("rotation", 0f, -360f, 360f), image.optBoolean("flipX", false), image.optBoolean("flipY", false), image.number("z", 0f, -1e6f, 1e6f))
-            }
-            val blocks = page.objects("blocks").map { block ->
-                fun fractions(key: String) = block.optJSONArray(key)?.let { a -> (0 until a.length()).map { a.optDouble(it, 0.0).toFloat().coerceIn(.001f, 1f) } }.orEmpty()
-                InkBlock(block.id(), block.optString("kind", InkBlock.Table), block.coordinate("x", note, .2f), block.coordinate("y", note, .2f),
-                    block.number("width", .5f, .01f, 4f), block.number("height", .3f, .01f, 4f), block.layer(), block.optInt("fill", 0),
-                    block.optString("text", ""), block.number("textSize", 16f, 6f, 96f), fractions("rows"), fractions("columns"),
-                    block.optBoolean("headerRow", true), block.optBoolean("headerColumn", true), block.number("borderWidth", 3f, 0f, 16f),
-                    block.optInt("borderColor", 0xFF8E8E93.toInt()), block.optInt("headerFill", 0xFFC0C0C3.toInt()),
-                    block.optJSONArray("merges")?.let { a -> (0 until a.length()).mapNotNull { i -> a.optJSONArray(i)?.takeIf { it.length() == 4 }?.let { m -> List(4) { k -> m.optInt(k) } } } }.orEmpty(),
-                    block.number("z", 1f, -1e6f, 1e6f))
-            }
-            val referencedLayers = (strokes.map { it.layerId } + texts.map { it.layerId } + images.map { it.layerId } + blocks.map { it.layerId }).distinct()
-            val recoveredLayers = referencedLayers.filter { id -> layers.none { it.id == id } }.map { InkLayer(id = it, name = "Recovered layer") }
-            NotebookPage(page.id(), strokes, page.optString("template", "blank"), layers + recoveredLayers, texts, images, page.optString("outline", ""), blocks)
-        }.ifEmpty { listOf(NotebookPage()) },
+        pages = (pages ?: note.objects("pages").map { page -> readPage(page, note) }).ifEmpty { listOf(NotebookPage()) },
         folderId = note.optString("folderId", "").ifBlank { null },
         favorite = note.optBoolean("favorite", false),
         openedAt = note.optLong("openedAt", 0),
