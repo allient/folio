@@ -1,3 +1,6 @@
-Folio 1.0.8
-- Corrige el cierre al abrir Folio con mucha escritura a mano: los cuadernos grandes ahora abren usando mucha menos memoria. Tus notas nunca se perdieron.
-- Si a un dispositivo aun le falta memoria, Folio muestra un aviso en vez de cerrarse, y tus notas quedan intactas.
+Folio 1.0.9
+- Lector: todos tus lápices guardados (colores, varios resaltadores) a un toque en la barra superior, con un botón de ojo para leer. Toca el lápiz elegido para sus ajustes.
+- Nueva opción: esconder la barra al escribir (Gestos).
+- Pasa de página con dos dedos mientras hay un lápiz activo.
+- Los dibujos aparecen junto con la página y la barra ya no parpadea.
+- Más seguro con mucha escritura: menos memoria y sin cierres si falta memoria.
