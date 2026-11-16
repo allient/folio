@@ -129,7 +129,7 @@ class ReaderActivity : AppCompatActivity() {
             catch (error: OutOfMemoryError) { engineError = "Not enough memory to open this document. Your notes are safe on this device; close other apps and try again." }
             finally { engineLoading = false }
         }
-        setContent { MaterialTheme(colorScheme = if (themeName == "Dark") darkColorScheme(primary = Color.White, onPrimary = Color.Black, secondary = Color.LightGray, secondaryContainer = Color.DarkGray) else lightColorScheme(primary = FolioBrand.Ink, secondary = FolioBrand.Muted, secondaryContainer = FolioBrand.SageSoft, onSecondaryContainer = FolioBrand.Ink, tertiary = FolioBrand.Sage, surface = Color.White, onSurface = FolioBrand.Ink, surfaceContainerLow = Color.White), typography = folioTypography()) { androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) { ReaderContent() } } }
+        setContent { val appStyle = HomePreferencesStore(this).read(); val accent = folioAccent(appStyle.accent); MaterialTheme(shapes = folioShapes(appStyle.corners), colorScheme = if (themeName == "Dark") darkColorScheme(primary = Color.White, onPrimary = Color.Black, secondary = Color.LightGray, secondaryContainer = Color.DarkGray) else lightColorScheme(primary = FolioBrand.Ink, secondary = FolioBrand.Muted, secondaryContainer = accent.soft, onSecondaryContainer = FolioBrand.Ink, tertiary = accent.primary, surfaceContainerHigh = androidx.compose.ui.graphics.lerp(Color.White, accent.soft, .6f), surface = Color.White, onSurface = FolioBrand.Ink, surfaceContainerLow = Color.White), typography = folioTypography()) { androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) { ReaderContent() } } }
     }
     // API 36+ displays may ignore app orientation requests even at phone-sized
     // window widths (for example a resized tablet). Follow the display to avoid letterboxing.
@@ -321,7 +321,7 @@ class ReaderActivity : AppCompatActivity() {
                 // The native PDF/EPUB view fills the screen beneath the Compose controls.
                 // Leave taps in the overlay bands for those controls; only a tap on the
                 // actual reading area dismisses the chrome.
-                val overlayTop = dp(ReaderChromeBands.TOP_DP)
+                val overlayTop = 0f
                 val overlayBottom = dp(ReaderChromeBands.BOTTOM_DP)
                 if (y < overlayTop || y > height - overlayBottom) return false
                 chromeVisible = false
@@ -447,6 +447,7 @@ class ReaderActivity : AppCompatActivity() {
             val paneWidth = maxWidth
             val paneHeight = maxHeight
             Box(Modifier.fillMaxSize()) {
+            Box(Modifier.fillMaxSize().padding(top = ReaderChromeBands.PAGE_TOP_DP.dp)) {
             when {
                     engineLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                     engineError != null -> Column(Modifier.align(Alignment.Center).padding(28.dp)) { Text("Could not open this document",style=MaterialTheme.typography.titleLarge); Text(engineError.orEmpty(),Modifier.padding(top=12.dp)); TextButton(onClick={finish()}) { Text("Back to library") } }
@@ -596,6 +597,7 @@ class ReaderActivity : AppCompatActivity() {
                         }
                     })
                 }
+            }
             }
             if (tool == "MarqueeCrop") Surface(Modifier.align(Alignment.TopCenter).fillMaxWidth().zIndex(4f), shadowElevation = 3.dp) {
                 Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {

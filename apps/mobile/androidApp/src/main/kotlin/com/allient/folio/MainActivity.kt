@@ -234,17 +234,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
     BackHandler(enabled = current != null && !importing) { openNotebookId = null }
     BackHandler(enabled = showSettings && !importing) { showSettings = false }
 
-    MaterialTheme(shapes = Shapes(
-        extraSmall = RoundedCornerShape(8.dp), small = RoundedCornerShape(12.dp), medium = RoundedCornerShape(16.dp),
-        large = RoundedCornerShape(24.dp), extraLarge = RoundedCornerShape(28.dp),
-    ), typography = folioTypography(), colorScheme = lightColorScheme(
-        primary = FolioBrand.Sage, onPrimary = Color.White, primaryContainer = FolioBrand.SageSoft, onPrimaryContainer = FolioBrand.Ink,
-        secondary = FolioBrand.Ink, onSecondary = Color.White, secondaryContainer = FolioBrand.SageSoft, onSecondaryContainer = FolioBrand.Ink,
-        background = FolioBrand.Paper, onBackground = FolioBrand.Ink, surface = Color.White, onSurface = FolioBrand.Ink,
-        onSurfaceVariant = FolioBrand.Muted, outline = Color(0xFFCBC5B8), outlineVariant = FolioBrand.Hairline,
-        surfaceContainerLowest = Color.White, surfaceContainerLow = FolioBrand.Paper, surfaceContainer = Color(0xFFF7F3EA),
-        surfaceContainerHigh = Color(0xFFF3EEE3), surfaceContainerHighest = FolioBrand.Cream,
-    )) {
+    FolioTheme(homePreferences) {
         Surface(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.displayCutout).semantics { testTagsAsResourceId = true }, color = Color.White) {
             when {
                 repository.loading -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
@@ -437,7 +427,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
             }
             if (importing) {
                 Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
-                    Surface(shape = RoundedCornerShape(8.dp), color = Color.White) {
+                    FolioDialogSurface {
                         Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(color = FolioBrand.Sage)
                             Text("Importing document…", Modifier.padding(top = 20.dp))

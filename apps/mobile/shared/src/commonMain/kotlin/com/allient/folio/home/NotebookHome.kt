@@ -1,5 +1,7 @@
 package com.allient.folio.home
 
+import com.allient.folio.FolioDialogSurface
+
 import com.allient.folio.penPressureFilter
 
 import androidx.compose.foundation.Canvas
@@ -513,7 +515,7 @@ fun NotebookHome(
                 DetailAction(Symbol.Copy, "Copy") { detailsNoteId = null; onCopy(id) },
                 DetailAction(Symbol.Rename, "Rename") { detailsNoteId = null; renameTitle = note.title; renameId = id },
                 DetailAction(Symbol.Share, "Share and export") { detailsNoteId = null; exportId = id },
-                DetailAction(Symbol.Star, if (note.favorite) "Unfavorite" else "Favorites") { onFavorite(id) },
+                DetailAction(Symbol.Star, if (note.favorite) "Unfavorite" else "Favorites", active = note.favorite) { onFavorite(id) },
             ))
     } }
     detailsBookId?.let { id -> liveBooks.firstOrNull { it.id == id }?.let { book ->
@@ -524,7 +526,7 @@ fun NotebookHome(
                 DetailAction(Symbol.Open, "Open") { detailsBookId = null; onOpenBook(id) },
                 DetailAction(Symbol.Trash, "Delete") { detailsBookId = null; deleteBookId = id },
                 DetailAction(Symbol.Folder, "Move") { detailsBookId = null; moveBookId = id },
-                DetailAction(Symbol.Star, if (book.favorite) "Unfavorite" else "Favorites") { onFavoriteBook(id, !book.favorite) },
+                DetailAction(Symbol.Star, if (book.favorite) "Unfavorite" else "Favorites", active = book.favorite) { onFavoriteBook(id, !book.favorite) },
             ))
     } }
     detailsFolderId?.let { id -> folders.firstOrNull { it.id == id }?.let { folder ->
@@ -849,7 +851,7 @@ internal fun HomeIconButton(symbol: Symbol, label: String, selected: Boolean, on
 internal fun HomeSymbol(symbol: Symbol, modifier: Modifier, folderFill: Boolean = false, tint: Color = Ink) =
     LucideGlyph(symbol.icon, modifier, tint, fill = if (folderFill) Color(0xFFF2C94C) else null)
 
-private data class DetailAction(val icon: Symbol, val label: String, val run: () -> Unit)
+private data class DetailAction(val icon: Symbol, val label: String, val active: Boolean = false, val run: () -> Unit)
 
 @Composable
 private fun LibraryDetailsDialog(
@@ -857,7 +859,7 @@ private fun LibraryDetailsDialog(
     preview: @Composable (Modifier) -> Unit, onDismiss: () -> Unit, actions: List<DetailAction>,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(Modifier.fillMaxWidth(.94f).widthIn(max = 760.dp).heightIn(max = 740.dp), shape = RoundedCornerShape(28.dp), color = Color.White, tonalElevation = 6.dp) {
+        FolioDialogSurface(Modifier.fillMaxWidth(.94f).widthIn(max = 760.dp).heightIn(max = 740.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Box(Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
                     Text("General", fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
@@ -881,8 +883,12 @@ private fun LibraryDetailsDialog(
                             Row(Modifier.fillMaxWidth()) {
                                 row.forEach { action ->
                                     Column(Modifier.weight(1f).testTag("details-${action.label.lowercase().replace(' ', '-')}").clickable(onClick = action.run).padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Box(Modifier.size(58.dp).border(1.dp, Line, androidx.compose.foundation.shape.CircleShape), contentAlignment = Alignment.Center) { HomeSymbol(action.icon, Modifier.size(26.dp)) }
-                                        Text(action.label, Modifier.padding(top = 10.dp), fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                        Box(
+                                            Modifier.size(58.dp).background(if (action.active) Color(0xFFFFF3CC) else Color.Transparent, androidx.compose.foundation.shape.CircleShape)
+                                                .border(if (action.active) 2.dp else 1.dp, if (action.active) Color(0xFFF2C94C) else Line, androidx.compose.foundation.shape.CircleShape),
+                                            contentAlignment = Alignment.Center,
+                                        ) { HomeSymbol(action.icon, Modifier.size(26.dp), folderFill = action.active) }
+                                        Text(action.label, Modifier.padding(top = 10.dp), fontSize = 12.sp, fontWeight = if (action.active) FontWeight.SemiBold else null, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     }
                                 }
                                 repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }

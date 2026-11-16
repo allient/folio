@@ -14,7 +14,6 @@ fun UsageStatsPrompt() {
     AlertDialog(
         onDismissRequest = {},
         properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
-        containerColor = FolioBrand.Paper,
         title = { Text("Help improve Folio", color = FolioBrand.Ink) },
         text = {
             Text(

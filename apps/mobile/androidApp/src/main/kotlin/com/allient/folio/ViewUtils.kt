@@ -13,5 +13,7 @@ internal fun View.dp(value: Float): Float = value * resources.displayMetrics.den
  */
 internal object ReaderChromeBands {
     const val TOP_DP = 88f
+    /** Fixed strip above the page, so showing the top bar never moves the text. */
+    const val PAGE_TOP_DP = 28f
     const val BOTTOM_DP = 176f
 }

@@ -1,6 +1,4 @@
-Folio 1.0.9
-- Lector: todos tus lápices guardados (colores, varios resaltadores) a un toque en la barra superior, con un botón de ojo para leer. Toca el lápiz elegido para sus ajustes.
-- Nueva opción: esconder la barra al escribir (Gestos).
-- Pasa de página con dos dedos mientras hay un lápiz activo.
-- Los dibujos aparecen junto con la página y la barra ya no parpadea.
-- Más seguro con mucha escritura: menos memoria y sin cierres si falta memoria.
+Folio 1.0.10
+- Lector: la página mantiene una franja fija arriba, así la barra superior ya no tapa las primeras líneas y el texto no salta al mostrar u ocultar la barra.
+- Biblioteca: un favorito ahora muestra una estrella amarilla rellena y un botón resaltado en los detalles.
+- El color de acento y el estilo de esquinas que elijas ahora se aplican a diálogos, menús y hojas, también en el lector y en las pizarras en vivo.
