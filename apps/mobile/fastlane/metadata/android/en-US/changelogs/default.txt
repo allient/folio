@@ -1,6 +1,3 @@
-Folio 1.0.6
-- Faster autosave in big notebooks: no slowdown as pages pile up.
-- Highlighters now darken where a stroke crosses itself, live and after lifting the pen.
-- Reader: pen, highlighter and pencil one tap away in the top bar; tap the middle of the page to show or hide it. Nothing is drawn until you pick a pen.
-- Leaving the reader is much faster.
-- Cleaner More menu and slightly taller tabs.
+Folio 1.0.8
+- Fixes Folio closing on start for people with lots of handwriting: big notebooks now open using much less memory. Your notes were never lost.
+- If a device still runs out of memory, Folio shows a message instead of closing, and your notes stay untouched.

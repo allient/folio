@@ -1,6 +1,3 @@
-Folio 1.0.6
-- Autoguardado más rápido en cuadernos grandes: sin lentitud al crecer las páginas.
-- Los resaltadores se oscurecen donde el trazo se cruza, al escribir y al levantar el lápiz.
-- Lector: pluma, resaltador y lápiz a un toque en la barra superior; toca el centro de la página para mostrarla u ocultarla. No se dibuja nada hasta elegir un lápiz.
-- Salir del lector es mucho más rápido.
-- Menú Más más limpio y pestañas un poco más altas.
+Folio 1.0.8
+- Corrige el cierre al abrir Folio con mucha escritura a mano: los cuadernos grandes ahora abren usando mucha menos memoria. Tus notas nunca se perdieron.
+- Si a un dispositivo aun le falta memoria, Folio muestra un aviso en vez de cerrarse, y tus notas quedan intactas.

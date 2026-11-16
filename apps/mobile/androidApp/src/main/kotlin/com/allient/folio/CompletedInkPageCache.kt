@@ -12,6 +12,9 @@ internal class CompletedInkPageCache {
     private data class Block(val source: Any, val node: RenderNode)
     private val blocks = mutableMapOf<String, Block>()
     private var commands: List<RenderNode?> = emptyList()
+    // The page below and above the live stroke, each flattened into one texture: a dense page of textured ink is
+    // rasterised once per change instead of on every frame. Only when not zoomed (a texture would blur) and bounded.
+    private var layers: List<RenderNode?> = emptyList()
     private var revision = -1L
     private var width = 0
     private var height = 0
@@ -21,7 +24,8 @@ internal class CompletedInkPageCache {
     fun draw(canvas: Canvas, page: NotebookPage, contentRevision: Long, w: Int, h: Int, scale: Float,
              images: Map<String, Bitmap>, filesDir: File, ink: JetpackInkEngine, activeLayerId: String,
              live: (Canvas) -> Unit, unbounded: Boolean = false) {
-        if (revision != contentRevision || width != w || height != h || zoom != scale || blocks.values.any { !it.node.hasDisplayList() }) {
+        if (revision != contentRevision || width != w || height != h || zoom != scale || blocks.values.any { !it.node.hasDisplayList() } ||
+            layers.any { it != null && !it.hasDisplayList() }) {
             // A render node clips to its bounds, so on the infinite canvas they cover all content, not just the first sheet.
             val nextExtent = if (!unbounded) android.graphics.Rect(0, 0, w, h) else worldContentBounds(page).let { b ->
                 val pad = w * .05f
@@ -73,9 +77,32 @@ internal class CompletedInkPageCache {
             val iterator = blocks.iterator()
             while (iterator.hasNext()) { val entry = iterator.next(); if (entry.key !in used) { entry.value.node.discardDisplayList(); iterator.remove() } }
             commands = next; revision = contentRevision; width = w; height = h; zoom = scale
+            layers.forEach { it?.discardDisplayList() }
+            layers = if (unbounded || scale > 1.01f) emptyList() else flatten(next, w, h)
         }
-        for (node in commands) if (node == null) live(canvas) else canvas.drawRenderNode(node)
+        for (node in layers.ifEmpty { commands }) if (node == null) live(canvas) else canvas.drawRenderNode(node)
     }
 
-    fun release() { blocks.values.forEach { it.node.discardDisplayList() }; blocks.clear(); commands = emptyList(); revision = -1L }
+    /** Groups the nodes between live-ink markers into one compositing layer each, keeping the markers. */
+    private fun flatten(nodes: List<RenderNode?>, w: Int, h: Int): List<RenderNode?> {
+        val out = mutableListOf<RenderNode?>()
+        var group = mutableListOf<RenderNode>()
+        fun close() {
+            if (group.isEmpty()) return
+            val layer = RenderNode("Folio page layer")
+            layer.setPosition(0, 0, w, h)
+            val recording = layer.beginRecording(w, h)
+            try { group.forEach { recording.drawRenderNode(it) } } finally { layer.endRecording() }
+            layer.setUseCompositingLayer(true, null)
+            out += layer; group = mutableListOf()
+        }
+        for (node in nodes) if (node == null) { close(); out += null } else group += node
+        close()
+        return out
+    }
+
+    fun release() {
+        layers.forEach { it?.discardDisplayList() }; layers = emptyList()
+        blocks.values.forEach { it.node.discardDisplayList() }; blocks.clear(); commands = emptyList(); revision = -1L
+    }
 }
