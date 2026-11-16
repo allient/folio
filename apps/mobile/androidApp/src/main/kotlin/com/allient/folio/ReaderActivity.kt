@@ -256,16 +256,16 @@ class ReaderActivity : AppCompatActivity() {
         val readerSlots = readerBrushes(brushState.presets, brushState.selected, pencil = !compactReader)
         // Drawing keeps only the reader top bar on screen (no floating bar); the rest of the chrome hides so the page takes ink.
         var readerNotice by remember { mutableStateOf<String?>(null) }
-        // The drawing bar is hidden once a pen is picked; a finger tap in the middle of the page shows or hides it.
+        // Picking a pen keeps the bar open; a finger tap in the middle of the page shows or hides it. Tapping the pen again deselects it and keeps the controls.
         var drawingBarShown by remember { mutableStateOf(false) }
         fun startDrawing(brush: BrushStyle) {
-            brushState.selected = brush; tool = "Pen"; drawingToolbar = true; drawingPopup = null; chromeVisible = false; drawingBarShown = false
+            brushState.selected = brush; tool = "Pen"; drawingToolbar = true; drawingPopup = null; chromeVisible = false; drawingBarShown = true
             if (!settings.getBoolean("drawBarHint", false)) {
                 readerNotice = "Tap the middle of the page with a finger to show or hide the bar."
                 settings.edit().putBoolean("drawBarHint", true).apply()
             }
         }
-        fun stopDrawing() { tool = "Read"; drawingToolbar = false; drawingPopup = null; drawingBarShown = false }
+        fun stopDrawing() { tool = "Read"; drawingToolbar = false; drawingPopup = null; drawingBarShown = false; chromeVisible = true }
         var editingMark by remember { mutableStateOf<ReaderAnnotation?>(null) }
         var markKind by remember { mutableStateOf(AnnotationKind.HIGHLIGHT) }
         var noteAnchor by rememberSaveable { mutableStateOf<String?>(null) }
