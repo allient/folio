@@ -59,7 +59,7 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 **Read with a pen in hand**
 - Open PDF and EPUB books, from the library or from other apps.
 - Optional folder mosaics with note, canvas and book previews: folder options → Edit folder → Mosaic.
-- Write on PDF pages with your notebook pens (pen, highlighter, pencil on tablets), straight from the top bar with one tap. Your pens are shared between the reader and notebooks.
+- Write on PDF pages with every pen you saved in the notebook (colours and widths included), straight from the top bar with one tap. Your pens are shared between the reader and notebooks.
 - Highlight, underline, add notes and bookmarks. Long-press a word (finger or stylus) to select it and drag the large handles to extend; the selection toolbar is one small row you can drag out of the way.
 - 11 highlight colours plus a custom colour picker. Long-press a word inside a saved mark, then tap the palette button to change its type or colour (with a live preview) or delete it.
 - Adjust PDF text weight, sharpness, pale backgrounds and dark tones; keep time, battery and reading position in view.
@@ -139,7 +139,7 @@ Marquee Crop and Reset appear in the Crop row; Reset restores the fit controls.
 Reader Split View supports the current document, another PDF/EPUB, handwritten study notes
 or text notes, with side-by-side or stacked panes and saved landscape orientation controls.
 
-In the PDF reader the pens sit in the top bar: tap one to write with it (only the top bar stays, with undo and redo), tap the middle of the page with a finger to hide or show it, and tap the selected pen again to go back to reading. Long-press a pen for its settings (type, size, colour, pressure). Pens are shared with the notebook editor. The bar also has the eraser (single strokes or the whole page), undo/redo, Bookmark and More. Nothing is drawn unless a pen is picked.
+In the PDF reader your saved pens (several highlighters in different colours, pens, pencils) sit in the top bar: tap one to write with it (the bar stays with undo and redo, or hides if you turn on Gestures → Hide the bar while writing, and then a finger tap in the middle shows it), and tap the selected pen again for its settings (type, size, colour, pressure). The eye button (Read mode, or Back) returns to reading. Pens are shared with the notebook editor. The bar also has the eraser (single strokes or the whole page), undo/redo, Bookmark and More. Nothing is drawn unless a pen is picked.
 
 In the PDF reader, hold a word and drag to select text, then drag either selection handle to adjust the passage. The selection toolbar offers highlight colors, solid/dashed/wavy underlines, notes, copy, share and Remove marks. Long-press an existing mark to edit its color or delete it. Scanned pages need OCR first.
 

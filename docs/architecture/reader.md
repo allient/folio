@@ -33,6 +33,16 @@ references, Knotes folder assignments, reading positions, bookmarks and annotati
 include PDF/EPUB bytes or covers. Restored books appear as unavailable until their original is
 reimported; a matching content hash reconnects it to saved annotations, folder and progress.
 
+### Memory and speed with heavy annotation
+
+A book can hold thousands of ink strokes, each stored as one annotation row whose anchor is a JSON string with every point. To keep the reader fast and inside the heap:
+
+- `ReaderAnnotation.page` is read once from the anchor text; nothing parses an anchor as JSON to find its page.
+- `ReaderViewModel` updates its annotation list in memory after a save or removal, and saving the reading position does not re-read the book's annotations.
+- When a page opens, `PdfReaderSession.projectAll` maps all of its marks with one page open and one transform, `JetpackInkEngine.prepare` builds each stroke's native object on a worker, and the page image is shown together with its marks.
+- The reader loads the notebook library (for study mode) only when it is used.
+- An `OutOfMemoryError` while rendering a page or opening a book is shown as a message and keeps the notes untouched.
+
 ## Features
 
 - Open a folder’s options → **Edit folder** → **Mosaic**, then save. This general folder style shows a 2×2 mosaic of up to four recent items: All mixes notebook pages, canvases and book covers; Notes, Canvas and Books show their matching types. The editor previews the actual items, or sample tiles before items are added. Empty folders retain their artwork; deleted items are excluded. The style is saved per folder and works in grid and list views.

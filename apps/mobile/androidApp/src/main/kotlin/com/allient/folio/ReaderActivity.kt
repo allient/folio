@@ -72,7 +72,10 @@ import kotlin.math.roundToInt
 
 class ReaderActivity : AppCompatActivity() {
     private lateinit var model: ReaderViewModel
-    private lateinit var notebookRepository: NotebookViewModel
+    // The notebook library is loaded only when study mode (or linking a notebook) needs it, not every time a book opens.
+    private var notebookRepositoryOrNull: NotebookViewModel? = null
+    private val notebookRepository: NotebookViewModel get() = notebookRepositoryOrNull
+        ?: ViewModelProvider(this)[NotebookViewModel::class.java].also { notebookRepositoryOrNull = it; if (::model.isInitialized) model.notebooksTouched = true }
     private var pdf: PdfReaderSession? by mutableStateOf(null)
     private var pdfContents by mutableStateOf<List<ReaderContentsEntry>>(emptyList())
     private var publication: Publication? by mutableStateOf(null)
@@ -107,7 +110,6 @@ class ReaderActivity : AppCompatActivity() {
         lineHeight = settings.getFloat("lineHeight", 1.5f).toDouble()
         requestedOrientation = readerOrientation(settings.getInt("readerLandscape", 0))
         model = ViewModelProvider(this)[ReaderViewModel::class.java]
-        notebookRepository = ViewModelProvider(this)[NotebookViewModel::class.java]
         lifecycleScope.launch {
             try {
                 model.load(requireNotNull(intent.getStringExtra("documentId")))
@@ -124,6 +126,7 @@ class ReaderActivity : AppCompatActivity() {
                 } else publication = withContext(Dispatchers.IO) { EpubReaderEngine.open(this@ReaderActivity, File(document.path)) }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { engineError = error.message ?: "Could not open document" }
+            catch (error: OutOfMemoryError) { engineError = "Not enough memory to open this document. Your notes are safe on this device; close other apps and try again." }
             finally { engineLoading = false }
         }
         setContent { MaterialTheme(colorScheme = if (themeName == "Dark") darkColorScheme(primary = Color.White, onPrimary = Color.Black, secondary = Color.LightGray, secondaryContainer = Color.DarkGray) else lightColorScheme(primary = FolioBrand.Ink, secondary = FolioBrand.Muted, secondaryContainer = FolioBrand.SageSoft, onSecondaryContainer = FolioBrand.Ink, tertiary = FolioBrand.Sage, surface = Color.White, onSurface = FolioBrand.Ink, surfaceContainerLow = Color.White), typography = folioTypography()) { androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) { ReaderContent() } } }
@@ -253,19 +256,30 @@ class ReaderActivity : AppCompatActivity() {
         LaunchedEffect(penBrush.presetId) { settings.edit().putString("reader-selected-brush", penBrush.presetId).apply() }
         // The book pens (pen, highlighter, pencil on tablets) shown in the reader top bar.
         val compactReader = LocalConfiguration.current.screenWidthDp < 600
-        val readerSlots = readerBrushes(brushState.presets, brushState.selected, pencil = !compactReader)
+        val readerSlots = readerBrushes(brushState.presets, brushState.selected)
         // Drawing keeps only the reader top bar on screen (no floating bar); the rest of the chrome hides so the page takes ink.
         var readerNotice by remember { mutableStateOf<String?>(null) }
-        // Picking a pen keeps the bar open; a finger tap in the middle of the page shows or hides it. Tapping the pen again deselects it and keeps the controls.
+        // Picking a pen keeps the bar on screen, unless "Hide the bar while writing" is on: then it hides and a finger tap in
+        // the middle of the page shows or hides it. Tapping the selected pen again deselects it and shows the controls.
         var drawingBarShown by remember { mutableStateOf(false) }
+        // The top bar lives in the reader's control window while reading and in the main window while writing. When
+        // writing stops, the writing copy stays a moment so the bar never blinks while the other one fades in.
+        var barHandoff by remember { mutableStateOf(false) }
+        LaunchedEffect(barHandoff) { if (barHandoff) { delay(320); barHandoff = false } }
         fun startDrawing(brush: BrushStyle) {
-            brushState.selected = brush; tool = "Pen"; drawingToolbar = true; drawingPopup = null; chromeVisible = false; drawingBarShown = true
-            if (!settings.getBoolean("drawBarHint", false)) {
+            brushState.selected = brush; tool = "Pen"; drawingToolbar = true; drawingPopup = null
+            drawingBarShown = !gestures.hideBarWhileWriting
+            // The writing bar appears first and the controls window closes a moment later, so the bar never blinks.
+            if (chromeVisible && drawingBarShown) scope.launch { delay(160); chromeVisible = false } else chromeVisible = false
+            if (gestures.hideBarWhileWriting && !settings.getBoolean("drawBarHint", false)) {
                 readerNotice = "Tap the middle of the page with a finger to show or hide the bar."
                 settings.edit().putBoolean("drawBarHint", true).apply()
             }
         }
-        fun stopDrawing() { tool = "Read"; drawingToolbar = false; drawingPopup = null; drawingBarShown = false; chromeVisible = true }
+        fun stopDrawing() {
+            barHandoff = drawingBarShown && pdf != null
+            tool = "Read"; drawingToolbar = false; drawingPopup = null; drawingBarShown = false; chromeVisible = true
+        }
         var editingMark by remember { mutableStateOf<ReaderAnnotation?>(null) }
         var markKind by remember { mutableStateOf(AnnotationKind.HIGHLIGHT) }
         var noteAnchor by rememberSaveable { mutableStateOf<String?>(null) }
@@ -465,6 +479,7 @@ class ReaderActivity : AppCompatActivity() {
                                 selected = null
                             }
                             view.onPageTap = { x, y, width, height -> handlePageTap(x, y, width, height) }
+                            view.drawingTapToggles = gestures.hideBarWhileWriting
                             view.onDrawingTap = { drawingBarShown = !drawingBarShown; drawingPopup = null }
                             view.onSelectionBounds = { anchor, rect ->
                                 if (selected?.anchor == anchor) selectionTextBounds = anchor to androidx.compose.ui.geometry.Rect(rect.left, rect.top, rect.right, rect.bottom)
@@ -602,11 +617,11 @@ class ReaderActivity : AppCompatActivity() {
                     modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
-            val pageInk = model.annotations.filter { it.kind == AnnotationKind.INK && JSONObject(it.anchor).optInt("page", -1) == page }
+            val pageInk = model.annotations.filter { it.kind == AnnotationKind.INK && it.page == page }
             fun undoInk() { scope.launch {
                 // Undo stays enabled while a stroke is still being saved; it simply waits for the save, so the button never blinks.
                 snapshotFlow { model.pendingWrites }.first { it == 0 }
-                model.annotations.lastOrNull { it.kind == AnnotationKind.INK && JSONObject(it.anchor).optInt("page", -1) == page }?.let { redoInk.add(it); model.remove(it) }
+                model.annotations.lastOrNull { it.kind == AnnotationKind.INK && it.page == page }?.let { redoInk.add(it); model.remove(it) }
             } }
             fun redoLastInk() { if (redoInk.isNotEmpty()) scope.launch { snapshotFlow { model.pendingWrites }.first { it == 0 }; if (redoInk.isNotEmpty()) model.save(redoInk.removeAt(redoInk.lastIndex)) } }
             // The reader top bar: one scrolling row after the back arrow. PDF pens sit in it: one tap picks a pen and
@@ -635,8 +650,15 @@ class ReaderActivity : AppCompatActivity() {
                 Row(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
                     val drawing = drawingToolbar && pdf != null && (tool == "Pen" || tool == "Eraser")
                     val pens: @Composable () -> Unit = {
-                        if (pdf != null) ReaderBrushButtons(readerSlots, brushState, drawing = tool == "Pen",
-                            onBrush = ::startDrawing, onBrushChange = { brush -> brushState.update(brush); tool = "Pen" }, onStopDrawing = ::stopDrawing)
+                        if (pdf != null) {
+                            // Always there, so nothing shifts when a pen is picked: marked while reading, it puts the pen down.
+                            // Thin lines set the pens section (read mode switch + saved pens) apart from the other buttons.
+                            ReaderReadAction(active = !drawing) { if (drawing) stopDrawing() }
+                            ReaderBarDivider()
+                            ReaderBrushButtons(readerSlots, brushState, drawing = tool == "Pen",
+                                onBrush = ::startDrawing, onBrushChange = { brush -> brushState.update(brush); tool = "Pen" })
+                            ReaderBarDivider()
+                        }
                     }
                     val eraser: @Composable () -> Unit = {
                         if (pdf != null) ReaderEraserAction(tool == "Eraser") {
@@ -652,23 +674,25 @@ class ReaderActivity : AppCompatActivity() {
                         }
                     }
                     val docAction: @Composable () -> Unit = { ReaderAction(Lucide.FileText, "Doc", Modifier.width(48.dp)) { panel = "Document" } }
-                    val search: @Composable () -> Unit = { ReaderAction(InkIcon.Search, "Search", Modifier.width(if (compactReader) 52.dp else 56.dp)) { panel = "Search" } }
                     val gesturesAction: @Composable () -> Unit = { ReaderAction(InkIcon.Hand, "Gestures", Modifier.width(64.dp)) { panel = "Gestures" } }
-                    docAction()
-                    if (compactReader) { pens(); if (drawing) { eraser(); history() }; search() }
+                    if (compactReader) { pens(); if (drawing) { eraser(); history() } }
                     // Tablets: the same order whether reading or writing; Gestures always sits at the end.
-                    else { search(); pens(); eraser(); history() }
+                    else { pens(); eraser(); history() }
                     // EPUBs have no ink: their notes entry opens the highlights and notes list.
                     if (pdf == null) ReaderAction(Lucide.NotebookPen, "Notes", Modifier.width(56.dp)) { panel = "Annotations" }
                     ReaderAction(InkIcon.ReaderBookmark, "Bookmark", Modifier.width(if (compactReader) 60.dp else 62.dp), active = bookmark != null, enabled = currentAnchor() != null) { toggleBookmark() }
-                    ReaderAction(InkIcon.More, "More", Modifier.width(if (compactReader) 48.dp else 56.dp)) { panel = "More" }
                     if (compactReader) { if (!drawing) eraser(); gesturesAction() } else gesturesAction()
+                    // Doc and More close the bar, after Gestures.
+                    docAction()
+                    ReaderAction(InkIcon.More, "More", Modifier.width(if (compactReader) 48.dp else 56.dp)) { panel = "More" }
                 }
             }
             HorizontalDivider()
             }
-            if (drawingToolbar && !chromeVisible && pdf != null && drawingBarShown) {
+            if (pdf != null && ((drawingToolbar && drawingBarShown) || (barHandoff && chromeVisible))) {
                 Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().testTag("reader-drawing-bar").onSizeChanged { topChromeHeight = it.height }.background(MaterialTheme.colorScheme.surface).zIndex(1f)) { topChrome() }
+            }
+            if (drawingToolbar && !chromeVisible && pdf != null && drawingBarShown) {
                 drawingPopup?.let { popup ->
                     Surface(Modifier.align(Alignment.TopCenter).padding(top = with(androidx.compose.ui.platform.LocalDensity.current) { topChromeHeight.toDp() } + 8.dp, start = 16.dp, end = 16.dp).widthIn(max = 480.dp).zIndex(2f),
                         shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline), shadowElevation = 3.dp) {
@@ -745,7 +769,12 @@ class ReaderActivity : AppCompatActivity() {
                 properties = DialogProperties(usePlatformDefaultWidth = false),
             ) {
                 val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
-                SideEffect { dialogWindow?.setDimAmount(0f); dialogWindow?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND) }
+                SideEffect {
+                    dialogWindow?.setDimAmount(0f); dialogWindow?.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+                    // No zoom/fade on this window: the top bar also exists in the main window while writing, and the two
+                    // copies would show through each other as a flicker.
+                    dialogWindow?.setWindowAnimations(0)
+                }
                 Box(
                     Modifier.fillMaxSize().semantics { testTagsAsResourceId = true }.background(Color.Transparent).pointerInput(chromeVisible, panel, readerTab) {
                         if (chromeVisible) awaitEachGesture {
@@ -776,7 +805,7 @@ class ReaderActivity : AppCompatActivity() {
             if (chromeVisible) Column(Modifier.align(Alignment.TopCenter).fillMaxWidth().onSizeChanged { topChromeHeight = it.height }.background(MaterialTheme.colorScheme.surface).zIndex(1f)) {
             topChrome()
             if (tool == "Select" && pdf != null && selected == null) Text("Drag across text to select a passage. Long-press a word to select it.",Modifier.padding(horizontal=16.dp,vertical=4.dp),style=MaterialTheme.typography.bodySmall)
-            if (chromeVisible && tool == "Pen" && pdf != null) Text("Write directly on the page. Switch to Read to pan or zoom.",Modifier.padding(horizontal=16.dp,vertical=4.dp),style=MaterialTheme.typography.bodySmall)
+            if (chromeVisible && tool == "Pen" && !drawingToolbar && pdf != null) Text("Write directly on the page. Switch to Read to pan or zoom.",Modifier.padding(horizontal=16.dp,vertical=4.dp),style=MaterialTheme.typography.bodySmall)
             if (chromeVisible) readerNotice?.let { notice -> Row(Modifier.fillMaxWidth().padding(horizontal=16.dp),verticalAlignment=Alignment.CenterVertically) { Text(notice,Modifier.weight(1f),style=MaterialTheme.typography.bodySmall);TextButton(onClick={readerNotice=null}){Text("Dismiss")} } }
             }
             if (chromeVisible && selected == null && readerTab != "Contents") Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().heightIn(max = paneHeight * .65f).onSizeChanged { bottomChromeHeight = it.height }.background(MaterialTheme.colorScheme.surface).zIndex(1f)) {
@@ -805,7 +834,8 @@ class ReaderActivity : AppCompatActivity() {
                     enabled = if (pdf != null) page < pdf!!.pageCount - 1 else nav != null, modifier = Modifier.widthIn(min = 48.dp).semantics { contentDescription = "Next page" }) { Text("›", fontSize = 28.sp) }
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-                ReaderAction(Lucide.TableOfContents, "Contents", Modifier.weight(1f)) { readerTab = "Contents" }
+                // Search sits first in this row; Contents is one tap away in the tab bar below.
+                ReaderAction(InkIcon.Search, "Search", Modifier.weight(1f)) { panel = "Search" }
                 ReaderAction(Lucide.TextSelect, "Select", Modifier.weight(1f), active = tool == "Select", enabled = pdf != null) { tool = "Select"; chromeVisible = false }
                 ReaderAction(Lucide.PenLine, "Handwriting", Modifier.weight(1f), enabled = pdf != null) { tool = "Pen"; drawingToolbar = true; chromeVisible = false; drawingBarShown = false }
                 ReaderAction(InkIcon.Share, "Export notes", Modifier.weight(1f), enabled = !exporting && model.pendingWrites == 0) { export("notes") }
@@ -1050,7 +1080,7 @@ class ReaderActivity : AppCompatActivity() {
                         }
                     }
                     "Pen settings" -> Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Text("Long-press a pen in the top bar to open these settings while writing.", Modifier.padding(bottom = 8.dp), style = MaterialTheme.typography.bodySmall)
+                        Text("Tap the selected pen in the top bar, or long-press any pen, to open these settings while writing.", Modifier.padding(bottom = 8.dp), style = MaterialTheme.typography.bodySmall)
                         BrushSettings(brushState.selected, brushState.options, { brush -> brushState.update(brush) },
                             onAdd = { brushState.add(brushState.selected) }, onDelete = { brushState.delete() }, editHint = READER_PEN_EDIT_HINT)
                     }
@@ -1062,6 +1092,10 @@ class ReaderActivity : AppCompatActivity() {
                     }
                     "Gestures" -> {
                         Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                        ReaderGestureToggle("Hide the bar while writing", gestures.hideBarWhileWriting, pdf != null) {
+                            gestures = gestures.copy(hideBarWhileWriting = it)
+                            if (!it && drawingToolbar) drawingBarShown = true
+                        }
                         ReaderGestureToggle("Click / Long Press", gestures.clickLongPress) { gestures = gestures.copy(clickLongPress = it) }
                         ReaderGestureToggle("Slide / Drag the page", gestures.slide) { gestures = gestures.copy(slide = it) }
                         ReaderGestureToggle("Pinch-to-zoom", gestures.pinch, pdf != null) { gestures = gestures.copy(pinch = it) }
@@ -1191,9 +1225,10 @@ class ReaderActivity : AppCompatActivity() {
     override fun finish() {
         if (finishRequested) return
         finishRequested = true
-        val changed = !::notebookRepository.isInitialized || notebookRepository.changedNotes
+        val touched = !::model.isInitialized || model.notebooksTouched
+        val changed = !::model.isInitialized || (touched && notebookRepository.changedNotes)
         setResult(RESULT_OK, Intent().putExtra(EXTRA_NOTEBOOKS_CHANGED, changed))
-        if (changed && ::notebookRepository.isInitialized) notebookRepository.afterPendingWrites(::finishNow) else finishNow()
+        if (changed && touched) notebookRepository.afterPendingWrites(::finishNow) else finishNow()
     }
     private fun finishNow() = super.finish()
     companion object {

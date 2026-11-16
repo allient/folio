@@ -245,6 +245,23 @@ internal class JetpackInkEngine {
         canvas.restore()
     }
 
+    /**
+     * Builds the native stroke for [source] now (on a worker), so its first draw on the UI thread only renders. The
+     * reader calls this while it projects a page's marks; the result lands in the same caches [draw] uses.
+     */
+    fun prepare(source: InkStroke) {
+        if (source.points.isEmpty()) return
+        if (current(source.engine) && NaturalMediaRenderer.supports(source.brush)) return
+        val style = BrushStyle(source.brush, source.width, source.color, angle = source.angle)
+        if (drawsInPasses(style, source.engine)) { passes(source, style); return }
+        val cached = completed[source.id]
+        if (cached != null && (cached.source === source || cached.source == source)) return
+        val inputs = MutableStrokeInputBatch()
+        var time = -1L
+        for (point in source.points) { time = maxOf(time + 1, point.elapsedMillis); inputs.append(point, time, style, source.engine) }
+        completed.put(source.id, Cached(source, Stroke(brushFor(style, source.engine), inputs)))
+    }
+
     private data class Passes(val source: InkStroke, val strokes: List<Pass>)
     private val passCache = object : LruCache<String, Passes>(40_000) {
         override fun sizeOf(key: String, value: Passes) = value.source.points.size.coerceAtLeast(256)
