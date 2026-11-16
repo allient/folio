@@ -1114,7 +1114,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             }
         }
         parent?.requestDisallowInterceptTouchEvent(true)
-        postInvalidateOnAnimation(); return true
+        // While Ink's front-buffered layer shows the stroke being written, the page underneath doesn't change, so it isn't
+        // redrawn on every move (on a dense page that replay is what made new strokes lag).
+        if (!(event.actionMasked == MotionEvent.ACTION_MOVE && Build.VERSION.SDK_INT >= 29 && frontInk?.hasActive == true)) postInvalidateOnAnimation()
+        return true
     }
 
     override fun onHoverEvent(event: MotionEvent): Boolean {
