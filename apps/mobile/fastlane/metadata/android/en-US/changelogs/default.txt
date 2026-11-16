@@ -1,3 +1,3 @@
-Folio 1.0.7
-- Writing stays fast on pages full of drawings: no more delay on busy pages with pencil, spray and textures.
-- Reader: picking a pen keeps the top bar with undo and redo; tap the middle of the page to hide or show it, and tap the pen again to go back to reading.
+Folio 1.0.8
+- Fixes Folio closing on start for people with lots of handwriting: big notebooks now open using much less memory. Your notes were never lost.
+- If a device still runs out of memory, Folio shows a message instead of closing, and your notes stay untouched.

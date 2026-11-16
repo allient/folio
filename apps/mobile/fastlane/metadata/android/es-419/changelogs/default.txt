@@ -1,3 +1,3 @@
-Folio 1.0.7
-- Escribir sigue siendo rápido en páginas llenas de dibujos: sin retraso en páginas cargadas de lápiz, spray y texturas.
-- Lector: al elegir un lápiz, la barra superior queda con deshacer y rehacer; toca el centro de la página para ocultarla o mostrarla, y toca el lápiz otra vez para volver a leer.
+Folio 1.0.8
+- Corrige el cierre al abrir Folio con mucha escritura a mano: los cuadernos grandes ahora abren usando mucha menos memoria. Tus notas nunca se perdieron.
+- Si a un dispositivo aun le falta memoria, Folio muestra un aviso en vez de cerrarse, y tus notas quedan intactas.
