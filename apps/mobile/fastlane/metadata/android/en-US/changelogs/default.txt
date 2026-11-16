@@ -1,6 +1,2 @@
-Folio 1.0.9
-- Reader: all your saved pens (colours, several highlighters) are one tap away in the top bar, with an eye button for reading mode. Tap the selected pen for its settings.
-- New option: hide the bar while writing (Gestures).
-- Turn pages with two fingers while a pen is active.
-- Drawings now appear together with the page, and the bar no longer blinks.
-- Safer with lots of handwriting: less memory and no crash if memory runs out.
+Folio 1.0.10
+- Reader: the page now keeps a fixed strip at the top, so the top bar never covers the first lines and the text no longer jumps when you show or hide the bar.
