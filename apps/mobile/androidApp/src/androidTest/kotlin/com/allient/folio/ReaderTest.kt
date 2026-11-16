@@ -206,24 +206,41 @@ class ReaderTest {
         }
     }
 
-    @Test fun readerPensComeFromTheNotebookPresetsAndKeepThePenInUseVisible() {
-        val yellow=android.graphics.Color.argb(80,255,200,0)
+    @Test fun readerPensAreEverySavedNotebookPenAndKeepThePenInUseVisible() {
+        val yellow=android.graphics.Color.argb(80,255,200,0); val green=android.graphics.Color.argb(80,60,200,90)
         val presets=brushes.filterNot{it.eraser}.map{if(it.name=="Highlighter")it.copy(color=yellow,width=20f,presetId="my-highlighter") else it}
-        val pen=presets.first{it.name=="Pen"}
-        val tablet=readerBrushes(presets,pen,pencil=true)
-        assertEquals(listOf("Pen","Highlight","Pencil"),tablet.map{it.label})
-        assertEquals("The user's own highlighter colour and width carry over","my-highlighter",tablet[1].brush.presetId)
-        assertEquals(yellow,tablet[1].brush.color); assertEquals(20f,tablet[1].brush.width)
-        assertEquals("Phones leave the Pencil out",listOf("Pen","Highlight"),readerBrushes(presets,pen,pencil=false).map{it.label})
-        val pencil=presets.first{it.name=="Pencil"}
-        assertEquals("The pen in use stays visible on a phone",listOf("Pen","Highlight","Pencil"),readerBrushes(presets,pencil,pencil=false).map{it.label})
-        val calligraphy=presets.first{it.name=="Calligraphy"}
-        assertEquals(calligraphy,readerBrushes(presets,calligraphy,pencil=true).last().brush)
-        val secondPen=pen.copy(presetId="pen-2",label="Pen 2",color=android.graphics.Color.RED)
-        assertEquals("The selected pen fills its slot",secondPen,readerBrushes(presets+secondPen,secondPen,pencil=false).first().brush)
-        val noHighlighter=presets.filterNot{it.name=="Highlighter"}
-        assertEquals("A marker stands in for a missing highlighter","Marker",readerBrushes(noHighlighter,pen,pencil=false)[1].brush.name)
-        assertEquals("Without any preset of the type the catalog default is used","Highlighter",readerBrushes(listOf(pen),pen,pencil=false)[1].brush.name)
+        val greenHighlighter=presets.first{it.presetId=="my-highlighter"}.copy(presetId="green-highlighter",color=green)
+        val saved=presets+greenHighlighter
+        val pen=saved.first{it.name=="Pen"}
+        val slots=readerBrushes(saved,pen)
+        assertEquals("Every saved pen is offered, in the saved order",saved.map{it.presetId},slots.map{it.brush.presetId})
+        assertEquals("The highlighter label is shortened",2,slots.count{it.label=="Highlight"})
+        assertEquals("The user's own highlighter colour and width carry over",yellow,slots.first{it.brush.presetId=="my-highlighter"}.brush.color)
+        assertEquals("Several highlighters in different colours stay ready to use",green,slots.first{it.brush.presetId=="green-highlighter"}.brush.color)
+        val outsider=pen.copy(presetId="outsider",label="Outsider")
+        assertEquals("The pen in use stays visible when it is not saved",outsider,readerBrushes(saved,outsider).last().brush)
+        assertFalse("Erasers are not pens",readerBrushes(brushes,pen).any{it.brush.eraser})
+        assertEquals("Without any saved pen the catalog defaults stand in",listOf("Pen","Highlight","Pencil"),readerBrushes(emptyList(),pen).map{it.label})
+        assertEquals("Hiding the bar is off by default",false,ReaderGesturePreferences().hideBarWhileWriting)
+    }
+    @Test fun projectingAnchorsMatchesPdfiumsMappingOnRotatedPages() {
+        val file=File(directory,"rotated.pdf")
+        PDDocument().use{doc->
+            for(rotation in listOf(0,90,180,270)){
+                val page=com.tom_roush.pdfbox.pdmodel.PDPage(com.tom_roush.pdfbox.pdmodel.common.PDRectangle.A4); page.rotation=rotation; doc.addPage(page)
+            }
+            doc.save(file)
+        }
+        PdfReaderSession(file).use{session->
+            val points=listOf(android.graphics.PointF(.1f,.2f),android.graphics.PointF(.9f,.1f),android.graphics.PointF(.5f,.5f),android.graphics.PointF(.2f,.95f))
+            for(index in 0..3){
+                // The anchor is built with PDFium's own device-to-page mapping; projecting must bring the points back.
+                val anchor=session.inkAnchor(index,points,.01f)
+                val back=session.projectAll(index,listOf(anchor,anchor)).also{assertEquals(2,it.size)}.first().single()
+                points.zip(back).forEach{(wanted,got)->assertEquals("page $index x",wanted.x,got.x,3e-4f); assertEquals("page $index y",wanted.y,got.y,3e-4f)}
+                assertEquals(back,session.project(index,anchor).single())
+            }
+        }
     }
     @Test fun rejectsEpubPathTraversalWithoutAddingDocument()=runBlocking {
         val file=File(directory,"bad.epub")

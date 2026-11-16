@@ -177,34 +177,24 @@ internal fun ReaderContrastRow(label: String, value: Int, maximum: Int, kind: St
 }
 
 /** The pen settings hint in the reader, where tapping the selected pen returns to reading instead. */
-internal const val READER_PEN_EDIT_HINT = "Long-press a pen to edit it."
+internal const val READER_PEN_EDIT_HINT = "Tap the selected pen again to edit it."
 
 /** One reader pen button: the bar [label] ("Pen", "Highlight", …) and the shared notebook preset it draws with. */
 internal data class ReaderBrushSlot(val label: String, val brush: BrushStyle)
 
-/** Brush types that annotate a book, in slot order; each slot takes the first preset of its types, in this priority. */
-private val readerBrushTypes = listOf(
-    "Pen" to listOf("Pen", "Fineliner", "Gel pen", "Fountain pen", "Brush pen"),
-    "Highlight" to listOf("Highlighter", "Marker"),
-    "Pencil" to listOf("Pencil"),
-)
+/** The bar label of a pen: its preset label, with the highlighter shortened so the bar stays compact. */
+private fun readerPenLabel(brush: BrushStyle) = if (brush.label == "Highlighter") "Highlight" else brush.label
 
 /**
- * The few pens the reader offers, picked by type from the shared notebook [presets] so the user's colours and
- * widths carry over. The [selected] brush fills its own slot; when it fits no shown slot (another type, or the
- * Pencil on a phone) it is appended so the pen in use is always visible. Without a preset of a slot's type the
- * catalog default is used. [pencil] adds the Pencil slot (tablets).
+ * The pens the reader offers: every pen saved in the shared notebook [presets], in the user's order, so colours,
+ * widths and several highlighters carry over and one tap picks any of them. The [selected] brush is appended when it
+ * is not among them, so the pen in use is always visible. Without any saved pen the catalog's Pen, Highlighter and
+ * Pencil stand in.
  */
-internal fun readerBrushes(presets: List<BrushStyle>, selected: BrushStyle, pencil: Boolean): List<ReaderBrushSlot> {
-    val kinds = if (pencil) readerBrushTypes else readerBrushTypes.filter { it.first != "Pencil" }
-    val slots = kinds.map { (label, types) ->
-        val brush = selected.takeIf { !it.eraser && it.name in types }
-            ?: types.firstNotNullOfOrNull { type -> presets.firstOrNull { it.name == type && !it.eraser } }
-            ?: brushes.first { it.name == types.first() }
-        ReaderBrushSlot(label, brush)
-    }
-    val extra = selected.takeIf { pen -> !pen.eraser && slots.none { it.brush.presetId == pen.presetId } }
-    return slots + listOfNotNull(extra?.let { ReaderBrushSlot(it.name, it) })
+internal fun readerBrushes(presets: List<BrushStyle>, selected: BrushStyle): List<ReaderBrushSlot> {
+    val saved = presets.filterNot { it.eraser }.ifEmpty { listOf("Pen", "Highlighter", "Pencil").map { type -> brushes.first { it.name == type } } }
+    val extra = selected.takeIf { pen -> !pen.eraser && saved.none { it.presetId == pen.presetId } }
+    return (saved + listOfNotNull(extra)).map { ReaderBrushSlot(readerPenLabel(it), it) }
 }
 
 /** [ReaderAction]'s compact layout for drawing tools: the selected tool gets a sage pill and a sage label. */
@@ -226,21 +216,31 @@ internal fun readerBrushes(presets: List<BrushStyle>, selected: BrushStyle, penc
 }
 
 /**
- * The reader pens in the top bar. Tap picks a pen and starts drawing; tapping the pen
- * in use again ([onStopDrawing]) returns to reading. Long-press picks it and opens its settings (width, colour,
- * type, add or delete a preset) from the shared [brushes].
+ * The reader pens in the top bar. Tap picks a pen and starts drawing; tapping the pen in use again (or long-pressing
+ * any pen) opens its settings (width, colour, type, add or delete a preset) from the shared [brushes]. Back returns to reading.
  */
 @Composable internal fun ReaderBrushButtons(
     slots: List<ReaderBrushSlot>, brushes: BrushPresetsState, drawing: Boolean,
-    onBrush: (BrushStyle) -> Unit, onBrushChange: (BrushStyle) -> Unit, onStopDrawing: () -> Unit,
+    onBrush: (BrushStyle) -> Unit, onBrushChange: (BrushStyle) -> Unit,
 ) {
     var settingsFor by remember { mutableStateOf<String?>(null) }
+    // The pens scroll in their own strip, so every saved pen is one tap away while the eraser, undo and the other
+    // actions stay in place (as in 1.0.5: three pens on a phone, five on a tablet).
+    val compact = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp < 600
+    val slotWidth = 52.dp
+    val scroll = rememberScrollState()
+    val slotPx = with(androidx.compose.ui.platform.LocalDensity.current) { slotWidth.toPx() }
+    LaunchedEffect(brushes.selected.presetId, slots.size) {
+        val index = slots.indexOfFirst { it.brush.presetId == brushes.selected.presetId }
+        if (index >= 0) scroll.animateScrollTo((index * slotPx - slotPx).toInt().coerceAtLeast(0))
+    }
+    Row(Modifier.widthIn(max = slotWidth * (if (compact) 3 else 5)).horizontalScroll(scroll)) {
     slots.forEach { slot ->
         val active = drawing && slot.brush.presetId == brushes.selected.presetId
         Box {
             ReaderToolAction(slot.label, "reader-brush-${stableControlSlug(slot.label)}",
-                "${slot.label}, ${slot.brush.label}. Long press for pen settings", Modifier.width(if (slot.label.length > 6) 52.dp else 48.dp), active,
-                onClick = { if (active) onStopDrawing() else onBrush(slot.brush) },
+                "${slot.label}, ${slot.brush.label}. Tap again for pen settings", Modifier.width(slotWidth), active,
+                onClick = { if (active) settingsFor = slot.brush.presetId else onBrush(slot.brush) },
                 onLongClick = { onBrush(slot.brush); settingsFor = slot.brush.presetId }) {
                 BrushGlyph(slot.brush.name, slot.brush.color, Modifier.size(width = 19.dp, height = 22.dp))
             }
@@ -251,6 +251,20 @@ internal fun readerBrushes(presets: List<BrushStyle>, selected: BrushStyle, penc
                     onDelete = { if (brushes.delete()) { onBrush(brushes.selected); settingsFor = null } }, editHint = READER_PEN_EDIT_HINT)
             }
         }
+    }
+    }
+}
+
+/** The reading-mode switch before the pens: the eye is marked while no pen or eraser is active; tapping it while writing returns to reading. */
+@Composable internal fun ReaderReadAction(active: Boolean, onClick: () -> Unit) =
+    ReaderToolAction("Read", "reader-read", "Read mode, put the pen down", Modifier.width(48.dp), active, onClick) { tint ->
+        InkSymbol(InkIcon.Visibility, Modifier.size(22.dp), tint)
+    }
+
+/** A thin vertical line that sets the pens section apart from the other buttons of the bar. */
+@Composable internal fun ReaderBarDivider() {
+    Box(Modifier.height(50.dp).padding(horizontal = 4.dp), contentAlignment = Alignment.Center) {
+        Box(Modifier.width(1.dp).height(30.dp).background(ChromeLine))
     }
 }
 

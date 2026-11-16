@@ -11,11 +11,14 @@ internal data class ReaderGesturePreferences(
     val bottom: Boolean = true,
     val sides: Boolean = true,
     val back: Boolean = true,
+    /** Off (default): the pen bar stays on screen while writing. On: it hides when a pen is picked and a finger tap in the middle shows it. */
+    val hideBarWhileWriting: Boolean = false,
 ) {
     fun save(preferences: SharedPreferences) {
         preferences.edit().putBoolean("gestureStylus", stylusWriting).putBoolean("gestureClick", clickLongPress)
             .putBoolean("gestureSlide", slide).putBoolean("gesturePinch", pinch).putBoolean("gestureSystemBars", systemBars)
-            .putBoolean("gestureBottom", bottom).putBoolean("gestureSides", sides).putBoolean("gestureBack", back).apply()
+            .putBoolean("gestureBottom", bottom).putBoolean("gestureSides", sides).putBoolean("gestureBack", back)
+            .putBoolean("gestureHideBar", hideBarWhileWriting).apply()
     }
     companion object {
         fun read(preferences: SharedPreferences) = ReaderGesturePreferences(
@@ -23,6 +26,7 @@ internal data class ReaderGesturePreferences(
             preferences.getBoolean("gestureSlide", true), preferences.getBoolean("gesturePinch", true),
             preferences.getBoolean("gestureSystemBars", true), preferences.getBoolean("gestureBottom", true),
             preferences.getBoolean("gestureSides", true), preferences.getBoolean("gestureBack", true),
+            preferences.getBoolean("gestureHideBar", false),
         )
     }
 }
