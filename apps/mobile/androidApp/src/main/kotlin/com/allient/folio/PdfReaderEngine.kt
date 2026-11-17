@@ -299,6 +299,17 @@ internal class PdfPageReaderView(context: Context) : View(context) {
      */
     private class PendingInk(val projection: Projection) { var anchor: String? = null }
     private val pendingInk = mutableListOf<PendingInk>()
+    /** Marks already projected on this page, so a new stroke projects only itself instead of every mark again. */
+    private var projectionCache: Map<ReaderAnnotation, Projection> = emptyMap()
+    /**
+     * The finished marks flattened into one image while a stroke is written. Redrawing every brush stroke on each pen
+     * move made a page slower with every stroke, until writing lagged and strokes broke into dots.
+     */
+    private var marksLayer: Bitmap? = null
+    private var marksLayerFor: List<Projection>? = null
+    private val marksLayerBounds = RectF()
+    /** False while Fit Screen/Fit Width trims blank margins: the trim only places the page, ink still shows anywhere on it. */
+    private var clipToCrop = true
     private val pageBounds = RectF()
     private val annotationBounds = RectF()
     private val drawPath = Path()
@@ -357,9 +368,10 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     private var enhancement = 0f
     private var scrolling = false
     private var rtl = false
-    fun setLayout(widthFit: Boolean, rect: RectF?, textEnhancement: Float, continuous: Boolean, rightToLeft: Boolean, alignTop: Boolean = false) {
+    fun setLayout(widthFit: Boolean, rect: RectF?, textEnhancement: Float, continuous: Boolean, rightToLeft: Boolean, alignTop: Boolean = false, clipCrop: Boolean = true) {
         val next = rect ?: RectF(0f, 0f, 1f, 1f)
         val changed = fitWidth != widthFit || crop != next || topAligned != alignTop
+        if (clipToCrop != clipCrop) { clipToCrop = clipCrop; invalidate() }
         topAligned = alignTop; fitWidth = widthFit; crop.set(next); scrolling = continuous; rtl = rightToLeft
         if (enhancement != textEnhancement) { enhancement = textEnhancement; updateFilter() }
         if (changed) { resetToTop = widthFit; panX = 0f; panY = 0f; scheduleRender(); invalidate() }
@@ -520,7 +532,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         val pageChanged = this.session !== session || this.page != page
         if (pageChanged) {
             removeCallbacks(longPress); selectionJob?.cancel(); selecting = false; draggingHandle = -1; preview = null; previewGroups = emptyList()
-            this.session = session; this.page = page; bitmap = null; projections = emptyList(); pendingInk.clear(); textLines = emptyList(); accessibility.invalidateRoot(); clearStroke(); zoom = displayZoom; panX = 0f; panY = 0f
+            this.session = session; this.page = page; bitmap = null; projections = emptyList(); projectionCache = emptyMap(); pendingInk.clear(); textLines = emptyList(); accessibility.invalidateRoot(); clearStroke(); zoom = displayZoom; panX = 0f; panY = 0f
             // Where the marks and ink go is worked out at the same time as the page renders, not after it, so they
             // appear together with the page instead of a moment later.
             this.annotations = annotations; updateProjections(); scheduleRender()
@@ -586,22 +598,85 @@ internal class PdfPageReaderView(context: Context) : View(context) {
     private fun updateProjections() {
         val current = session ?: return
         val index = page; val records = annotations.filter { it.page == index }
+        val known = projectionCache
         projectionJob?.cancel()
         projectionJob = scope.launch {
-            try { projections = withContext(Dispatchers.IO) {
-                val ratio by lazy { current.aspect(index) }
-                val placed = current.projectAll(index, records.map { it.anchor })
-                records.mapIndexed { at, record ->
-                    val json = JSONObject(record.anchor); val groups = placed[at]
-                    val brushStroke = if (record.kind == AnnotationKind.INK && ReaderInk.isBrush(json)) ReaderInk.toInkStroke(record.id, json, record.color, groups.firstOrNull().orEmpty(), ratio) else null
-                    brushStroke?.let { ink.prepare(it) }
-                    Projection(record, groups, ReaderInk.normalizedWidth(json), brushStroke)
+            try {
+                val next = withContext(Dispatchers.IO) {
+                    // Only marks not projected yet are parsed and projected: a new stroke no longer re-reads every stroke's anchor.
+                    val missing = records.filter { it !in known }
+                    val ratio by lazy { current.aspect(index) }
+                    val placed = current.projectAll(index, missing.map { it.anchor })
+                    val fresh = missing.mapIndexed { at, record ->
+                        val json = JSONObject(record.anchor); val groups = placed[at]
+                        val brushStroke = if (record.kind == AnnotationKind.INK && ReaderInk.isBrush(json)) ReaderInk.toInkStroke(record.id, json, record.color, groups.firstOrNull().orEmpty(), ratio) else null
+                        brushStroke?.let { ink.prepare(it) }
+                        record to Projection(record, groups, ReaderInk.normalizedWidth(json), brushStroke)
+                    }.toMap()
+                    records.associateWith { known[it] ?: fresh.getValue(it) }
                 }
-            }
+                projectionCache = next; projections = records.map { next.getValue(it) }
                 pendingInk.removeAll { pending -> pending.anchor?.let { saved -> records.any { it.anchor == saved } } == true }
                 invalidate() }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (error: Exception) { onError(error.message ?: "Could not display annotations") }
+        }
+    }
+    private fun clipPage(canvas: Canvas, b: RectF) {
+        if (clipToCrop) canvas.clipRect(b.left + crop.left * b.width(), b.top + crop.top * b.height(), b.left + crop.right * b.width(), b.top + crop.bottom * b.height())
+        else canvas.clipRect(b)
+    }
+    /** The finished marks as one view-sized image, rebuilt only when the marks or the page position change. */
+    private fun marksLayer(b: RectF): Bitmap? {
+        val cached = marksLayer
+        if (cached != null && marksLayerFor === projections && marksLayerBounds == b && cached.width == width && cached.height == height) return cached
+        val layer = cached?.takeIf { it.width == width && it.height == height } ?: try {
+            cached?.recycle(); marksLayer = null
+            Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        } catch (_: OutOfMemoryError) { return null }
+        layer.eraseColor(Color.TRANSPARENT)
+        val target = Canvas(layer); clipPage(target, b)
+        projections.forEach { drawMark(target, it, b) }
+        marksLayer = layer; marksLayerFor = projections; marksLayerBounds.set(b)
+        return layer
+    }
+    private fun drawMark(canvas: Canvas, projection: Projection, b: RectF) {
+        val (annotation, groups, inkWidth, brushStroke) = projection
+        if (annotation.id == "selection" && (selecting || draggingHandle >= 0)) return
+        paint.color = annotation.color
+        if (brushStroke != null) {
+            val inkClip = canvas.save(); canvas.translate(b.left, b.top)
+            NotebookRenderer.drawStroke(canvas, brushStroke, b.width(), ReaderInk.strokeHeight(b.width()), ink)
+            canvas.restoreToCount(inkClip)
+        } else if (annotation.kind == AnnotationKind.INK) groups.forEach { points ->
+            drawPath.rewind()
+            points.forEachIndexed { i, p -> val x=b.left+p.x*b.width();val y=b.top+p.y*b.height();if(i==0)drawPath.moveTo(x,y)else drawPath.lineTo(x,y) }
+            paint.style = Paint.Style.STROKE; paint.strokeCap = Paint.Cap.ROUND; paint.strokeJoin = Paint.Join.ROUND
+            paint.strokeWidth = inkWidth * b.width(); canvas.drawPath(drawPath, paint); paint.style = Paint.Style.FILL
+        } else if (annotation.kind == AnnotationKind.HIGHLIGHT || annotation.kind == AnnotationKind.UNDERLINE) groups.forEach { points ->
+            val a=points[0];val z=points[1]
+            annotationBounds.set(b.left+min(a.x,z.x)*b.width(), b.top+min(a.y,z.y)*b.height(), b.left+max(a.x,z.x)*b.width(), b.top+max(a.y,z.y)*b.height())
+            if (annotation.kind == AnnotationKind.UNDERLINE) {
+                paint.strokeWidth = dp(2f)
+                when (JSONObject(annotation.anchor).optString("underlineStyle", "solid")) {
+                    "wavy" -> {
+                        drawPath.rewind(); drawPath.moveTo(annotationBounds.left, annotationBounds.bottom)
+                        var x = annotationBounds.left
+                        while (x < annotationBounds.right) {
+                            val next = min(x + dp(2f), annotationBounds.right)
+                            drawPath.lineTo(next, annotationBounds.bottom + sin((next - annotationBounds.left) / dp(8f) * (2 * PI)).toFloat() * dp(2f))
+                            x = next
+                        }
+                        paint.style = Paint.Style.STROKE; canvas.drawPath(drawPath, paint); paint.style = Paint.Style.FILL
+                    }
+                    else -> {
+                        if (JSONObject(annotation.anchor).optString("underlineStyle") == "dashed") paint.pathEffect = DashPathEffect(floatArrayOf(dp(5f), dp(3f)), 0f)
+                        canvas.drawLine(annotationBounds.left,annotationBounds.bottom,annotationBounds.right,annotationBounds.bottom,paint)
+                        paint.pathEffect = null
+                    }
+                }
+            }
+            else { paint.alpha = 90; canvas.drawRect(annotationBounds, paint); paint.alpha = 255 }
         }
     }
     override fun onDraw(canvas: Canvas) {
@@ -614,50 +689,15 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         canvas.drawColor(Color.WHITE)
         val b = bounds(); paint.color = Color.WHITE; paint.style = Paint.Style.FILL; canvas.drawRect(b, paint)
         val pageClip = canvas.save()
-        canvas.clipRect(b.left + crop.left * b.width(), b.top + crop.top * b.height(), b.left + crop.right * b.width(), b.top + crop.bottom * b.height())
+        clipPage(canvas, b)
         bitmap?.let { paint.alpha = 255; paint.colorFilter = pageFilter; canvas.drawBitmap(it, null, b, paint); paint.colorFilter = null }
-        fun drawMark(projection: Projection) {
-            val (annotation, groups, inkWidth, brushStroke) = projection
-            if (annotation.id == "selection" && (selecting || draggingHandle >= 0)) return
-            paint.color = annotation.color
-            if (brushStroke != null) {
-                val inkClip = canvas.save(); canvas.translate(b.left, b.top)
-                NotebookRenderer.drawStroke(canvas, brushStroke, b.width(), ReaderInk.strokeHeight(b.width()), ink)
-                canvas.restoreToCount(inkClip)
-            } else if (annotation.kind == AnnotationKind.INK) groups.forEach { points ->
-                drawPath.rewind()
-                points.forEachIndexed { i, p -> val x=b.left+p.x*b.width();val y=b.top+p.y*b.height();if(i==0)drawPath.moveTo(x,y)else drawPath.lineTo(x,y) }
-                paint.style = Paint.Style.STROKE; paint.strokeCap = Paint.Cap.ROUND; paint.strokeJoin = Paint.Join.ROUND
-                paint.strokeWidth = inkWidth * b.width(); canvas.drawPath(drawPath, paint); paint.style = Paint.Style.FILL
-            } else if (annotation.kind == AnnotationKind.HIGHLIGHT || annotation.kind == AnnotationKind.UNDERLINE) groups.forEach { points ->
-                val a=points[0];val z=points[1]
-                annotationBounds.set(b.left+min(a.x,z.x)*b.width(), b.top+min(a.y,z.y)*b.height(), b.left+max(a.x,z.x)*b.width(), b.top+max(a.y,z.y)*b.height())
-                if (annotation.kind == AnnotationKind.UNDERLINE) {
-                    paint.strokeWidth = dp(2f)
-                    when (JSONObject(annotation.anchor).optString("underlineStyle", "solid")) {
-                        "wavy" -> {
-                            drawPath.rewind(); drawPath.moveTo(annotationBounds.left, annotationBounds.bottom)
-                            var x = annotationBounds.left
-                            while (x < annotationBounds.right) {
-                                val next = min(x + dp(2f), annotationBounds.right)
-                                drawPath.lineTo(next, annotationBounds.bottom + sin((next - annotationBounds.left) / dp(8f) * (2 * PI)).toFloat() * dp(2f))
-                                x = next
-                            }
-                            paint.style = Paint.Style.STROKE; canvas.drawPath(drawPath, paint); paint.style = Paint.Style.FILL
-                        }
-                        else -> {
-                            if (JSONObject(annotation.anchor).optString("underlineStyle") == "dashed") paint.pathEffect = DashPathEffect(floatArrayOf(dp(5f), dp(3f)), 0f)
-                            canvas.drawLine(annotationBounds.left,annotationBounds.bottom,annotationBounds.right,annotationBounds.bottom,paint)
-                            paint.pathEffect = null
-                        }
-                    }
-                }
-                else { paint.alpha = 90; canvas.drawRect(annotationBounds, paint); paint.alpha = 255 }
-            }
+        // Marks wait for the page image, so they never show on a blank page ahead of it. While a stroke is written they
+        // come from one cached image, so each pen move costs the same however many marks the page holds.
+        if (bitmap != null) {
+            val layer = if (stroke.isNotEmpty()) marksLayer(b) else null
+            if (layer != null) canvas.drawBitmap(layer, 0f, 0f, null) else projections.forEach { drawMark(canvas, it, b) }
         }
-        // Marks wait for the page image, so they never show on a blank page ahead of it.
-        if (bitmap != null) projections.forEach { drawMark(it) }
-        pendingInk.forEach { drawMark(it.projection) }
+        pendingInk.forEach { drawMark(canvas, it.projection, b) }
         if (selecting || draggingHandle >= 0) {
             paint.color = 0x5576B9EF
             previewGroups.forEach { points ->
@@ -878,5 +918,6 @@ internal class PdfPageReaderView(context: Context) : View(context) {
         // Compose can detach and re-attach the same view; a cancelled scope would leave the page blank.
         if (!scope.isActive) { scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate); scheduleRender(); updateProjections() }
     }
-    override fun onDetachedFromWindow() { removeCallbacks(longPress); scope.cancel(); bitmap = null; clearStroke(); ink.release(); super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() { removeCallbacks(longPress); scope.cancel(); bitmap = null; clearStroke(); ink.release()
+        projectionCache = emptyMap(); marksLayer?.recycle(); marksLayer = null; marksLayerFor = null; super.onDetachedFromWindow() }
 }
