@@ -320,7 +320,8 @@ internal class NotebookStorage(context: Context) {
             val downloads = json.optJSONArray("downloads") ?: JSONArray()
             return com.allient.folio.home.LibrarySettings(
                 folders = List(folders.length()) { index -> folders.getJSONObject(index).let {
-                    com.allient.folio.home.NoteFolder(it.getString("id"), it.getString("name"), it.optString("color", "sage"), it.optString("style", "classic"), it.optLong("deletedAt", 0).coerceAtLeast(0))
+                    com.allient.folio.home.NoteFolder(it.getString("id"), it.getString("name"), it.optString("color", "sage"), it.optString("style", "classic"), it.optLong("deletedAt", 0).coerceAtLeast(0),
+                        it.optString("parentId").takeIf { parent -> parent.isNotBlank() })
                 } },
                 downloaded = List(downloads.length()) { downloads.getString(it) }.toSet(),
             )
@@ -652,9 +653,9 @@ internal class NotebookStorage(context: Context) {
 }
 }
 
-/** Shared by SQLite, library backups and the backup signature. deletedAt is written only for folders in Trash. */
+/** Shared by SQLite, library backups and the backup signature. deletedAt is written only for folders in Trash, parentId only for folders inside another folder. */
 internal fun folderJson(folder: com.allient.folio.home.NoteFolder): JSONObject = JSONObject().put("id", folder.id).put("name", folder.name)
-    .put("color", folder.color).put("style", folder.style).apply { if (folder.deletedAt > 0) put("deletedAt", folder.deletedAt) }
+    .put("color", folder.color).put("style", folder.style).apply { if (folder.deletedAt > 0) put("deletedAt", folder.deletedAt); folder.parentId?.let { put("parentId", it) } }
 
 internal fun serializeNotebook(note: Notebook): String = NotebookStorage.serializeNotebook(note)
 internal fun deserializeNotebook(json: String): Notebook = NotebookStorage.deserializeNotebook(json)

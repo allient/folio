@@ -8,7 +8,33 @@ import androidx.compose.ui.unit.dp
 
 // Platform-neutral presentation models. Persistence and ink rendering are supplied by the host.
 /** [deletedAt] > 0 means the folder is in Trash; its notebooks and books keep their folderId and show as unfiled. */
-data class NoteFolder(val id: String, val name: String, val color: String = "sage", val style: String = "classic", val deletedAt: Long = 0)
+data class NoteFolder(val id: String, val name: String, val color: String = "sage", val style: String = "classic", val deletedAt: Long = 0,
+    /** The folder this one sits in; null (or a folder that is gone or in Trash) means the library root. */
+    val parentId: String? = null)
+/**
+ * The folder [folder] sits in, or null for the library root. A parent that is missing, in Trash (not in this list) or
+ * that would close a loop counts as the root, so every folder stays reachable.
+ */
+fun List<NoteFolder>.parentOf(folder: NoteFolder): String? {
+    val byId = associateBy { it.id }
+    val parent = folder.parentId?.let(byId::get) ?: return null
+    var step: NoteFolder? = parent
+    var hops = 0
+    while (step != null && hops++ <= size) {
+        if (step.id == folder.id) return null
+        step = step.parentId?.let(byId::get)
+    }
+    return parent.id
+}
+
+/** Folders depth-first, each followed by its subfolders, with their depth: for the sidebar and the move lists. */
+fun List<NoteFolder>.folderTree(): List<Pair<NoteFolder, Int>> {
+    val children = groupBy { parentOf(it) }
+    val tree = mutableListOf<Pair<NoteFolder, Int>>()
+    fun visit(parent: String?, depth: Int) { children[parent].orEmpty().forEach { tree += it to depth; visit(it.id, depth + 1) } }
+    visit(null, 0)
+    return tree
+}
 data class LibrarySettings(val folders: List<NoteFolder> = emptyList(), val downloaded: Set<String> = emptySet()) {
     val activeFolders get() = folders.filter { it.deletedAt == 0L }
 }

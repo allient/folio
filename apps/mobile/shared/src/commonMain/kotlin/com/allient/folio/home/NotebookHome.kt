@@ -180,6 +180,9 @@ fun NotebookHome(
     val folderIds = folders.map { it.id }.toSet()
     fun placed(id: String?) = id?.takeIf { it in folderIds }
     val currentFolder = folders.firstOrNull { it.id == folderId }
+    // Inside a subfolder, Back and "move out" go to the folder above, not straight to the library.
+    val parentFolderId = currentFolder?.let { folders.parentOf(it) }
+    val upName = folders.firstOrNull { it.id == parentFolderId }?.name ?: "All folders"
     LaunchedEffect(folderId, currentFolder) { if (folderId != null && currentFolder == null) folderId = null }
     val newNote = { infinite: Boolean ->
         draftName = "${if (infinite) "Canvas" else "Notebook"}-${liveNotes.size + 1}"; selection = "blank"; infiniteCanvas = infinite; infinitePattern = InfinitePaper().template; screen = "create"
@@ -223,12 +226,21 @@ fun NotebookHome(
     fun countLabel(count: Int) = when (segment) { "notes" -> "notebook"; "canvas" -> "canvas"; "books" -> "book"; else -> "item" }
         .let { unit -> "$count ${if (count == 1) unit else if (unit == "canvas") "canvases" else "${unit}s"}" }
     fun latest(id: String) = maxOf(liveNotes.filter { placed(it.folderId) == id }.maxOfOrNull { it.updatedAt } ?: 0L, liveBooks.filter { placed(it.folderId) == id }.maxOfOrNull { it.openedAt } ?: 0L)
-    val folderMatches = (if (view != HomeView.Home || folderId != null || tag != null) emptyList() else folders.filter { query.isEmpty() || it.name.contains(query, true) }).let { list ->
+    fun folderDetail(id: String): String {
+        val subfolders = folders.count { folders.parentOf(it) == id }
+        val items = countLabel(folderCount(id))
+        return if (subfolders == 0) items else "$subfolders ${if (subfolders == 1) "folder" else "folders"} · $items"
+    }
+    val folderMatches = (when {
+        view != HomeView.Home || tag != null -> emptyList()
+        query.isNotEmpty() -> folders.filter { it.name.contains(query, true) }
+        else -> folders.filter { folders.parentOf(it) == folderId }
+    }).let { list ->
         when (preferences.sort) { HomeSort.Name, HomeSort.Type -> list.sortedBy { it.name.lowercase() }; HomeSort.Edited -> list.sortedByDescending { latest(it.id) }; else -> list }
     }
     val sections = buildList {
         if (folderId != null && dragArmedId != null) add(Section("parent", "Move out", listOf(FolderEntry(null, "Drop to move out"))))
-        if (folderMatches.isNotEmpty()) add(Section("folders", "Folders", folderMatches.map { FolderEntry(it, countLabel(folderCount(it.id))) }))
+        if (folderMatches.isNotEmpty()) add(Section("folders", "Folders", folderMatches.map { FolderEntry(it, folderDetail(it.id)) }))
         noteMatches.filter { !it.infinite }.takeIf { showNotes && it.isNotEmpty() }?.let { add(Section("notes", "Notes", it.map(::NoteEntry))) }
         noteMatches.filter { it.infinite }.takeIf { showCanvas && it.isNotEmpty() }?.let { add(Section("canvas", "Canvas", it.map(::NoteEntry))) }
         bookMatches.takeIf { showBooks && it.isNotEmpty() }?.let { add(Section("books", "Books", it.map(::BookEntry))) }
@@ -360,7 +372,7 @@ fun NotebookHome(
                         }
                         val heading = when { currentFolder != null -> currentFolder.name; tag != null -> "#$tag"; query.isNotEmpty() -> null; view == HomeView.Recent -> "Recent"; view == HomeView.Favorites -> "Favorites"; else -> null }
                         if (heading != null || notice != null) Row(Modifier.fillMaxWidth().padding(start = 12.dp, end = 16.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                            if (currentFolder != null || (view != HomeView.Home && !global)) HomeIconButton(Symbol.Back, "Back to library", false, { folderId = null; viewName = HomeView.Home.name; dragArmedId = null; notice = null })
+                            if (currentFolder != null || (view != HomeView.Home && !global)) HomeIconButton(Symbol.Back, "Back to library", false, { folderId = parentFolderId; viewName = HomeView.Home.name; dragArmedId = null; notice = null })
                             Column(Modifier.weight(1f).padding(start = 6.dp)) {
                                 if (heading != null) Text(heading, fontSize = 22.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 if (notice != null) Text(notice.orEmpty(), fontSize = 12.sp, lineHeight = 16.sp, color = Muted)
@@ -398,11 +410,11 @@ fun NotebookHome(
                                                 val folder = entry.folder
                                                 val target = folder?.id ?: "root"
                                                 DisposableEffect(target) { onDispose { bounds.remove(target) } }
-                                                LibraryTile(grid, folder?.name ?: "All folders", entry.detail, "Options for ${folder?.name ?: "All folders"}", { if (folder != null) detailsFolderId = folder.id },
+                                                LibraryTile(grid, folder?.name ?: upName, entry.detail, "Options for ${folder?.name ?: upName}", { if (folder != null) detailsFolderId = folder.id },
                                                     Modifier.onGloballyPositioned { bounds[target] = it.boundsInRoot() }
-                                                        .combinedClickable(onClick = { if (selecting && folder != null) toggle(entry.key) else folderId = folder?.id }, onLongClickLabel = "Folder options",
+                                                        .combinedClickable(onClick = { if (selecting && folder != null) toggle(entry.key) else folderId = folder?.id ?: parentFolderId }, onLongClickLabel = "Folder options",
                                                             onLongClick = { if (folder != null) detailsFolderId = folder.id })
-                                                        .testTag("folder-$target").semantics { contentDescription = "Open folder ${folder?.name ?: "All folders"}" },
+                                                        .testTag("folder-$target").semantics { contentDescription = "Open folder ${folder?.name ?: upName}" },
                                                     mark, highlighted = dragId != null && bounds[target]?.contains(dragPoint) == true, previewBackground = Color(0xFFFAFAFA)) {
                                                     val covers = if (folder?.style == "mosaic") folderPreviews[folder.id].orEmpty() else emptyList()
                                                     if (covers.isNotEmpty()) FolderMosaic(covers, itemPreview, Modifier.fillMaxSize().testTag("folder-cover-preview-$target"))
@@ -419,9 +431,9 @@ fun NotebookHome(
                                                             detectDragGestures(
                                                                 onDragStart = { local -> dragId = note.id; dragPoint = cardBounds.topLeft + local },
                                                                 onDragEnd = {
-                                                                    val targets = if (folderId == null) folders.map { it.id } else listOf("root")
+                                                                    val targets = folderMatches.map { it.id } + listOfNotNull("root".takeIf { folderId != null })
                                                                     val target = targets.firstOrNull { bounds[it]?.contains(dragPoint) == true }
-                                                                    if (target != null) { onMove(note.id, target.takeUnless { it == "root" }); notice = "Notebook moved" } else notice = "No folder selected"
+                                                                    if (target != null) { onMove(note.id, if (target == "root") parentFolderId else target); notice = "Notebook moved" } else notice = "No folder selected"
                                                                     dragId = null; dragArmedId = null
                                                                 }, onDragCancel = { dragId = null; dragArmedId = null; notice = null },
                                                                 onDrag = { change, amount -> change.consume(); dragPoint += amount },
@@ -553,7 +565,7 @@ fun NotebookHome(
         OutlinedTextField(renameTitle, { renameTitle = it }, label = { Text("Notebook name") }, singleLine = true, shape = RoundedCornerShape(16.dp))
     }, confirmButton = { TextButton(enabled = renameTitle.isNotBlank(), onClick = { onRename(id, renameTitle.trim()); renameId = null }) { Text("Save") } }, dismissButton = { TextButton(onClick = { renameId = null }) { Text("Cancel") } }) }
     deleteFolderId?.let { id -> AlertDialog(onDismissRequest = { deleteFolderId = null }, title = { Text("Move folder to Trash?") },
-        text = { Text("Its notebooks and books stay in your library without a folder. Restoring the folder from Trash puts them back inside.") },
+        text = { Text("Its notebooks, books and folders stay in your library without a folder. Restoring the folder from Trash puts them back inside.") },
         confirmButton = { TextButton(modifier = Modifier.testTag("confirm-delete-folder"), onClick = {
             onTrash("folder", setOf(id)); if (folderId == id) folderId = null; deleteFolderId = null
         }) { Text("Move to Trash") } }, dismissButton = { TextButton(onClick = { deleteFolderId = null }) { Text("Cancel") } }) }
@@ -561,7 +573,7 @@ fun NotebookHome(
             val edit = editedFolder
             val updated = if (edit != null) settings.folders.map { if (it.id == edit.id) it.copy(name = name, color = color, style = style) else it } else {
                 val id = generateSequence(1) { it + 1 }.map { "folder-$it" }.first { id -> settings.folders.none { it.id == id } }
-                settings.folders + NoteFolder(id, name, color, style)
+                settings.folders + NoteFolder(id, name, color, style, parentId = currentFolder?.id?.takeIf { screen == "home" })
             }
             onSettingsChange(settings.copy(folders = updated)); folderDialog = false
     }, contentPreview = { modifier ->
@@ -589,7 +601,7 @@ fun NotebookHome(
     val moveTargets: @Composable ((String?) -> Unit) -> Unit = { pick ->
         Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState())) {
             TextButton(onClick = { pick(null) }) { Text("Main library (no folder)") }
-            folders.forEach { folder -> TextButton(onClick = { pick(folder.id) }) { Text(folder.name, maxLines = 1, overflow = TextOverflow.Ellipsis) } }
+            folders.folderTree().forEach { (folder, depth) -> TextButton(onClick = { pick(folder.id) }, Modifier.padding(start = (depth * 16).dp)) { Text(folder.name, maxLines = 1, overflow = TextOverflow.Ellipsis) } }
         }
     }
     if (bulkMove) AlertDialog(onDismissRequest = { bulkMove = false }, title = { Text("Move to folder") }, text = {
