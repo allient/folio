@@ -1,3 +1,4 @@
 Folio 1.0.11
 - Lector: escribir sigue siendo fluido en páginas con muchos dibujos. Antes, cada trazo nuevo hacía el lápiz más lento hasta que los trazos quedaban como puntos.
 - Lector: con Ajustar a pantalla o Ajustar al ancho, la tinta ahora se ve en cualquier parte de la página, también debajo de la última línea del contenido.
+- Biblioteca: las carpetas pueden contener carpetas. Nueva carpeta ahora la crea dentro de la carpeta en la que estás, y Atrás sube un nivel.

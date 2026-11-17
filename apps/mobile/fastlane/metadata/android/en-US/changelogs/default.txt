@@ -1,3 +1,4 @@
 Folio 1.0.11
 - Reader: writing stays fast on pages with many drawings. Before, each new stroke made the pen slower until strokes turned into dots.
 - Reader: with Fit Screen or Fit Width, ink now shows anywhere on the page, including below the last line of content.
+- Library: folders can hold folders. New folder now creates it inside the folder you are in, and Back goes one level up.
