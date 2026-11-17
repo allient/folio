@@ -35,6 +35,23 @@ fun List<NoteFolder>.folderTree(): List<Pair<NoteFolder, Int>> {
     visit(null, 0)
     return tree
 }
+/** [ids] and every folder inside them at any depth: a folder can't move into itself or one of its own subfolders. */
+fun List<NoteFolder>.withSubfolders(ids: Set<String>): Set<String> {
+    val result = ids.toMutableSet()
+    var grew = true
+    while (grew) {
+        grew = false
+        forEach { folder -> val parent = parentOf(folder); if (parent != null && parent in result && result.add(folder.id)) grew = true }
+    }
+    return result
+}
+
+/** Moves the folders [ids] into [target] (null: the library root). A folder inside another moved one keeps its place in it. */
+fun List<NoteFolder>.moveFolders(ids: Set<String>, target: String?): List<NoteFolder> {
+    if (target != null && target in withSubfolders(ids)) return this
+    val outermost = ids.filter { id -> id !in withSubfolders(ids - id) }.toSet()
+    return map { if (it.id in outermost) it.copy(parentId = target) else it }
+}
 data class LibrarySettings(val folders: List<NoteFolder> = emptyList(), val downloaded: Set<String> = emptySet()) {
     val activeFolders get() = folders.filter { it.deletedAt == 0L }
 }

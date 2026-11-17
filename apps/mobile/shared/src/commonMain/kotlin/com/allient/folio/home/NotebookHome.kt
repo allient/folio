@@ -152,6 +152,7 @@ fun NotebookHome(
     var deleteFolderId by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteBookId by rememberSaveable { mutableStateOf<String?>(null) }
     var moveId by rememberSaveable { mutableStateOf<String?>(null) }
+    var moveFolderId by rememberSaveable { mutableStateOf<String?>(null) }
     var moveBookId by rememberSaveable { mutableStateOf<String?>(null) }
     var selection by rememberSaveable { mutableStateOf("blank") }
     var draftName by rememberSaveable { mutableStateOf("") }
@@ -310,7 +311,7 @@ fun NotebookHome(
                             val toggleAll = { selected = if (all) emptySet() else selectableKeys.toSet() }
                             if (compactBar) HomeIconButton(Symbol.Select, if (all) "Clear selection" else "Select all", all, toggleAll)
                             else TextButton(onClick = toggleAll) { Text(if (all) "Clear" else "Select all", color = style.accent) }
-                            HomeIconButton(Symbol.Folder, "Move selected", false, { if (ids("note").isNotEmpty() || ids("book").isNotEmpty()) bulkMove = true else notice = "Select notebooks or books to move" })
+                            HomeIconButton(Symbol.Folder, "Move selected", false, { if (selected.isNotEmpty()) bulkMove = true else notice = "Select folders, notebooks or books to move" })
                             HomeIconButton(Symbol.Star, "Favorite selected", false, {
                                 val notes = ids("note"); val picked = ids("book")
                                 if (notes.isNotEmpty() || picked.isNotEmpty()) {
@@ -552,6 +553,7 @@ fun NotebookHome(
             },
             onDismiss = { detailsFolderId = null }, actions = listOf(
                 DetailAction(Symbol.Open, "Open") { detailsFolderId = null; screen = "home"; viewName = HomeView.Home.name; folderId = id },
+                DetailAction(Symbol.Folder, "Move") { detailsFolderId = null; moveFolderId = id },
                 DetailAction(Symbol.Rename, "Edit folder") { detailsFolderId = null; editedFolderId = folder.id; folderDialog = true },
                 DetailAction(Symbol.Trash, "Delete") { detailsFolderId = null; deleteFolderId = id },
             ))
@@ -598,16 +600,18 @@ fun NotebookHome(
             listOf("note", "book", "folder").forEach { kind -> ids(kind).takeIf { it.isNotEmpty() }?.let { onTrash(kind, it) } }
             notice = "Moved ${selected.size} ${if (selected.size == 1) "item" else "items"} to Trash"; bulkDelete = false; exitSelection()
         }) { Text("Move to Trash") } }, dismissButton = { TextButton(onClick = { bulkDelete = false }) { Text("Cancel") } })
-    val moveTargets: @Composable ((String?) -> Unit) -> Unit = { pick ->
+    // [exclude]: folders being moved and their subfolders, which can't be their own destination.
+    val moveTargets: @Composable (Set<String>, (String?) -> Unit) -> Unit = { exclude, pick ->
         Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState())) {
             TextButton(onClick = { pick(null) }) { Text("Main library (no folder)") }
-            folders.folderTree().forEach { (folder, depth) -> TextButton(onClick = { pick(folder.id) }, Modifier.padding(start = (depth * 16).dp)) { Text(folder.name, maxLines = 1, overflow = TextOverflow.Ellipsis) } }
+            folders.folderTree().filter { (folder, _) -> folder.id !in exclude }.forEach { (folder, depth) -> TextButton(onClick = { pick(folder.id) }, Modifier.padding(start = (depth * 16).dp)) { Text(folder.name, maxLines = 1, overflow = TextOverflow.Ellipsis) } }
         }
     }
     if (bulkMove) AlertDialog(onDismissRequest = { bulkMove = false }, title = { Text("Move to folder") }, text = {
-        moveTargets { target ->
+        moveTargets(folders.withSubfolders(ids("folder"))) { target ->
             ids("note").forEach { onMove(it, target) }; ids("book").forEach { onMoveBook(it, target) }
-            notice = if (ids("folder").isNotEmpty()) "Moved. Folders stay where they are." else "Moved to ${folders.firstOrNull { it.id == target }?.name ?: "the main library"}"
+            if (ids("folder").isNotEmpty()) onSettingsChange(settings.copy(folders = settings.folders.moveFolders(ids("folder"), target)))
+            notice = "Moved to ${folders.firstOrNull { it.id == target }?.name ?: "the main library"}"
             bulkMove = false; exitSelection()
         }
     }, confirmButton = { TextButton(onClick = { bulkMove = false }) { Text("Cancel") } })
@@ -617,12 +621,19 @@ fun NotebookHome(
                 screen = "home"; viewName = HomeView.Home.name; folderId = liveNotes.firstOrNull { it.id == id }?.folderId?.let(::placed)
                 dragArmedId = id; moveId = null; notice = "Drag the selected notebook onto a folder, or tap × to cancel"
             }) { Text("Drag on home screen") }
-            moveTargets { target -> onMove(id, target); moveId = null }
+            moveTargets(emptySet()) { target -> onMove(id, target); moveId = null }
         }
     }, confirmButton = { TextButton(onClick = { moveId = null }) { Text("Cancel") } }) }
     moveBookId?.let { id -> AlertDialog(onDismissRequest = { moveBookId = null }, title = { Text("Move book to folder") }, text = {
-        moveTargets { target -> onMoveBook(id, target); moveBookId = null }
+        moveTargets(emptySet()) { target -> onMoveBook(id, target); moveBookId = null }
     }, confirmButton = { TextButton(onClick = { moveBookId = null }) { Text("Cancel") } }) }
+    moveFolderId?.let { id -> AlertDialog(onDismissRequest = { moveFolderId = null }, title = { Text("Move folder") }, text = {
+        moveTargets(folders.withSubfolders(setOf(id))) { target ->
+            onSettingsChange(settings.copy(folders = settings.folders.moveFolders(setOf(id), target)))
+            notice = "Moved to ${folders.firstOrNull { it.id == target }?.name ?: "the main library"}"
+            moveFolderId = null
+        }
+    }, confirmButton = { TextButton(onClick = { moveFolderId = null }) { Text("Cancel") } }) }
     }
 }
 
