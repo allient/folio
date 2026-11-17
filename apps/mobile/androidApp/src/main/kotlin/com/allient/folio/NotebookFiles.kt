@@ -249,8 +249,8 @@ internal class NotebookFiles(private val context: Context) {
                 require(!folderIdMap.containsKey(oldId)) { "Library backup has duplicate folder IDs." }
                 val newId = UUID.randomUUID().toString(); folderIdMap[oldId] = newId
                 com.allient.folio.home.NoteFolder(newId, folder.optString("name", "Folder"), folder.optString("color", "sage"), folder.optString("style", "classic"),
-                    if (folder.optLong("deletedAt", 0) > 0) restoredAt else 0)
-            }
+                    if (folder.optLong("deletedAt", 0) > 0) restoredAt else 0, parentId = folder.optString("parentId").takeIf { it.isNotBlank() })
+            }.map { folder -> folder.copy(parentId = folder.parentId?.let { folderIdMap[it] }) }
             val records = libraryJson.optJSONArray("notebooks") ?: JSONArray()
             require(records.length() == archiveManifest.optInt("notebookCount", -1)) { "Library backup notebook count does not match its manifest." }
             val usedPaths = mutableSetOf<String>()

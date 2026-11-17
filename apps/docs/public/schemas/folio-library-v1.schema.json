@@ -10,7 +10,7 @@
       "type": "array",
       "items": {
         "type": "object", "required": ["id", "name"],
-        "properties": { "id": { "type": "string", "minLength": 1 }, "name": { "type": "string", "minLength": 1 } },
+        "properties": { "id": { "type": "string", "minLength": 1 }, "name": { "type": "string", "minLength": 1 }, "parentId": { "type": "string", "minLength": 1, "description": "Folder this one sits in; absent at the library root." } },
         "additionalProperties": true
       }
     },

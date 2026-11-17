@@ -1,4 +1,4 @@
-Folio 1.0.10
-- Reader: the page now keeps a fixed strip at the top, so the top bar never covers the first lines and the text no longer jumps when you show or hide the bar.
-- Library: a favourite now shows a filled yellow star and a highlighted button in the details sheet.
-- Your chosen accent colour and corner style now apply to dialogs, menus and sheets, including the reader and live boards.
+Folio 1.0.11
+- Reader: writing stays fast on pages with many drawings. Before, each new stroke made the pen slower until strokes turned into dots.
+- Reader: with Fit Screen or Fit Width, ink now shows anywhere on the page, including below the last line of content.
+- Library: folders can hold folders. New folder now creates it inside the folder you are in, Back goes one level up, and Move puts a folder inside another.

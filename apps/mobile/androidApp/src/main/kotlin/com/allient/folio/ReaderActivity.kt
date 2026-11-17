@@ -465,7 +465,7 @@ class ReaderActivity : AppCompatActivity() {
                         }
                         AndroidView(factory={PdfPageReaderView(it)},update={ view ->
                             view.show(session,index,records); view.tool=tool; view.chromeVisible=chromeVisible; view.brush=penBrush; view.inkColor=penBrush.color
-                            view.setLayout(pdfContentFit && pdfFitWidth, cropRect ?: fittedContent, pdfEnhancement, pdfScroll || pdfSpread, pdfRtl, alignTop = pdfContentFit && cropRect == null)
+                            view.setLayout(pdfContentFit && pdfFitWidth, cropRect ?: fittedContent, pdfEnhancement, pdfScroll || pdfSpread, pdfRtl, alignTop = pdfContentFit && cropRect == null, clipCrop = cropRect != null)
                             view.setDisplay(pdfZoom, pdfMargin, pdfContrast, pdfBrightness)
                             view.setImageAdjustments(imageAdjustments)
                             view.gestures = gestures; view.onShowControls = { chromeVisible = true }

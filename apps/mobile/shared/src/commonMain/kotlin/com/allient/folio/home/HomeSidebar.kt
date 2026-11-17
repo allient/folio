@@ -42,8 +42,8 @@ internal fun HomeSidebar(folders: List<NoteFolder>, current: String, trashCount:
                     contentAlignment = Alignment.Center) { HomeSymbol(Symbol.ChevronDown, Modifier.size(15.dp).rotate(if (expanded) 0f else -90f)) }
             }
             if (expanded) {
-                folders.forEach { folder ->
-                    SidebarItem(null, folder.name, current == "folder:${folder.id}", { onSelect("folder:${folder.id}") }, indent = true, folder = folder)
+                folders.folderTree().forEach { (folder, depth) ->
+                    SidebarItem(null, folder.name, current == "folder:${folder.id}", { onSelect("folder:${folder.id}") }, indent = true, folder = folder, depth = depth)
                 }
                 if (folders.isEmpty()) Text("No folders yet", Modifier.padding(start = 52.dp, top = 4.dp, bottom = 8.dp), fontSize = 12.sp, color = HomeMuted)
             }
@@ -61,10 +61,10 @@ internal fun HomeSidebar(folders: List<NoteFolder>, current: String, trashCount:
 }
 
 @Composable
-private fun SidebarItem(symbol: Symbol?, label: String, selected: Boolean, onClick: () -> Unit, indent: Boolean = false, folder: NoteFolder? = null, trailing: @Composable RowScope.() -> Unit = {}) {
+private fun SidebarItem(symbol: Symbol?, label: String, selected: Boolean, onClick: () -> Unit, indent: Boolean = false, folder: NoteFolder? = null, depth: Int = 0, trailing: @Composable RowScope.() -> Unit = {}) {
     val style = LocalHomeStyle.current
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(style.item)).background(if (selected) style.soft else Color.Transparent)
-        .clickable(onClick = onClick).padding(start = if (indent) 40.dp else 12.dp, end = 4.dp)
+        .clickable(onClick = onClick).padding(start = if (indent) 40.dp + 16.dp * depth.coerceAtMost(4) else 12.dp, end = 4.dp)
         .testTag("sidebar-${label.lowercase().replace(' ', '-')}").semantics { this.selected = selected },
         verticalAlignment = Alignment.CenterVertically) {
         when {
