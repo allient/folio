@@ -1,4 +1,2 @@
-Folio 1.0.11
-- Reader: writing stays fast on pages with many drawings. Before, each new stroke made the pen slower until strokes turned into dots.
-- Reader: with Fit Screen or Fit Width, ink now shows anywhere on the page, including below the last line of content.
-- Library: folders can hold folders. New folder now creates it inside the folder you are in, Back goes one level up, and Move puts a folder inside another.
+Folio 1.0.12
+- Notes: ink shows as you write again on some Samsung tablets (Galaxy Tab S6 Lite). Since 1.0.6 the stroke could appear only after lifting the pen.

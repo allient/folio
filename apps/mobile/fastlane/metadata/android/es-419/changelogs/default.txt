@@ -1,4 +1,2 @@
-Folio 1.0.11
-- Lector: escribir sigue fluido en páginas con muchos dibujos. Antes, cada trazo hacía el lápiz más lento hasta dejar solo puntos.
-- Lector: con Ajustar a pantalla o Ajustar al ancho, la tinta se ve en toda la página, también debajo del último contenido.
-- Biblioteca: las carpetas pueden contener carpetas. Nueva carpeta la crea dentro de la carpeta en la que estás, Atrás sube un nivel y Mover pone una carpeta dentro de otra.
+Folio 1.0.12
+- Notas: la tinta vuelve a verse mientras escribes en algunas tabletas Samsung (Galaxy Tab S6 Lite). Desde la 1.0.6 el trazo podía aparecer solo al levantar el lápiz.
