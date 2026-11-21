@@ -59,6 +59,15 @@ internal enum class EraserMode(val label: String) { Pixel("Pixel Eraser"), Strok
 internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> Unit) : FrameLayout(context) {
     init { setWillNotDraw(false); contentDescription = "Handwriting canvas"; importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES }
     private var frontInk: FrontBufferedInkController? = null
+    /**
+     * A 1-pixel child that draws nothing. Invalidating it makes the window draw a frame without re-recording the page.
+     * Ink's wet layer re-sends the same buffer on each move, and some compositors (Galaxy Tab S6 Lite, One UI 5) only
+     * show its new content when the window also draws a frame; without one, the stroke appeared only on pen lift.
+     */
+    private val framePump = View(context).also {
+        it.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+        addView(it, LayoutParams(1, 1))
+    }
     private var backendReported = false
     private val ink = JetpackInkEngine()
     private var segmentStartedAt = 0L
@@ -1115,8 +1124,10 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         }
         parent?.requestDisallowInterceptTouchEvent(true)
         // While Ink's front-buffered layer shows the stroke being written, the page underneath doesn't change, so it isn't
-        // redrawn on every move (on a dense page that replay is what made new strokes lag).
+        // redrawn on every move (on a dense page that replay is what made new strokes lag). The window still draws a frame,
+        // through framePump, so compositors that need one show the wet stroke as it is written.
         if (!(event.actionMasked == MotionEvent.ACTION_MOVE && Build.VERSION.SDK_INT >= 29 && frontInk?.hasActive == true)) postInvalidateOnAnimation()
+        else framePump.postInvalidateOnAnimation()
         return true
     }
 
