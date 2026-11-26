@@ -26,7 +26,7 @@ text: reimport the original file into Books & PDFs.
 - Shared Kotlin document/annotation presentation models live in `apps/mobile/shared/.../reader`.
 
 Originals are copied into private app storage with SHA-256 identities. Duplicate imports reuse the
-library record. Import limits: 128 MiB per original; EPUB archive limits: 20,000 entries, 64 MiB per
+library record. Import limits: 1 GiB per original (with a free-storage check before copying); Import as notebook keeps 128 MiB; EPUB archive limits: 20,000 entries, 64 MiB per
 resource and 512 MiB expanded. EPUB path traversal is rejected. Reader documents and annotations
 influence the automatic backup signature. Library backups keep reader titles, content hashes, source URI
 references, Knotes folder assignments, reading positions, bookmarks and annotations, but never

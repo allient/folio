@@ -81,9 +81,16 @@ internal class ReaderStore(private val context: Context) : Closeable {
     }
     suspend fun importDocument(uri: Uri, targetFolderId: String? = null): ReaderDocument = withContext(Dispatchers.IO) {
         var name = "Document"
-        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) name = cursor.getString(0) ?: name
+        var size = -1L
+        context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                name = cursor.getString(0) ?: name
+                if (!cursor.isNull(1)) size = cursor.getLong(1)
+            }
         }
+        require(size <= MAX_DOCUMENT_BYTES) { "Documents must be smaller than 1 GiB." }
+        // The import keeps its own copy of the book: fail before copying instead of filling the disk partway.
+        if (size > 0) require(documentsDir.usableSpace > size + FREE_SPACE_MARGIN) { "Not enough free storage to import this document." }
         runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         val staged = File(documentsDir, "${UUID.randomUUID()}.partial")
         var created: File? = null
@@ -94,7 +101,7 @@ internal class ReaderStore(private val context: Context) : Closeable {
                 while (true) {
                     kotlinx.coroutines.currentCoroutineContext().ensureActive()
                     val count = input.read(buffer); if (count < 0) break
-                    total += count; require(total <= 128L * 1024 * 1024) { "Documents must be smaller than 128 MiB." }
+                    total += count; require(total <= MAX_DOCUMENT_BYTES) { "Documents must be smaller than 1 GiB." }
                     digest.update(buffer, 0, count); output.write(buffer, 0, count)
                 }
                 output.fd.sync()
@@ -193,6 +200,9 @@ internal class ReaderStore(private val context: Context) : Closeable {
     override fun close() { helper.close() }
 
     companion object {
+        /** Books are streamed to disk and Pdfium renders one page at a time, so size costs storage, not memory. */
+        const val MAX_DOCUMENT_BYTES = 1024L * 1024 * 1024
+        private const val FREE_SPACE_MARGIN = 64L * 1024 * 1024
         fun writeDocument(d: ReaderDocument): JSONObject = JSONObject().put("id", d.id).put("title", d.title).put("author", d.author).put("format", d.format)
             .put("path", d.path).put("cover", JSONObject().put("path", d.coverPath)).put("hash", d.contentHash).put("pageCount", d.pageCount).put("locator", d.locator).put("progress", d.progress).put("openedAt", d.openedAt).put("sourceUri",d.sourceUri).put("folderId", d.folderId)
             .put("favorite", d.favorite).put("createdAt", d.createdAt).put("deletedAt", d.deletedAt)
