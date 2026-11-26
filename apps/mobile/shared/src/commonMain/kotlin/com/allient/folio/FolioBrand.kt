@@ -11,6 +11,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import knotes.shared.generated.resources.Res
+import knotes.shared.generated.resources.allient_logo
 import knotes.shared.generated.resources.folio_icon_primary
 import knotes.shared.generated.resources.folio_symbol
 import knotes.shared.generated.resources.geist_bold
@@ -66,3 +67,7 @@ fun FolioSymbol(modifier: Modifier = Modifier, color: Color = FolioBrand.Sage) =
 /** Primary app icon: sage F on cream paper with the folded corner. Use 64 dp or larger so the fold reads. */
 @Composable
 fun FolioIcon(modifier: Modifier = Modifier) = Image(painterResource(Res.drawable.folio_icon_primary), "Folio", modifier)
+
+/** Allient wordmark (the company that maintains Folio), as shown in About. */
+@Composable
+fun AllientLogo(modifier: Modifier = Modifier) = Image(painterResource(Res.drawable.allient_logo), "Allient", modifier)

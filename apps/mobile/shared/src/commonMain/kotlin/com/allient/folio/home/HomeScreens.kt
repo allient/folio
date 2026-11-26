@@ -251,6 +251,8 @@ private data class AboutLink(val tag: String, val icon: androidx.compose.ui.grap
 internal fun AboutScreen(version: String, onBack: () -> Unit) {
     val style = LocalHomeStyle.current
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val inAppBrowser = com.allient.folio.LocalInAppBrowser.current
+    fun openAllient() { inAppBrowser?.invoke(com.allient.folio.FolioLinks.ALLIENT) ?: uriHandler.openUri(com.allient.folio.FolioLinks.ALLIENT) }
     val links = listOf(
         AboutLink("website", Lucide.Globe, "Documentation and more info", "folio.allient.io", com.allient.folio.FolioLinks.SITE),
         AboutLink("github", Lucide.Github, "Like Folio? Star it on GitHub", "github.com/allient/folio", com.allient.folio.FolioLinks.GITHUB),
@@ -278,7 +280,16 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
                             fontSize = 13.sp, color = HomeInk)
                     }
                 }
-                Column(Modifier.padding(top = 24.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).background(style.soft.copy(alpha = .5f)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.padding(top = 20.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).border(1.dp, HomeHairline, RoundedCornerShape(style.card))
+                    .clickable(role = Role.Button, onClickLabel = "Open allient.io") { openAllient() }.padding(horizontal = 16.dp, vertical = 12.dp).testTag("about-maintainer"),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Maintained by the Allient team", fontSize = 15.sp, fontWeight = FontWeight.Medium, color = HomeInk)
+                        Text("allient.io", fontSize = 13.sp, color = HomeMuted)
+                    }
+                    com.allient.folio.AllientLogo(Modifier.height(24.dp))
+                }
+                Column(Modifier.padding(top = 16.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).background(style.soft.copy(alpha = .5f)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Your notes stay on this device", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
                     Text("There are no accounts and no cloud sync. Notebooks, folders and reading notes live in the app's private storage, so turn on Smart backups or export a .folio file before you uninstall or clear the app's data.",
                         fontSize = 14.sp, lineHeight = 21.sp, color = HomeInk)
@@ -311,7 +322,7 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
                         if (index < libraries.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = HomeHairline)
                     }
                 }
-                Text("Folio is open source under the Apache License 2.0. Made by Allient.", Modifier.padding(top = 24.dp, bottom = 8.dp).clickable(role = Role.Button, onClickLabel = "Open allient.io") { uriHandler.openUri(com.allient.folio.FolioLinks.ALLIENT) }.testTag("about-allient"),
+                Text("Folio is open source under the Apache License 2.0. Made by Allient.", Modifier.padding(top = 24.dp, bottom = 8.dp).clickable(role = Role.Button, onClickLabel = "Open allient.io") { openAllient() }.testTag("about-allient"),
                     fontSize = 13.sp, color = HomeMuted)
             }
         }

@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
         updates = PlayUpdates(this)
         if (savedInstanceState == null) updates.check()
         setContent {
-            androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue) {
+            androidx.compose.runtime.CompositionLocalProvider(LocalPenThreshold provides PenSettings.thresholdState.floatValue, LocalInAppBrowser provides { url -> openInAppBrowser(url) }) {
                 Box(Modifier.fillMaxSize()) {
                     FolioApp(repository, backup, reader)
                     UpdateReadyBar(updates)
