@@ -57,7 +57,39 @@ internal enum class LassoKind { Smart, Freeform, Rectangle }
 internal enum class EraserMode(val label: String) { Pixel("Pixel Eraser"), Stroke("Stroke Eraser"), Lasso("Lasso Eraser") }
 
 internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> Unit) : FrameLayout(context) {
-    init { setWillNotDraw(false); contentDescription = "Handwriting canvas"; importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES }
+    init {
+        setWillNotDraw(false); contentDescription = "Handwriting canvas"; importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
+        setOnDragListener { _, event -> handleImageDrag(event) }
+    }
+
+    /**
+     * Receives an image dragged from another app (split screen), the page point where it was dropped (0..1) and the
+     * page's width/height, so the image keeps its shape whatever the canvas size (split screen makes it short).
+     */
+    var onImageDrop: ((android.net.Uri, Offset, Float) -> Boolean)? = null
+
+    private fun handleImageDrag(event: android.view.DragEvent): Boolean {
+        val receiver = onImageDrop ?: return false
+        return when (event.action) {
+            android.view.DragEvent.ACTION_DRAG_STARTED -> event.clipDescription?.let { description ->
+                (0 until description.mimeTypeCount).any { description.getMimeType(it).startsWith("image/") }
+            } == true
+            android.view.DragEvent.ACTION_DROP -> {
+                val clip = event.clipData ?: return false
+                val uri = (0 until clip.itemCount).firstNotNullOfOrNull { clip.getItemAt(it).uri } ?: return false
+                // Read access to another app's content URI lasts while the activity lives; the import copies the file.
+                hostActivity()?.requestDragAndDropPermissions(event)
+                receiver(uri, position(event.x, event.y), width.toFloat() / documentHeight.coerceAtLeast(1))
+            }
+            else -> true
+        }
+    }
+
+    private fun hostActivity(): android.app.Activity? {
+        var current = context
+        while (current is android.content.ContextWrapper) { if (current is android.app.Activity) return current; current = current.baseContext }
+        return null
+    }
     private var frontInk: FrontBufferedInkController? = null
     /**
      * A 1-pixel child that draws nothing. Invalidating it makes the window draw a frame without re-recording the page.

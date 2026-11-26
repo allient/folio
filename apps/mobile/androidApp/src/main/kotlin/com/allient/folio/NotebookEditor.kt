@@ -580,6 +580,10 @@ internal fun NotebookEditor(
                 undoStack = (undoStack + importNotice.previousPage).takeLast(80)
                 redoStack = emptyList()
             }
+            // A dropped image is selected in the current tool, like a new sticker: drag to move, handles to resize and rotate.
+            if (importNotice.kind == "image" && importNotice.pageId == page.id) importNotice.selectImageIds.lastOrNull()?.let { id ->
+                selectedBlockId = null; sheet = null; canvas?.post { canvas?.selectObject(id, isText = false) }
+            }
             repository.consumeEditorImport(importNotice.token)
         }
     }
@@ -610,6 +614,11 @@ internal fun NotebookEditor(
     fun requireEditableLayer(): Boolean {
         if (editableLayer(activeLayer)) return true
         message = "Choose a visible, unlocked layer first."; return false
+    }
+    fun dropImage(uri: android.net.Uri, pageId: String, point: Offset, pageAspect: Float): Boolean {
+        if (!requireEditableLayer()) return false
+        repository.importIntoNotebook(uri, notebook.id, "image", pageId, activeLayer, ImageDrop(point.x, point.y, pageAspect))
+        return true
     }
     /** A page-normalised rectangle of [width] centred on the current view; [aspect] is on-screen height / width. */
     fun placeBlock(width: Float, aspect: Float): android.graphics.RectF {
@@ -1497,7 +1506,7 @@ internal fun NotebookEditor(
                                             val destination = safeIndex + delta
                                             if (destination in notebook.pages.indices) { canvas?.flushInput(); pageIndex = destination }
                                         },
-                                        onCanvas = { if (model.id == page.id) canvas = it },
+                                        onCanvas = { view -> view.onImageDrop = { uri, point, aspect -> dropImage(uri, model.id, point, aspect) }; if (model.id == page.id) canvas = view },
                                         onPageChange = { changed ->
                                             if (model.id == page.id) applyPage(changed) else replacePage(changed)
                                             if (model.id != page.id) pageIndex = index
@@ -1557,6 +1566,7 @@ internal fun NotebookEditor(
                                     view.onObjectsChanged = { texts, images -> applyPage(page.copy(texts = texts, images = images)) }
                                     view.onObjectSelectionChanged = { id, text -> selectedObjectId = id; selectedObjectIsText = text }
                                     view.onCanvasAction = { handleCanvasAction(it) }; view.canPaste = clipboard.isNotEmpty()
+                                    view.onImageDrop = { uri, point, aspect -> dropImage(uri, page.id, point, aspect) }
                                     view.brush = selectedBrush; view.threshold = threshold
                                     view.infiniteCanvas = notebook.infiniteCanvas
                                     view.onAddPin = { location -> editingPin = null; pendingPin = location; pinName = "Pin ${latestNotebook.pins.size + 1}" }
