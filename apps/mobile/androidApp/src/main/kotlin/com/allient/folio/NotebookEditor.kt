@@ -297,18 +297,24 @@ internal fun NotebookEditor(
     }
     var drawingViewportWidthPx by remember { mutableIntStateOf(0) }
     var drawingViewportHeightPx by remember { mutableIntStateOf(0) }
-    // Pages keep the shape they have full screen. In split screen or a freeform window the drawing area is smaller, and
-    // squashing the page to fit it distorted images and ink; instead the page keeps its aspect and scrolls (0 = fill the view).
+    // A page is a portrait sheet with the shape it has full screen in portrait. In split screen, a freeform window or
+    // landscape the drawing area has another shape, and squashing the page into it distorted images and ink: the page keeps
+    // its shape instead (0 = fill the view, only full screen in portrait). Split screen shows it at full width and scrolls;
+    // landscape shows the whole page centred (pinch to zoom in).
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val reducedWindow = remember(configuration) { context.isReducedWindow() }
     val landscapeDisplay = remember(configuration) { context.displayIsLandscape() }
-    val fullPageAspectKey = if (landscapeDisplay) "page-aspect-landscape" else "page-aspect-portrait"
-    LaunchedEffect(reducedWindow, drawingViewportWidthPx, drawingViewportHeightPx, fullPageAspectKey) {
-        if (!reducedWindow && drawingViewportWidthPx > 0 && drawingViewportHeightPx > 0)
-            preferences.edit().putFloat(fullPageAspectKey, drawingViewportHeightPx.toFloat() / drawingViewportWidthPx).apply()
+    LaunchedEffect(reducedWindow, landscapeDisplay, drawingViewportWidthPx, drawingViewportHeightPx) {
+        if (!reducedWindow && !landscapeDisplay && drawingViewportWidthPx > 0 && drawingViewportHeightPx > 0)
+            preferences.edit().putFloat("page-aspect-portrait", drawingViewportHeightPx.toFloat() / drawingViewportWidthPx)
+                .putInt("page-width-portrait", drawingViewportWidthPx).apply()
     }
-    val pageAspect = if (!reducedWindow || notebook.infiniteCanvas) 0f
-        else preferences.getFloat(fullPageAspectKey, 0f).takeIf { it > 0f } ?: context.estimatedFullPageAspect(drawingViewportWidthPx, drawingViewportHeightPx)
+    val pageAspect = if (notebook.infiniteCanvas || (!reducedWindow && !landscapeDisplay)) 0f
+        else preferences.getFloat("page-aspect-portrait", 0f).takeIf { it > 0f }
+            ?: if (landscapeDisplay) context.displayPortraitAspect() else context.estimatedFullPageAspect(drawingViewportWidthPx, drawingViewportHeightPx)
+    // Landscape: the page keeps its portrait width on screen, centred, and scrolls down for the rest.
+    val landscapePageWidthPx = if (!landscapeDisplay || reducedWindow || notebook.infiniteCanvas) 0
+        else preferences.getInt("page-width-portrait", 0).takeIf { it > 0 } ?: context.estimatedPortraitPageWidth(drawingViewportWidthPx)
     val panelXdpi = context.resources.displayMetrics.xdpi
     var zoom by remember(savedPage.id) { mutableFloatStateOf(1f) }
     var viewportCenterX by remember(savedPage.id) { mutableFloatStateOf(.5f) }
@@ -1601,6 +1607,7 @@ internal fun NotebookEditor(
                                     view.brush = selectedBrush; view.threshold = threshold
                                     view.infiniteCanvas = notebook.infiniteCanvas
                                     view.documentAspect = pageAspect
+                                    view.pageWidthPx = landscapePageWidthPx
                                     view.onAddPin = { location -> editingPin = null; pendingPin = location; pinName = resources.getString(R.string.editor_pin_default_name, latestNotebook.pins.size + 1) }
                                     view.pressureCurve = pressureCurve; view.pressureCurveEnabled = pressureCurveEnabled
                                     view.velocityCurveEnabled = velocityCurveEnabled; view.velocityCurve = velocityCurve

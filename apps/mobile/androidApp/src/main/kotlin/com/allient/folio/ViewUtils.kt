@@ -38,6 +38,19 @@ fun android.content.Context.displayIsLandscape(): Boolean {
     val metrics = resources.displayMetrics; return metrics.widthPixels > metrics.heightPixels
 }
 
+/** Before a portrait page width was recorded: the display's short side minus the same side chrome (rail) as now. */
+fun android.content.Context.estimatedPortraitPageWidth(viewportWidth: Int): Int {
+    val metrics = resources.displayMetrics
+    val chrome = (maxOf(metrics.widthPixels, metrics.heightPixels) - viewportWidth).coerceAtLeast(0)
+    return (minOf(metrics.widthPixels, metrics.heightPixels) - chrome).coerceAtLeast(0)
+}
+
+/** Long side / short side of the display: a portrait page shape to use before a portrait page size was recorded. */
+fun android.content.Context.displayPortraitAspect(): Float {
+    val metrics = resources.displayMetrics
+    return maxOf(metrics.widthPixels, metrics.heightPixels).toFloat() / minOf(metrics.widthPixels, metrics.heightPixels).coerceAtLeast(1)
+}
+
 /**
  * Page height / width when no full-screen size was recorded yet: the full display minus the same editor chrome the
  * current window has around its [viewportWidth] × [viewportHeight] drawing area.

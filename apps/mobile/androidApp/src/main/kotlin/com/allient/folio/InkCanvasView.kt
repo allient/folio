@@ -436,7 +436,22 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     var onAddPin: (Offset) -> Unit = {}
     /** When positive, a page is `width * documentAspect` tall instead of filling the view, so a second, differently sized view maps ink uniformly. */
     var documentAspect: Float = 0f
-        set(value) { if (field == value) return; field = value; cachedPage = null; constrainPan(); onZoomChanged(zoomValue); postInvalidateOnAnimation() }
+        set(value) { if (field == value) return; field = value; cachedPage = null; updateBaseZoom(); postInvalidateOnAnimation() }
+    /**
+     * Landscape: the page is shown as wide as it is in portrait ([pageWidthPx] screen pixels), centred, and scrolls
+     * vertically, instead of stretching across the wider view. 0 = the page fills the view's width.
+     */
+    var pageWidthPx: Int = 0
+        set(value) { if (field == value) return; field = value; updateBaseZoom(); postInvalidateOnAnimation() }
+    /** The zoom of the default view: 1, or less when [pageWidthPx] keeps the page narrower than the view. */
+    private var baseZoom = 1f
+    private fun updateBaseZoom() {
+        val next = if (pageWidthPx > 0 && !infiniteCanvas && width > 0) (pageWidthPx.toFloat() / width).coerceIn(.25f, 1f) else 1f
+        // Follow the new default only while the user is on the old one, so a zoom they chose is kept.
+        if (kotlin.math.abs(zoomValue - baseZoom) < .001f) zoomValue = next
+        baseZoom = next
+        constrainPan(); onZoomChanged(zoomValue)
+    }
     private val documentHeight: Int get() = if (infiniteCanvas) (width * 1.6f).toInt().coerceAtLeast(1) else if (documentAspect > 0f) (width * documentAspect).toInt().coerceAtLeast(1) else height
 
     // --- Zoom window: a draggable box on the page whose contents are written in a magnified panel (see docs/ruler-and-zoom-window.md). ---
@@ -600,7 +615,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         panY = height / 2f - (height / 2f - panY) * factor
         constrainPan(); onZoomChanged(zoomValue); postInvalidateOnAnimation()
     }
-    fun resetViewport() { finishGesture(); resetFrontInk(); zoomValue = 1f; panX = 0f; panY = 0f; constrainPan(); onZoomChanged(1f); postInvalidateOnAnimation() }
+    fun resetViewport() { finishGesture(); resetFrontInk(); zoomValue = baseZoom; panX = 0f; panY = 0f; constrainPan(); onZoomChanged(zoomValue); postInvalidateOnAnimation() }
     fun fitToScreen() = resetViewport()
     fun fitToWidth() = resetViewport()
     fun fitToHeight() = resetViewport()
@@ -723,7 +738,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         if (oldw != 0 && oldh != 0 && (w != oldw || h != oldh)) { finishGesture(); resetFrontInk() }
         super.onSizeChanged(w, h, oldw, oldh)
-        constrainPan()
+        updateBaseZoom()
     }
     // All input belongs to our pressure filter; the authoring child only renders accepted samples.
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
@@ -760,6 +775,8 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         // expands the clip with the page, so panned content can paint into the rails.
         canvas.clipRect(0, 0, width, height)
         if (infiniteCanvas) canvas.drawColor(com.allient.folio.InfinitePaper.parse(template)?.background ?: Color.WHITE)
+        // A page smaller than the view (landscape, zoomed out) sits on a grey desk so its edges show.
+        if (!infiniteCanvas && (width * zoomValue < width - 1f || documentHeight * zoomValue < height - 1f)) canvas.drawColor(PAGE_DESK_COLOR)
         canvas.translate(panX, panY); canvas.scale(zoomValue, zoomValue)
         if (infiniteCanvas) NotebookRenderer.drawInfinitePattern(canvas, template, width.toFloat(), -panX / zoomValue, -panY / zoomValue, (width - panX) / zoomValue, (height - panY) / zoomValue, zoomValue)
         val page = cachedPage ?: NotebookPage(id = "render-cache", strokes = if (Build.VERSION.SDK_INT >= 29) strokes.filterNot { frontInk?.isPending(it.id) == true } else strokes, template = template,
@@ -1718,3 +1735,6 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         return RectF(points.minOf { it.x } * width - 8, points.minOf { it.y } * documentHeight - 8, points.maxOf { it.x } * width + 8, points.maxOf { it.y } * documentHeight + 8)
     }
 }
+
+/** The grey around a page that is smaller than the canvas (landscape, zoomed out). */
+private const val PAGE_DESK_COLOR = 0xFFE4E4E0.toInt()
