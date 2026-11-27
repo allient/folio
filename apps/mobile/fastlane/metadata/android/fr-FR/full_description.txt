@@ -1,0 +1,35 @@
+Folio est un carnet calme et concentré pour votre stylet. Écrivez à la main, dessinez sur un canevas infini et lisez des PDF et des EPUB stylet en main. Vos notes et vos livres restent sur votre appareil : pas de compte, pas de publicité, et tout fonctionne hors ligne.
+
+<b>Une encre qui se comporte comme de l'encre</b>
+• Douze pinceaux : stylo bille, feutre fin, stylo gel, marqueur, stylo plume, stylo pinceau, calligraphie, surligneur, crayons 2H à 6B, craie, aérosol et pinceau à poils
+• Tracé à faible latence avec pression et inclinaison
+• Des courbes de pression que vous réglez vous-même, et un seuil qui ignore une pointe usée
+• Un grain de crayon qui reste sur le papier quand vous zoomez
+
+<b>Des pages, ou aucune limite</b>
+• 35 modèles de page : lignes, grille, points, Cornell, agenda, Kanban, portée musicale, suivi d'habitudes et plus
+• Canevas infini avec repères, mini-carte et « retour au contenu »
+• Calques, lasso, formes, remplissage, zones de texte, tableaux, autocollants, notes adhésives et images
+• Une règle et une fenêtre de zoom pour les détails
+• Des notes vocales dans la page
+
+<b>Lire stylet en main</b>
+• Lecteur PDF et EPUB avec surlignages, soulignements, notes en marge et signets
+• Recherche, accès direct à une page et reconnaissance de texte sur l'appareil (OCR)
+• Vue d'étude : un livre et un carnet côte à côte
+• Exportez le PDF annoté, ou vos notes de lecture en Markdown
+• Ouvrez des livres depuis votre gestionnaire de fichiers ou d'autres applis
+
+<b>Une bibliothèque toujours en ordre</b>
+• Dossiers avec couleurs et styles, favoris, récents et recherche dans les noms, le texte saisi, les tags et les titres de livres
+• Corbeille vidée automatiquement après 7 ou 30 jours
+• Sauvegardes intelligentes dans un dossier de votre choix, avec versions quotidiennes, hebdomadaires et mensuelles
+• Exportez des pages en PDF ou PNG, ou un carnet en fichier .folio modifiable
+
+<b>Dans votre langue</b>
+• Anglais, espagnol, portugais, français, allemand, hindi et chinois
+
+<b>Confidentiel par conception</b>
+Folio fonctionne entièrement hors ligne. Vos notes et vos livres ne quittent jamais votre appareil, sauf si vous les exportez ou les partagez vous-même. Folio envoie des statistiques d'utilisation anonymes (écrans et fonctions utilisés) pour améliorer l'appli ; vous pouvez les désactiver dans Préférences. Le micro n'est utilisé que lorsque vous enregistrez une note vocale.
+
+Conçu pour les tablettes Android et les écrans à stylet, et fonctionne aussi sur téléphone.

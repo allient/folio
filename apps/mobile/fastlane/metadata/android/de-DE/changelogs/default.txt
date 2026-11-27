@@ -1,0 +1,5 @@
+Folio 1.0.14
+- Folio gibt es jetzt auf Englisch, Spanisch, Portugiesisch, Französisch, Deutsch, Hindi und Chinesisch. Es folgt der Sprache deines Geräts, oder wähle eine unter Einstellungen → Sprache.
+- Neu gestaltete Einstellungen und Sicherungseinstellungen.
+- Im Querformat behalten Seiten ihre Form, zentriert, und lassen sich scrollen.
+- Korrekturen beim Umblättern im Querformat.

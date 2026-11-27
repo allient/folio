@@ -1,0 +1,5 @@
+Folio 1.0.14
+- Folio parle désormais anglais, espagnol, portugais, français, allemand, hindi et chinois. Il suit la langue de votre appareil, ou choisissez-en une dans Préférences → Langue.
+- Nouvelle présentation des Préférences et des paramètres de sauvegarde.
+- En paysage, les pages gardent leur forme, centrées, et défilent.
+- Corrections pour tourner les pages en paysage.
