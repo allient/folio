@@ -666,12 +666,18 @@ internal fun NotebookEditor(
     fun addSticker(emoji: String) {
         if (!requireEditableLayer()) return
         val box = placeBlock(.2f, 1f)
-        val file = runCatching { renderStickerFile(context, emoji) }.getOrElse { message = "Could not create this sticker."; return }
-        canvas?.flushInput()
-        val sticker = InkImage(path = file.absolutePath, x = box.left, y = box.top, width = box.width(), height = box.height(), layerId = activeLayer, z = frontUnderInk())
-        applyPage(page.copy(images = page.images + sticker))
-        // Selected right away in the current tool, like a new shape: drag to move, handles to resize.
-        selectedBlockId = null; sheet = null; canvas?.selectObject(sticker.id, isText = false)
+        val layer = activeLayer
+        scope.launch {
+            // Rendering and writing the PNG is file I/O: keep it off the main thread.
+            val file = try { withContext(Dispatchers.IO) { renderStickerFile(context, emoji) } }
+                catch (error: kotlinx.coroutines.CancellationException) { throw error }
+                catch (_: Exception) { message = "Could not create this sticker."; return@launch }
+            canvas?.flushInput()
+            val sticker = InkImage(path = file.absolutePath, x = box.left, y = box.top, width = box.width(), height = box.height(), layerId = layer, z = frontUnderInk())
+            applyPage(page.copy(images = page.images + sticker))
+            // Selected right away in the current tool, like a new shape: drag to move, handles to resize.
+            selectedBlockId = null; sheet = null; canvas?.selectObject(sticker.id, isText = false)
+        }
     }
     fun selectEraser() {
         canvas?.flushInput(); showBrush = false; selectedIds = emptySet()
@@ -1581,13 +1587,13 @@ internal fun NotebookEditor(
                                     view.onImageDrop = { uri, point, aspect -> dropImage(uri, page.id, point, aspect) }
                                     view.brush = selectedBrush; view.threshold = threshold
                                     view.infiniteCanvas = notebook.infiniteCanvas
+                                    view.documentAspect = pageAspect
                                     view.onAddPin = { location -> editingPin = null; pendingPin = location; pinName = "Pin ${latestNotebook.pins.size + 1}" }
                                     view.pressureCurve = pressureCurve; view.pressureCurveEnabled = pressureCurveEnabled
                                     view.velocityCurveEnabled = velocityCurveEnabled; view.velocityCurve = velocityCurve
                                     view.tiltCurveEnabled = tiltCurveEnabled; view.tiltCurve = tiltCurve
                                     view.mode = mode; view.shapeKind = shape; view.shapeFilled = shapeFilled; view.shapeFillColor = shapeFillColor; view.shapeBorderNone = shapeBorderNone; view.shapeColor = shapeColor; view.shapeWidth = shapeWidth; view.shapeLineStyle = shapeLineStyle; view.fillColor = fillColor; view.onColorPicked = { picked -> val receiver = pageColorReceiver; pageColorReceiver = null; mode = colorReturnMode; sheet = colorReturnSheet; receiver?.invoke(picked) }; view.eraserMode = eraserMode
                                     view.rulerVisible = rulerOn
-                                    view.documentAspect = pageAspect
                                     view.selectedBlockId = selectedBlockId
                                     view.selectedCells = cellSelection
                                     view.onBlockTap = { id, tapX, tapY ->

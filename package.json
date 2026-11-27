@@ -13,6 +13,6 @@
     "test:android": "turbo run test --filter=@folio/mobile"
   },
   "devDependencies": {
-    "turbo": "^2.11.7"
+    "turbo": "^2.11.13"
   }
 }
