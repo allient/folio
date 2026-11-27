@@ -45,7 +45,7 @@ internal class ReaderStore(private val context: Context) : Closeable {
         LocalBackupScheduler.changed(context)
     }
     fun saveAnnotation(annotation: ReaderAnnotation) {
-        require(annotation.anchor.length <= 2_000_000 && annotation.note.length <= 100_000 && annotation.quote.length <= 100_000) { "Annotation is too large." }
+        requireUser(annotation.anchor.length <= 2_000_000 && annotation.note.length <= 100_000 && annotation.quote.length <= 100_000, R.string.error_annotation_too_large) { "Annotation is too large." }
         val doc = requireNotNull(document(annotation.documentId)) { "Document no longer exists" }
         val anchor = JSONObject(annotation.anchor)
         if (doc.format == "pdf") {
@@ -88,9 +88,9 @@ internal class ReaderStore(private val context: Context) : Closeable {
                 if (!cursor.isNull(1)) size = cursor.getLong(1)
             }
         }
-        require(size <= MAX_DOCUMENT_BYTES) { "Documents must be smaller than 1 GiB." }
+        requireUser(size <= MAX_DOCUMENT_BYTES, R.string.error_document_too_large) { "Documents must be smaller than 1 GiB." }
         // The import keeps its own copy of the book: fail before copying instead of filling the disk partway.
-        if (size > 0) require(documentsDir.usableSpace > size + FREE_SPACE_MARGIN) { "Not enough free storage to import this document." }
+        if (size > 0) requireUser(documentsDir.usableSpace > size + FREE_SPACE_MARGIN, R.string.error_not_enough_storage) { "Not enough free storage to import this document." }
         runCatching { context.contentResolver.takePersistableUriPermission(uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
         val staged = File(documentsDir, "${UUID.randomUUID()}.partial")
         var created: File? = null
@@ -101,7 +101,7 @@ internal class ReaderStore(private val context: Context) : Closeable {
                 while (true) {
                     kotlinx.coroutines.currentCoroutineContext().ensureActive()
                     val count = input.read(buffer); if (count < 0) break
-                    total += count; require(total <= MAX_DOCUMENT_BYTES) { "Documents must be smaller than 1 GiB." }
+                    total += count; requireUser(total <= MAX_DOCUMENT_BYTES, R.string.error_document_too_large) { "Documents must be smaller than 1 GiB." }
                     digest.update(buffer, 0, count); output.write(buffer, 0, count)
                 }
                 output.fd.sync()
@@ -144,15 +144,15 @@ internal class ReaderStore(private val context: Context) : Closeable {
 
     /** Reject path traversal and expansion bombs before handing an EPUB to the navigator. */
     private fun validateEpub(file: File) {
-        val archive = try { java.util.zip.ZipFile(file) } catch (notZip: java.util.zip.ZipException) { throw IllegalArgumentException("This file is not a PDF or EPUB book.", notZip) }
+        val archive = try { java.util.zip.ZipFile(file) } catch (notZip: java.util.zip.ZipException) { throw UserInputException(R.string.error_book_not_supported, "This file is not a PDF or EPUB book.", cause = notZip) }
         archive.use { zip ->
-            require(zip.getEntry("META-INF/container.xml") != null) { "This file is not an EPUB book. Import a PDF or DRM-free EPUB." }
+            requireUser(zip.getEntry("META-INF/container.xml") != null, R.string.error_book_not_epub) { "This file is not an EPUB book. Import a PDF or DRM-free EPUB." }
             var expanded = 0L; var entries = 0
             zip.entries().asSequence().forEach { entry ->
-                require(++entries <= 20_000 && !entry.name.startsWith('/') && !entry.name.contains('\\') && entry.name.split('/').none { it == ".." }) { "Invalid EPUB archive" }
-                require(entry.size in 0..64L * 1024 * 1024 || entry.isDirectory) { "EPUB resource is too large" }
+                requireUser(++entries <= 20_000 && !entry.name.startsWith('/') && !entry.name.contains('\\') && entry.name.split('/').none { it == ".." }, R.string.error_epub_damaged) { "Invalid EPUB archive" }
+                requireUser(entry.size in 0..64L * 1024 * 1024 || entry.isDirectory, R.string.error_epub_too_large) { "EPUB resource is too large" }
                 expanded += entry.size.coerceAtLeast(0)
-                require(expanded <= 512L * 1024 * 1024) { "EPUB expands beyond the 512 MiB limit" }
+                requireUser(expanded <= 512L * 1024 * 1024, R.string.error_epub_too_large) { "EPUB expands beyond the 512 MiB limit" }
             }
         }
     }

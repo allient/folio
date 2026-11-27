@@ -9,6 +9,7 @@ data class InfinitePaper(val pattern: String = "dots", val color: String = "whit
     val gapFraction: Float get() = (.012f + .006f * spacing.coerceIn(1, 8)) * when (pattern) { "graph" -> .6f; "grid" -> 1.5f; else -> 1f }
 
     companion object {
+        // English names are fallbacks; the UI shows infinitePaperPatternName / infinitePaperColorName.
         val patterns = listOf("blank" to "Blank paper", "graph" to "Graph paper", "grid" to "Wide grid paper", "lines" to "Line paper", "dots" to "Dot paper", "sheet" to "Sheet")
         val colors = listOf("white" to "White", "beige" to "Beige", "dark" to "Dark gray")
         fun colorArgb(id: String): Int = when (id) { "beige" -> 0xFFFFF4E0.toInt(); "dark" -> 0xFF4A4A4A.toInt(); else -> 0xFFFFFFFF.toInt() }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.play.core.appupdate.AppUpdateInfo
@@ -115,12 +116,12 @@ fun UpdateReadyBar(updates: PlayUpdates, modifier: Modifier = Modifier) {
             modifier = Modifier.widthIn(max = 520.dp).fillMaxWidth(),
         ) {
             Row(Modifier.padding(start = 18.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("A new version of Folio is ready.", Modifier.weight(1f), fontSize = 14.sp)
+                Text(stringResource(R.string.main_update_ready), Modifier.weight(1f), fontSize = 14.sp)
                 TextButton(onClick = updates::later, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text("Later", color = FolioBrand.Cream.copy(alpha = 0.75f))
+                    Text(stringResource(R.string.main_update_later), color = FolioBrand.Cream.copy(alpha = 0.75f))
                 }
                 TextButton(onClick = updates::install, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text("Restart", color = FolioBrand.FoldMint, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.main_update_restart), color = FolioBrand.FoldMint, fontWeight = FontWeight.SemiBold)
                 }
             }
         }

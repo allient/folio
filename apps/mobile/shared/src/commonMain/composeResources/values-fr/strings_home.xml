@@ -1,0 +1,509 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Écrans de la bibliothèque (accueil) dans shared/commonMain. Les identifiants enregistrés (modèles, accents, tris) ne changent jamais ; seuls ces libellés sont traduits. -->
+<resources>
+    <!-- Actions communes -->
+    <string name="home_cancel">Annuler</string>
+    <string name="home_close">Fermer</string>
+    <string name="home_create">Créer</string>
+    <string name="home_save">Enregistrer</string>
+    <string name="home_open">Ouvrir</string>
+    <string name="home_delete">Supprimer</string>
+    <string name="home_move">Déplacer</string>
+    <string name="home_copy">Copier</string>
+    <string name="home_rename">Renommer</string>
+    <string name="home_restore">Restaurer</string>
+    <string name="home_back">Retour</string>
+    <string name="home_back_to_library">Retour à la bibliothèque</string>
+    <string name="home_move_to_trash">Mettre à la corbeille</string>
+    <string name="home_delete_permanently">Supprimer définitivement</string>
+    <string name="home_selected_suffix">%1$s, sélectionné</string>
+    <string name="home_options_for">Options pour %1$s</string>
+    <string name="home_open_item">Ouvrir %1$s</string>
+
+    <!-- Onglets et sections -->
+    <string name="home_segment_all">Tout</string>
+    <string name="home_segment_notes">Notes</string>
+    <string name="home_segment_canvas">Canevas</string>
+    <string name="home_segment_books">Livres</string>
+    <string name="home_segment_live">Direct</string>
+    <string name="home_section_folders">Dossiers</string>
+    <string name="home_section_move_out">Sortir</string>
+    <string name="home_drop_to_move_out">Déposer pour sortir</string>
+    <string name="home_all_folders">Tous les dossiers</string>
+    <string name="home_fold">Replier</string>
+    <string name="home_unfold">Déplier (%1$d)</string>
+    <plurals name="home_count_notebooks">
+        <item quantity="one">%1$d carnet</item>
+        <item quantity="many">%1$d carnets</item>
+        <item quantity="other">%1$d carnets</item>
+    </plurals>
+    <plurals name="home_count_canvases">
+        <item quantity="one">%1$d canevas</item>
+        <item quantity="many">%1$d canevas</item>
+        <item quantity="other">%1$d canevas</item>
+    </plurals>
+    <plurals name="home_count_books">
+        <item quantity="one">%1$d livre</item>
+        <item quantity="many">%1$d livres</item>
+        <item quantity="other">%1$d livres</item>
+    </plurals>
+    <plurals name="home_count_items">
+        <item quantity="one">%1$d élément</item>
+        <item quantity="many">%1$d éléments</item>
+        <item quantity="other">%1$d éléments</item>
+    </plurals>
+    <!-- %1$d sous-dossiers, %2$s le nombre d'éléments, par exemple « 3 éléments ». -->
+    <plurals name="home_folder_detail">
+        <item quantity="one">%1$d dossier · %2$s</item>
+        <item quantity="many">%1$d dossiers · %2$s</item>
+        <item quantity="other">%1$d dossiers · %2$s</item>
+    </plurals>
+    <string name="home_default_notebook_name">Carnet-%1$d</string>
+    <string name="home_default_canvas_name">Canevas-%1$d</string>
+
+    <!-- Barre supérieure et menu de la bibliothèque -->
+    <string name="home_toggle_sidebar">Afficher/masquer la barre latérale</string>
+    <string name="home_search_notebooks">Rechercher des carnets</string>
+    <string name="home_library_menu">Menu de la bibliothèque</string>
+    <string name="home_select">Sélectionner</string>
+    <string name="home_sort_by">Trier par</string>
+    <string name="home_sort_by_current">Trier par (%1$s)</string>
+    <string name="home_view_grid">Grille</string>
+    <string name="home_view_list">Liste</string>
+    <string name="home_search_tags">Rechercher des étiquettes</string>
+    <string name="home_import_document">Importer un carnet ou un document</string>
+    <string name="home_export_library">Exporter une sauvegarde complète de la bibliothèque</string>
+    <string name="home_search_label">Rechercher carnets, livres, étiquettes et texte</string>
+    <string name="home_close_search">Fermer la recherche</string>
+    <string name="home_all_tags">Toutes les étiquettes</string>
+    <string name="home_tags_hint">Ajoutez des étiquettes depuis l'éditeur d'un carnet</string>
+    <string name="home_close_tag_search">Fermer la recherche d'étiquettes</string>
+    <string name="home_folder_options">Options du dossier</string>
+    <string name="home_cancel_move">Annuler le déplacement</string>
+    <string name="home_clear_tag_filter">Effacer le filtre d'étiquette</string>
+    <string name="home_dismiss_message">Ignorer le message</string>
+    <string name="home_close_sidebar">Fermer la barre latérale</string>
+    <string name="home_saving">Enregistrement sur cet appareil…</string>
+
+    <!-- Sélection -->
+    <string name="home_cancel_selection">Annuler la sélection</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d sélectionné</item>
+        <item quantity="many">%1$d sélectionnés</item>
+        <item quantity="other">%1$d sélectionnés</item>
+    </plurals>
+    <string name="home_clear_selection">Effacer la sélection</string>
+    <string name="home_select_all">Tout sélectionner</string>
+    <string name="home_clear">Effacer</string>
+    <string name="home_move_selected">Déplacer la sélection</string>
+    <string name="home_favorite_selected">Ajouter la sélection aux favoris</string>
+    <string name="home_delete_selected">Supprimer la sélection</string>
+    <string name="home_notice_select_to_move">Sélectionnez des dossiers, carnets ou livres à déplacer</string>
+    <string name="home_notice_added_favorites">Ajouté aux favoris</string>
+    <string name="home_notice_removed_favorites">Retiré des favoris</string>
+    <string name="home_notice_folders_no_favorites">Les dossiers ne peuvent pas être ajoutés aux favoris</string>
+
+    <!-- Éléments de la bibliothèque -->
+    <string name="home_open_folder">Ouvrir le dossier %1$s</string>
+    <string name="home_notebook_options">Options du carnet</string>
+    <string name="home_book_options">Options du livre</string>
+    <string name="home_infinite_badge">∞ Infini</string>
+    <string name="home_badge_canvas">CANEVAS</string>
+    <string name="home_badge_note">NOTE</string>
+    <string name="home_book_missing">Original manquant · réimportez pour lire</string>
+    <!-- %1$s format (PDF, EPUB), %2$s progression comme 45 %, %3$s date. -->
+    <string name="home_book_list_detail">%1$s · %2$s lu · %3$s</string>
+    <string name="home_percent_read">%1$s lu</string>
+    <string name="home_notice_notebook_moved">Carnet déplacé</string>
+    <string name="home_notice_no_folder">Aucun dossier sélectionné</string>
+
+    <!-- États vides -->
+    <string name="home_empty_search">Aucun élément correspondant</string>
+    <string name="home_empty_favorites">Aucun favori pour l'instant</string>
+    <string name="home_empty_recent">Ouvrez un carnet ou un livre pour le retrouver ici</string>
+    <string name="home_empty_folder">Ce dossier est vide</string>
+    <string name="home_empty_books">Aucun livre pour l'instant</string>
+    <string name="home_empty">Rien ici pour l'instant</string>
+    <string name="home_empty_books_hint">Touchez + pour importer un PDF ou un EPUB sans DRM.</string>
+    <string name="home_empty_hint">Touchez + pour créer un carnet ou importer un livre.</string>
+
+    <!-- Menu Créer -->
+    <string name="home_new_notebook">Nouveau carnet</string>
+    <string name="home_import_pdf_notebook">Importer un PDF/EPUB comme carnet</string>
+    <string name="home_new_canvas">Nouveau canevas infini</string>
+    <string name="home_new_folder">Nouveau dossier</string>
+    <string name="home_import_book">Importer un livre PDF/EPUB</string>
+    <string name="home_import_backup">Importer un carnet ou une sauvegarde</string>
+
+    <!-- Boîte de dialogue Détails -->
+    <string name="home_details_title">Général</string>
+    <string name="home_close_details">Fermer les détails</string>
+    <string name="home_details_information">Informations : %1$s</string>
+    <string name="home_details_type">Type : %1$s</string>
+    <string name="home_details_updated">Modifié : %1$s</string>
+    <string name="home_details_folder_updated">Dernière modification d'un carnet : %1$s</string>
+    <string name="home_details_infinite">Canevas infini</string>
+    <!-- %1$d nombre de pages, %2$d page actuelle. -->
+    <plurals name="home_details_pages">
+        <item quantity="one">%1$d page · Page %2$d</item>
+        <item quantity="many">%1$d pages · Page %2$d</item>
+        <item quantity="other">%1$d pages · Page %2$d</item>
+    </plurals>
+    <plurals name="home_page_count">
+        <item quantity="one">%1$d page</item>
+        <item quantity="many">%1$d pages</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <string name="home_type_infinite_notebook">Carnet infini</string>
+    <string name="home_type_notebook">Carnet</string>
+    <string name="home_type_canvas">Canevas</string>
+    <string name="home_type_folder">Dossier</string>
+    <string name="home_type_book">Livre %1$s</string>
+    <plurals name="home_type_notebook_pages">
+        <item quantity="one">Carnet · %1$d page</item>
+        <item quantity="many">Carnet · %1$d pages</item>
+        <item quantity="other">Carnet · %1$d pages</item>
+    </plurals>
+    <string name="home_folder_contents">%1$s · %2$s</string>
+    <string name="home_no_notebooks_yet">Aucun carnet pour l'instant</string>
+    <string name="home_share_export">Partager et exporter</string>
+    <string name="home_favorites_action">Favoris</string>
+    <string name="home_unfavorite">Retirer des favoris</string>
+    <string name="home_edit_folder">Modifier le dossier</string>
+    <string name="home_export_pdf">PDF · toutes les pages</string>
+    <string name="home_export_png">PNG · page actuelle</string>
+    <string name="home_export_folio">Sauvegarde Folio (.folio) · modifiable</string>
+    <string name="home_rename_notebook">Renommer le carnet</string>
+    <string name="home_notebook_name">Nom du carnet</string>
+
+    <!-- Déplacer et supprimer -->
+    <string name="home_trash_folder_title">Mettre le dossier à la corbeille ?</string>
+    <string name="home_trash_folder_text">Ses carnets, livres et dossiers restent dans votre bibliothèque, hors dossier. Restaurer le dossier depuis la corbeille les y replace.</string>
+    <string name="home_trash_notebook_title">Mettre le carnet à la corbeille ?</string>
+    <string name="home_trash_book_title">Mettre le livre à la corbeille ?</string>
+    <!-- %1$s est home_restore_for_days ou home_restore_until_empty. -->
+    <string name="home_trash_book_text">Les surlignages, notes et la position de lecture sont conservés. %1$s</string>
+    <plurals name="home_restore_for_days">
+        <item quantity="one">Vous pouvez le restaurer depuis la corbeille pendant %1$d jour.</item>
+        <item quantity="many">Vous pouvez le restaurer depuis la corbeille pendant %1$d jours.</item>
+        <item quantity="other">Vous pouvez le restaurer depuis la corbeille pendant %1$d jours.</item>
+    </plurals>
+    <string name="home_restore_until_empty">Vous pouvez le restaurer depuis la corbeille jusqu'à ce que vous la vidiez.</string>
+    <plurals name="home_bulk_trash_title">
+        <item quantity="one">Mettre %1$d élément à la corbeille ?</item>
+        <item quantity="many">Mettre %1$d éléments à la corbeille ?</item>
+        <item quantity="other">Mettre %1$d éléments à la corbeille ?</item>
+    </plurals>
+    <string name="home_bulk_trash_folders_note">Les carnets et livres des dossiers supprimés restent dans votre bibliothèque.</string>
+    <plurals name="home_restore_them_for_days">
+        <item quantity="one">Vous pouvez les restaurer depuis la corbeille pendant %1$d jour.</item>
+        <item quantity="many">Vous pouvez les restaurer depuis la corbeille pendant %1$d jours.</item>
+        <item quantity="other">Vous pouvez les restaurer depuis la corbeille pendant %1$d jours.</item>
+    </plurals>
+    <string name="home_restore_them_until_empty">Vous pouvez les restaurer depuis la corbeille jusqu'à ce que vous la vidiez.</string>
+    <plurals name="home_notice_moved_to_trash">
+        <item quantity="one">%1$d élément mis à la corbeille</item>
+        <item quantity="many">%1$d éléments mis à la corbeille</item>
+        <item quantity="other">%1$d éléments mis à la corbeille</item>
+    </plurals>
+    <string name="home_main_library">Bibliothèque principale (sans dossier)</string>
+    <string name="home_move_to_folder">Déplacer vers un dossier</string>
+    <string name="home_move_book_title">Déplacer le livre vers un dossier</string>
+    <string name="home_move_folder_title">Déplacer le dossier</string>
+    <string name="home_notice_moved_to">Déplacé vers %1$s</string>
+    <string name="home_notice_moved_to_main">Déplacé vers la bibliothèque principale</string>
+    <string name="home_drag_on_home">Faire glisser sur l'écran d'accueil</string>
+    <string name="home_notice_drag_hint">Faites glisser le carnet sélectionné sur un dossier, ou touchez × pour annuler</string>
+
+    <!-- Écran Corbeille -->
+    <string name="home_trash_title">Corbeille</string>
+    <string name="home_trash_empty_action">Vider la corbeille</string>
+    <plurals name="home_trash_retention">
+        <item quantity="one">Les éléments sont supprimés définitivement %1$d jour après leur suppression.</item>
+        <item quantity="many">Les éléments sont supprimés définitivement %1$d jours après leur suppression.</item>
+        <item quantity="other">Les éléments sont supprimés définitivement %1$d jours après leur suppression.</item>
+    </plurals>
+    <string name="home_trash_retention_off">La suppression automatique est désactivée. Les éléments restent ici jusqu'à ce que vous les supprimiez.</string>
+    <string name="home_trash_empty_title">La corbeille est vide</string>
+    <string name="home_trash_empty_detail">Les carnets, dossiers et livres supprimés apparaissent ici.</string>
+    <!-- %1$s type et taille de l'élément, %2$s date de suppression. -->
+    <string name="home_trash_deleted_on">%1$s · Supprimé %2$s</string>
+    <string name="home_trash_kept">Conservé jusqu'à ce que vous le supprimiez</string>
+    <string name="home_trash_next_start">Supprimé au prochain démarrage</string>
+    <plurals name="home_trash_days_left">
+        <item quantity="one">%1$d jour restant</item>
+        <item quantity="many">%1$d jours restants</item>
+        <item quantity="other">%1$d jours restants</item>
+    </plurals>
+    <string name="home_delete_permanently_title">Supprimer définitivement ?</string>
+    <string name="home_delete_folder_forever">Le dossier « %1$s » est supprimé. Ses carnets et livres restent dans votre bibliothèque, hors dossier.</string>
+    <string name="home_delete_book_forever">« %1$s » et ses surlignages, notes et position de lecture sont supprimés de Folio. Le fichier d'origine que vous avez importé n'est pas modifié.</string>
+    <string name="home_delete_note_forever">« %1$s » et toutes ses pages sont supprimés de cet appareil. Cette action est irréversible.</string>
+    <string name="home_empty_trash_title">Vider la corbeille ?</string>
+    <plurals name="home_empty_trash_text">
+        <item quantity="one">%1$d élément est supprimé définitivement. Cette action est irréversible.</item>
+        <item quantity="many">%1$d éléments sont supprimés définitivement. Cette action est irréversible.</item>
+        <item quantity="other">%1$d éléments sont supprimés définitivement. Cette action est irréversible.</item>
+    </plurals>
+
+    <!-- Écran Nouveau carnet -->
+    <string name="home_clear_name">Effacer le nom</string>
+    <string name="home_canvas_type">Canevas</string>
+    <string name="home_type_pages">Pages</string>
+    <string name="home_type_pages_detail">Pages individuelles</string>
+    <string name="home_type_infinite">Infini</string>
+    <string name="home_type_infinite_detail">Un canevas · toutes directions</string>
+    <string name="home_canvas_fixed">Le type de canevas ne peut plus être modifié après la création.</string>
+    <string name="home_infinite_detail">Déplacez-vous dans toutes les directions, le papier suit. Appuyez longuement sur un espace vide pour ajouter un repère et y revenir plus tard.</string>
+    <string name="home_pattern">Motif</string>
+    <string name="home_spacing">Espacement %1$d</string>
+
+    <!-- Modèles -->
+    <string name="template_page_template">Modèle de page</string>
+    <string name="template_browse">Parcourir les modèles</string>
+    <string name="template_no_recent">Aucun modèle récent pour l'instant</string>
+    <string name="template_browse_all">Parcourir tous les modèles</string>
+    <string name="template_hub_title">Galerie de modèles</string>
+    <string name="template_back_from_hub">Quitter la galerie de modèles</string>
+    <string name="template_recent">Modèles récents</string>
+    <string name="template_ready">Prêt à l'emploi · Local</string>
+    <string name="template_use">Utiliser le modèle</string>
+    <string name="template_add">Ajouter à la bibliothèque</string>
+    <string name="template_no_recent_hub">Aucun modèle récent pour l'instant. Sélectionnez un modèle pour l'ajouter à votre bibliothèque locale.</string>
+    <string name="template_category_all">Tous</string>
+    <string name="template_category_recent">Récents</string>
+    <string name="template_category_general">Général</string>
+    <string name="template_category_planning">Planification</string>
+    <string name="template_category_work">Travail</string>
+    <string name="template_category_study">Études</string>
+    <string name="template_category_creative">Création</string>
+    <string name="template_category_custom">Personnalisés</string>
+    <string name="template_blank">Vierge</string>
+    <string name="template_lined">Ligné</string>
+    <string name="template_wide_ruled">Grandes lignes</string>
+    <string name="template_grid">Quadrillage</string>
+    <string name="template_big_grid">Grand quadrillage</string>
+    <string name="template_dots">Pointillés</string>
+    <string name="template_graph">Papier millimétré</string>
+    <string name="template_hex_grid">Grille hexagonale</string>
+    <string name="template_todo">Liste de tâches</string>
+    <string name="template_todo_daily">Tâches du jour</string>
+    <string name="template_daily">Agenda quotidien</string>
+    <string name="template_time_block">Blocs horaires</string>
+    <string name="template_weekly">Agenda hebdomadaire</string>
+    <string name="template_monthly">Agenda mensuel</string>
+    <string name="template_habit">Suivi des habitudes</string>
+    <string name="template_priority">Matrice des priorités</string>
+    <string name="template_meeting">Notes de réunion</string>
+    <string name="template_project">Planificateur de projet</string>
+    <string name="template_kanban">Tableau Kanban</string>
+    <string name="template_cornell">Notes Cornell</string>
+    <string name="template_lecture">Notes de cours</string>
+    <string name="template_reading">Journal de lecture</string>
+    <string name="template_revision">Fiches de révision</string>
+    <string name="template_vocabulary">Liste de vocabulaire</string>
+    <string name="template_lab">Compte rendu de TP</string>
+    <string name="template_math_grid">Grille de maths</string>
+    <string name="template_english">Pratique de l'anglais</string>
+    <string name="template_isometric">Grille isométrique</string>
+    <string name="template_music">Portée musicale</string>
+    <string name="template_storyboard">Storyboard</string>
+    <string name="template_comic">Cases de BD</string>
+    <string name="template_mind_map">Carte mentale</string>
+    <string name="template_sketch">Page de croquis</string>
+    <string name="template_custom_grid">Grille personnalisée</string>
+    <string name="template_custom_ruled">Lignes personnalisées</string>
+    <string name="template_custom_dots">Points personnalisés</string>
+    <!-- Titres imprimés en haut des aperçus de modèles. -->
+    <string name="template_heading_todo">LISTE DE TÂCHES</string>
+    <string name="template_heading_meeting">NOTES DE RÉUNION</string>
+    <string name="template_heading_daily">AGENDA QUOTIDIEN</string>
+    <string name="template_heading_weekly">AGENDA HEBDOMADAIRE</string>
+    <string name="template_heading_project">PLANIFICATEUR DE PROJET</string>
+    <string name="template_heading_cornell">NOTES CORNELL</string>
+    <string name="template_heading_lecture">NOTES DE COURS</string>
+    <string name="template_heading_reading">NOTES DE LECTURE</string>
+    <string name="template_heading_time_block">BLOCS HORAIRES</string>
+    <string name="template_heading_monthly">AGENDA MENSUEL</string>
+    <string name="template_heading_habit">SUIVI DES HABITUDES</string>
+    <string name="template_heading_priority">MATRICE DES PRIORITÉS</string>
+    <string name="template_heading_kanban">TABLEAU KANBAN</string>
+    <string name="template_heading_revision">FICHES DE RÉVISION</string>
+    <string name="template_heading_vocabulary">VOCABULAIRE</string>
+    <string name="template_heading_lab">COMPTE RENDU DE TP</string>
+    <string name="template_heading_comic">CASES DE BD</string>
+    <string name="template_heading_mind_map">CARTE MENTALE</string>
+    <string name="template_heading_sketch">PAGE DE CROQUIS</string>
+    <!-- Papier du canevas infini -->
+    <string name="template_paper_blank">Papier vierge</string>
+    <string name="template_paper_graph">Papier millimétré</string>
+    <string name="template_paper_grid">Papier à grand quadrillage</string>
+    <string name="template_paper_lines">Papier ligné</string>
+    <string name="template_paper_dots">Papier pointillé</string>
+    <string name="template_paper_sheet">Feuille</string>
+    <string name="template_paper_white">Blanc</string>
+    <string name="template_paper_beige">Beige</string>
+    <string name="template_paper_dark">Gris foncé</string>
+
+    <!-- Tableaux en direct -->
+    <string name="boards_empty_title">Aucun tableau pour l'instant</string>
+    <string name="boards_empty_detail">Touchez + pour lancer un tableau en direct. Dessinez avec votre stylet et partagez un lien pendant votre appel.</string>
+    <string name="boards_badge">DIRECT</string>
+    <string name="boards_new_title">Nouveau tableau</string>
+    <string name="boards_rename_title">Renommer le tableau</string>
+    <string name="boards_delete_title">Supprimer « %1$s » ?</string>
+    <string name="boards_delete_text">Le tableau et son dessin sont supprimés de cet appareil.</string>
+    <string name="boards_untitled">Tableau sans titre</string>
+
+    <!-- Barre latérale -->
+    <string name="sidebar_notes">Notes</string>
+    <string name="sidebar_folders">Dossiers</string>
+    <string name="sidebar_create_folder">Créer un dossier</string>
+    <string name="sidebar_collapse_folders">Réduire les dossiers</string>
+    <string name="sidebar_expand_folders">Développer les dossiers</string>
+    <string name="sidebar_no_folders">Aucun dossier pour l'instant</string>
+    <string name="sidebar_recent">Récents</string>
+    <string name="sidebar_favorites">Favoris</string>
+
+    <!-- Préférences -->
+    <string name="prefs_title">Préférences</string>
+    <string name="prefs_accent_title">Couleur d'accent</string>
+    <string name="prefs_accent_detail">Utilisée dans la bibliothèque : onglet sélectionné, bouton +, barre latérale, coches et liens.</string>
+    <string name="prefs_corners_title">Coins</string>
+    <string name="prefs_corners_detail">S'applique aux cartes de la bibliothèque, aux onglets et à la barre latérale.</string>
+    <string name="prefs_corners_sharp">Droits</string>
+    <string name="prefs_corners_rounded">Arrondis</string>
+    <string name="prefs_corners_soft">Doux</string>
+    <string name="prefs_view_title">Affichage par défaut</string>
+    <string name="prefs_view_detail">Les options Grille et Liste du menu de la bibliothèque le modifient aussi.</string>
+    <string name="prefs_sort_title">Tri par défaut</string>
+    <string name="prefs_sort_detail">Le menu Trier par de la bibliothèque le modifie aussi.</string>
+    <string name="prefs_notebooks_title">Carnets</string>
+    <string name="prefs_fullscreen_title">Ouvrir les carnets en plein écran (mode concentration)</string>
+    <string name="prefs_fullscreen_detail">Les carnets ouverts depuis la bibliothèque démarrent avec les barres d'outils masquées. Utilisez le bouton de sortie pour les réafficher.</string>
+    <string name="prefs_privacy_title">Confidentialité</string>
+    <string name="prefs_usage_title">Partager les statistiques d'utilisation et les rapports de plantage</string>
+    <string name="prefs_usage_detail">Statistiques d'utilisation anonymes et rapports de plantage via Google Analytics et Crashlytics. Jamais le contenu, les titres ou les noms de vos notes et livres.</string>
+    <string name="prefs_trash_title">Corbeille</string>
+    <string name="prefs_trash_detail">Les éléments supprimés restent dans la corbeille pendant cette durée, puis sont effacés au démarrage de Folio.</string>
+    <plurals name="prefs_retention_days">
+        <item quantity="one">%1$d jour</item>
+        <item quantity="many">%1$d jours</item>
+        <item quantity="other">%1$d jours</item>
+    </plurals>
+    <string name="prefs_retention_never">Ne jamais supprimer automatiquement</string>
+    <string name="prefs_pen_title">Stylet</string>
+    <string name="prefs_pen_pressure_title">Pression du stylet</string>
+    <string name="prefs_pen_pressure_detail">Ignorer le survol et les contacts légers dans les notes, le lecteur et la bibliothèque ; courbes de pression</string>
+    <string name="prefs_backup_title">Sauvegarde</string>
+    <string name="prefs_backup_detail">Dossier de sauvegarde local, sauvegarder maintenant, exporter et restaurer</string>
+    <string name="prefs_reset">Rétablir les valeurs par défaut</string>
+    <string name="prefs_reset_title">Réinitialiser les préférences ?</string>
+    <string name="prefs_reset_text">La couleur d'accent, les coins, l'affichage, le tri, le plein écran et la durée de conservation de la corbeille reviennent à leurs valeurs par défaut. Vos carnets et livres ne sont pas modifiés.</string>
+    <string name="prefs_reset_confirm">Réinitialiser</string>
+    <string name="accent_sage">Sauge</string>
+    <string name="accent_morning">Matin</string>
+    <string name="accent_evening">Soir</string>
+    <string name="accent_sea">Mer</string>
+    <string name="accent_forest">Forêt</string>
+    <string name="accent_lavender">Lavande</string>
+    <string name="accent_desert">Désert</string>
+    <string name="accent_graphite">Graphite</string>
+    <string name="sort_edited">Dernière modification</string>
+    <string name="sort_created">Date de création</string>
+    <string name="sort_type">Type de fichier</string>
+    <string name="sort_name">Nom</string>
+
+    <!-- À propos -->
+    <string name="about_title">À propos</string>
+    <string name="about_tagline">Notes manuscrites et liseuse</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_open_allient">Ouvrir allient.io</string>
+    <string name="about_made_at">Créé chez</string>
+    <string name="about_made_at_allient">Créé chez Allient</string>
+    <string name="about_privacy_title">Vos notes restent sur cet appareil</string>
+    <string name="about_privacy_body">Pas de compte ni de synchronisation cloud. Les carnets, dossiers et notes de lecture sont stockés dans l'espace privé de l'application : activez les sauvegardes intelligentes ou exportez un fichier .folio avant de désinstaller l'application ou d'effacer ses données.</string>
+    <string name="about_privacy_internet">Folio utilise Internet uniquement pour les tableaux en direct, le téléchargement du modèle d'écriture manuscrite, les mises à jour Google Play et les statistiques d'utilisation anonymes, que vous pouvez désactiver dans les préférences.</string>
+    <string name="about_links">Liens</string>
+    <string name="about_link_docs">Documentation et plus d'infos</string>
+    <string name="about_link_star">Vous aimez Folio ? Ajoutez une étoile sur GitHub</string>
+    <string name="about_link_issues">Signaler un problème</string>
+    <string name="about_link_issues_detail">Ouvrir un ticket sur GitHub</string>
+    <string name="about_link_privacy">Politique de confidentialité</string>
+    <string name="about_link_license">Licence</string>
+    <string name="about_libraries">Bibliothèques open source</string>
+    <string name="about_lib_ink">Traits et rendu de l'écriture manuscrite</string>
+    <string name="about_lib_pdfium">Rendu PDF</string>
+    <string name="about_lib_pdfbox">Exportation de PDF annotés</string>
+    <string name="about_lib_readium">Lecture EPUB</string>
+    <string name="about_lib_mlkit">OCR sur l'appareil</string>
+    <string name="about_lib_zstd">Compression des sauvegardes</string>
+    <string name="about_lib_lucide">Icônes (ISC)</string>
+    <string name="about_lib_geist">Police de l'interface (SIL OFL)</string>
+    <string name="about_footer">Folio est open source sous licence Apache 2.0. Créé par Allient.</string>
+
+    <!-- Paramètres de sauvegarde -->
+    <string name="backup_settings_title">Paramètres de sauvegarde</string>
+    <string name="backup_restore_version_title">Restaurer cette version ?</string>
+    <string name="backup_restore_version_text">Les carnets, dossiers et notes de lecture du %1$s sont ajoutés à votre bibliothèque sous forme de copies. Rien n'est supprimé de votre bibliothèque actuelle.</string>
+    <string name="backup_smart_title">Sauvegardes intelligentes</string>
+    <string name="backup_explanation">Sauvegarde quelques minutes après la fermeture d'une note ou de l'application, uniquement si quelque chose a changé. Conserve les versions récentes et supprime automatiquement les anciennes. Les fichiers PDF et EPUB ne sont pas copiés ; vos notes et surlignages, si.</string>
+    <string name="backup_on_status">Activée : sauvegarde après les modifications</string>
+    <string name="backup_choose_to_start">Choisissez un dossier pour commencer</string>
+    <string name="backup_on_detail">Votre première sauvegarde démarre après le choix du dossier. Pendant les longues sessions, Folio sauvegarde aussi environ toutes les 15 minutes, et vérifie toutes les quelques heures au cas où quelque chose aurait été oublié. Android peut retarder les tâches en arrière-plan.</string>
+    <string name="backup_off_detail">Activez les sauvegardes pour choisir un dossier. Annuler le choix du dossier laisse les sauvegardes désactivées.</string>
+    <string name="backup_files_kept">Les fichiers de sauvegarde existants sont conservés quand la sauvegarde est désactivée.</string>
+    <string name="backup_folder">Dossier de sauvegarde</string>
+    <string name="backup_change_folder">Changer de dossier</string>
+    <string name="backup_last">Dernière sauvegarde</string>
+    <string name="backup_state_setting_up">Configuration</string>
+    <string name="backup_state_running">Sauvegarde…</string>
+    <string name="backup_state_attention">Action requise</string>
+    <string name="backup_state_on">Activée</string>
+    <string name="backup_state_off">Désactivée</string>
+    <string name="backup_saving_notes">Enregistrement de vos dernières notes…</string>
+    <string name="backup_now">Sauvegarder maintenant</string>
+    <string name="backup_versions">Versions conservées</string>
+    <string name="backup_documents_title">Choisissez un dossier dans Documents</string>
+    <string name="backup_documents_detail">Dans le sélecteur de dossiers Android, ouvrez Documents. Vous pouvez créer un dossier nommé Folio Backups, l'ouvrir, puis toucher Utiliser ce dossier.</string>
+    <string name="backup_format_detail">Une sauvegarde .folio inclut les carnets et leurs pièces jointes, ainsi que les titres du lecteur, les références de fichiers, les positions de lecture, les surlignages et les notes. Les fichiers PDF et EPUB restent dans le stockage de cet appareil et ne sont pas copiés ; après une restauration sur un autre appareil, réimportez un livre pour le rouvrir. Les livres correspondants retrouvent leurs annotations enregistrées. La restauration ajoute des copies et n'efface jamais votre bibliothèque. Les sauvegardes restent sur cet appareil ; rien n'est envoyé en ligne.</string>
+    <string name="backup_restore_from">Restaurer depuis une sauvegarde</string>
+
+    <!-- Éditeur de dossier -->
+    <string name="folder_eyebrow">VOTRE BIBLIOTHÈQUE, ORGANISÉE</string>
+    <string name="folder_title_new">Un espace pour vos idées</string>
+    <string name="folder_title_edit">Personnalisez-le</string>
+    <string name="folder_close_editor">Fermer l'éditeur de dossier</string>
+    <string name="folder_live_preview">APERÇU EN DIRECT</string>
+    <string name="folder_placeholder_name">Votre nouveau dossier</string>
+    <!-- %1$s style du dossier, %2$s couleur du dossier. -->
+    <string name="folder_preview_summary">%1$s · %2$s</string>
+    <string name="folder_name_label">Nom du dossier</string>
+    <string name="folder_name_hint">ex. Projets créatifs</string>
+    <string name="folder_duplicate">Un dossier portant ce nom existe déjà.</string>
+    <string name="folder_name_required">Donnez un nom à votre dossier.</string>
+    <string name="folder_name_help">Rassemblez les carnets et documents liés.</string>
+    <string name="folder_color_title">Couleur du dossier</string>
+    <string name="folder_color_description">Couleur de dossier %1$s</string>
+    <string name="folder_style_title">Choisissez un style</string>
+    <string name="folder_style_subtitle">Un peu de personnalité</string>
+    <string name="folder_style_description">Style de dossier %1$s</string>
+    <string name="folder_create">Créer le dossier</string>
+    <string name="folder_save_changes">Enregistrer les modifications</string>
+    <string name="folder_style_classic">Classique</string>
+    <string name="folder_style_papers">Avec feuilles</string>
+    <string name="folder_style_tabbed">À onglets</string>
+    <string name="folder_style_open">Ouvert</string>
+    <string name="folder_style_mosaic">Mosaïque</string>
+    <string name="folder_color_sage">Sauge</string>
+    <string name="folder_color_blue">Bleu</string>
+    <string name="folder_color_lavender">Lavande</string>
+    <string name="folder_color_rose">Rose</string>
+    <string name="folder_color_peach">Pêche</string>
+    <string name="folder_color_sand">Sable</string>
+    <!-- Groupes des préférences -->
+    <string name="prefs_group_general">Général</string>
+    <string name="prefs_group_library">Bibliothèque</string>
+    <string name="prefs_group_appearance">Apparence</string>
+    <string name="backup_group_file">Fichier de sauvegarde</string>
+</resources>

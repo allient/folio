@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Error messages shown to people. Exceptions keep English text for logs; see UserMessages.kt. -->
+<resources>
+    <!-- Backup folder labels -->
+    <string name="backup_label_internal_storage">Interner Speicher</string>
+    <string name="backup_label_sd_card">SD-Karte / %1$s</string>
+    <string name="backup_label_selected_folder">Ausgewählter Ordner</string>
+    <!-- Smart backups -->
+    <string name="error_backup_failed">Die Sicherung konnte nicht erstellt werden. Prüfe den Ordner und den freien Speicher.</string>
+    <string name="error_backup_low_space">Nicht genug freier Speicher für eine Sicherung: Benötigt werden etwa %1$s, frei sind %2$s. Gib etwas Speicher frei; Folio versucht es nach deiner nächsten Änderung erneut. Vorhandene Sicherungen wurden behalten.</string>
+    <string name="error_backup_folder_access">Der Zugriff auf den Ordner ist nicht mehr möglich. Wähle den Sicherungsordner erneut aus.</string>
+    <string name="error_backup_verify">Die Sicherungskopie stimmt nicht mit dem Archiv überein. Die vorherigen Sicherungen wurden behalten.</string>
+    <string name="error_backup_folder_unreadable">Der Sicherungsordner konnte nicht gelesen werden.</string>
+    <string name="error_backup_create_file">Im ausgewählten Ordner konnte keine Sicherung erstellt werden.</string>
+    <string name="error_backup_documents_folder">Die Sicherung konnte nicht abgeschlossen werden. Wähle einen Ordner in „Documents“ auf diesem Gerät.</string>
+    <string name="error_backup_open">Die Sicherung konnte nicht geöffnet werden.</string>
+    <string name="error_backup_folder_not_local">Wähle einen Ordner auf diesem Gerät.</string>
+    <string name="error_backup_folder_read_only">Folio kann nicht in diesen Ordner schreiben. Wähle einen anderen Ordner.</string>
+    <string name="error_backup_folder_open">Dieser Ordner konnte nicht geöffnet werden. Wähle einen anderen Ordner.</string>
+    <string name="error_backup_folder_unusable">Dieser Ordner kann nicht verwendet werden. Bitte wähle einen anderen.</string>
+    <!-- Backups and imports -->
+    <string name="error_attachment_missing">Ein Anhang des Notizbuchs fehlt.</string>
+    <string name="error_backup_too_many_files">Diese Sicherung enthält zu viele Dateien zum Wiederherstellen.</string>
+    <string name="error_backup_data_too_large">Die Notizbuchdaten überschreiten das Sicherungslimit von 32 MiB.</string>
+    <string name="error_backup_attachment_too_large">Ein Anhang überschreitet das Sicherungslimit von 128 MiB.</string>
+    <string name="error_backup_attachment_too_large_named">Ein Anhang überschreitet das Sicherungslimit von 128 MiB: %1$s</string>
+    <string name="error_backup_too_large">Die Sicherung überschreitet das Limit von 2 GiB.</string>
+    <string name="error_backup_unsupported">Dieses Sicherungsformat wird von dieser Folio-Version nicht unterstützt.</string>
+    <string name="error_backup_not_library">Dies ist keine unterstützte Sicherung einer Folio-Bibliothek.</string>
+    <string name="error_backup_is_library">Dies ist eine Sicherung der gesamten Bibliothek und kann daher nicht als einzelnes Notizbuch importiert werden.</string>
+    <string name="error_backup_damaged">Diese Sicherung ist beschädigt oder keine gültige Folio-Sicherung.</string>
+    <string name="error_image_unsupported">Dieses Bildformat kann nicht geöffnet werden.</string>
+    <string name="error_pdf_page_count">Importiere ein PDF mit %1$d–%2$d Seiten.</string>
+    <string name="error_file_too_large">Die ausgewählte Datei ist zu groß.</string>
+    <string name="error_epub_not_epub">Diese Datei ist kein EPUB-Buch.</string>
+    <string name="error_epub_chapter_too_large">Dieses EPUB enthält ein Kapitel, das zum Importieren zu groß ist.</string>
+    <string name="error_epub_drm_import">Dieses EPUB ist geschützt (DRM) und kann nicht importiert werden.</string>
+    <string name="error_epub_no_package">Dieses EPUB hat keine Paketdatei.</string>
+    <string name="error_epub_no_text">Dieses EPUB enthält keinen Text zum Importieren.</string>
+    <string name="error_epub_too_long">Dieses Buch ist zu lang, um es als Notizbuch zu importieren (mehr als %1$d Seiten). Öffne es stattdessen im Reader.</string>
+    <string name="error_import_document">Das ausgewählte Dokument konnte nicht importiert werden.</string>
+    <string name="error_import_file">Diese Datei konnte nicht importiert werden.</string>
+    <string name="error_insert_file">Diese Datei konnte nicht eingefügt werden.</string>
+    <string name="error_library_restore">Die Sicherung der Folio-Bibliothek konnte nicht wiederhergestellt werden.</string>
+    <string name="error_import_load_blocked">Vorhandene Notizbücher konnten nicht geladen werden. Das ausgewählte Dokument wurde nicht importiert.</string>
+    <string name="error_import_destination_missing">Das Zielnotizbuch oder die Zielseite existiert nicht mehr.</string>
+    <string name="error_import_layer">Wähle eine sichtbare, nicht gesperrte Ebene, bevor du ein Bild einfügst.</string>
+    <string name="error_canvas_no_pages">Unendliche Leinwände haben keine Seiten. Füge stattdessen ein Bild ein oder hänge das PDF an.</string>
+    <!-- Notebook storage -->
+    <string name="error_save_first_notebook">Dein erstes Notizbuch konnte nicht gespeichert werden.</string>
+    <string name="error_save_notebooks">Notizbücher konnten nicht auf diesem Gerät gespeichert werden.</string>
+    <string name="error_notebooks_loading">Notizbücher werden noch geladen. Bitte versuche es erneut.</string>
+    <string name="error_notebooks_not_loaded">Vorhandene Notizbücher konnten nicht geladen werden. Die ursprünglichen Daten wurden beibehalten.</string>
+    <!-- Recordings -->
+    <string name="error_recording_unavailable">Audioaufnahme ist nicht verfügbar.</string>
+    <string name="error_recording_save">Die Aufnahme konnte nicht gespeichert werden.</string>
+    <string name="error_recording_pause">Die Aufnahme konnte nicht pausiert werden.</string>
+    <string name="error_recording_resume">Die Aufnahme konnte nicht fortgesetzt werden.</string>
+    <string name="error_recording_running">Es läuft bereits eine Aufnahme.</string>
+    <string name="error_recording_empty">Die Aufnahme ist leer.</string>
+    <!-- Reader -->
+    <string name="error_annotation_too_large">Diese Anmerkung ist zu groß.</string>
+    <string name="error_document_too_large">Dokumente müssen kleiner als 1 GiB sein.</string>
+    <string name="error_not_enough_storage">Nicht genug freier Speicher, um dieses Dokument zu importieren.</string>
+    <string name="error_book_not_supported">Diese Datei ist kein PDF- oder EPUB-Buch.</string>
+    <string name="error_book_not_epub">Diese Datei ist kein EPUB-Buch. Importiere ein PDF oder ein DRM-freies EPUB.</string>
+    <string name="error_epub_damaged">Dieses EPUB ist beschädigt und kann nicht geöffnet werden.</string>
+    <string name="error_epub_too_large">Dieses EPUB ist zu groß zum Öffnen.</string>
+    <string name="error_epub_open">Dieses EPUB konnte nicht geöffnet werden.</string>
+    <string name="error_epub_drm_open">Dieses Buch ist DRM-geschützt. Importiere ein DRM-freies EPUB.</string>
+    <string name="error_pdf_password">Dieses PDF ist passwortgeschützt. Entferne das Passwort in einer anderen App und importiere es dann erneut.</string>
+    <string name="error_pdf_no_pages">Dieses PDF hat keine Seiten.</string>
+    <string name="error_export_pdf_password">Dieses PDF ist passwortgeschützt und kann daher nicht mit Anmerkungen exportiert werden. Exportiere stattdessen deine Lesenotizen.</string>
+    <string name="error_export_pdf_encrypted">Dieses PDF ist verschlüsselt und kann daher nicht mit Anmerkungen exportiert werden. Exportiere stattdessen deine Lesenotizen.</string>
+    <string name="error_export_pdf_no_annotations">Dieses PDF erlaubt keine Anmerkungen.</string>
+    <string name="error_reader_select_text">Text konnte nicht ausgewählt werden.</string>
+    <string name="error_reader_render_page">Diese Seite konnte nicht angezeigt werden.</string>
+    <string name="error_reader_page_memory">Nicht genug Arbeitsspeicher, um diese Seite in dieser Zoomstufe darzustellen. Zoome heraus oder schließe andere Bücher und versuche es erneut.</string>
+    <string name="error_reader_annotations">Anmerkungen konnten nicht angezeigt werden.</string>
+    <string name="error_reader_save_ink">Die Tinte konnte nicht gespeichert werden.</string>
+    <string name="error_reader_chapter">Dieses Kapitel konnte nicht geladen werden.</string>
+    <string name="error_reader_search">Dieses Buch konnte nicht durchsucht werden.</string>
+    <!-- Handwriting -->
+    <string name="error_handwriting_language">Handschrift in dieser Sprache wird nicht unterstützt.</string>
+</resources>

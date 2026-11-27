@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import knotes.shared.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 private val FolderInk = Color(0xFF263C35)
 private val FolderMuted = Color(0xFF6C7C75)
@@ -43,7 +45,10 @@ private val FolderColors = listOf(
     "lavender" to Color(0xFFC5BCEC), "rose" to Color(0xFFEDB7C7),
     "peach" to Color(0xFFF1C3A5), "sand" to Color(0xFFE9D48E),
 )
-private val FolderStyles = listOf("classic" to "Classic", "papers" to "With papers", "tabbed" to "Tabbed", "open" to "Open", "mosaic" to "Mosaic")
+/** Saved folder colour IDs; labels come from [folderColorName]. */
+internal val FolderColorIds = FolderColors.map { it.first }
+/** Saved folder style IDs; labels come from [folderStyleName]. */
+internal val FolderStyleIds = listOf("classic", "papers", "tabbed", "open", "mosaic")
 
 /** Shared by notebook and reader libraries; appearance is part of the saved folder. */
 @Composable
@@ -61,7 +66,7 @@ fun FolderEditorDialog(
     val duplicate = folders.any { it.id != existing?.id && it.name.equals(name.trim(), ignoreCase = true) }
     val valid = name.isNotBlank() && !duplicate
     val submit = { attempted = true; if (valid) onSave(name.trim(), color, style) }
-    val styles = FolderStyles
+    val styles = FolderStyleIds
     val artwork: @Composable (String, Modifier) -> Unit = { selectedStyle, modifier ->
         if (selectedStyle == "mosaic" && contentPreview != null) contentPreview(modifier)
         else FolderArtwork(color, selectedStyle, modifier)
@@ -75,10 +80,11 @@ fun FolderEditorDialog(
                 Column {
                     Row(Modifier.fillMaxWidth().padding(start = 28.dp, top = 20.dp, end = 16.dp, bottom = 18.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
-                            Text("YOUR LIBRARY, ORGANIZED", color = FolderMuted, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold)
-                            Text(if (existing == null) "A place for your ideas" else "Make it your own", color = FolderInk, fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
+                            Text(stringResource(Res.string.folder_eyebrow), color = FolderMuted, fontSize = 10.sp, letterSpacing = 1.5.sp, fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(if (existing == null) Res.string.folder_title_new else Res.string.folder_title_edit), color = FolderInk, fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp))
                         }
-                        IconButton(onClick = onDismiss, modifier = Modifier.testTag("folder-editor-close").semantics { contentDescription = "Close folder editor" }) {
+                        val closeLabel = stringResource(Res.string.folder_close_editor)
+                        IconButton(onClick = onDismiss, modifier = Modifier.testTag("folder-editor-close").semantics { contentDescription = closeLabel }) {
                             Text("×", fontSize = 28.sp, color = FolderMuted)
                         }
                     }
@@ -86,35 +92,37 @@ fun FolderEditorDialog(
                     Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(28.dp)) {
                         val preview: @Composable (Modifier) -> Unit = { modifier ->
                             Column(modifier.clip(RoundedCornerShape(20.dp)).background(Color(0xFFF1F5F0)).padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("LIVE PREVIEW", fontSize = 9.sp, letterSpacing = 1.6.sp, color = FolderMuted)
+                                Text(stringResource(Res.string.folder_live_preview), fontSize = 9.sp, letterSpacing = 1.6.sp, color = FolderMuted)
                                 Box(Modifier.padding(top = 18.dp, bottom = 12.dp).size(160.dp, 116.dp), contentAlignment = Alignment.Center) {
                                     artwork(style, if (style == "mosaic") Modifier.size(87.dp, 116.dp) else Modifier.fillMaxSize())
                                 }
-                                Text(name.trim().ifBlank { "Your new folder" }, color = FolderInk, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text("${styles.firstOrNull { it.first == style }?.second ?: "Classic"} · ${color.replaceFirstChar { it.uppercase() }}", color = FolderMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
+                                Text(name.trim().ifBlank { stringResource(Res.string.folder_placeholder_name) }, color = FolderInk, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(stringResource(Res.string.folder_preview_summary, folderStyleName(style), folderColorName(color)), color = FolderMuted, fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
                             }
                         }
                         val fields: @Composable (Modifier) -> Unit = { modifier ->
                             Column(modifier) {
-                                Text("Folder name", color = FolderInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                val nameLabel = stringResource(Res.string.folder_name_label)
+                                Text(nameLabel, color = FolderInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                 OutlinedTextField(
                                     value = name, onValueChange = { name = it; attempted = false },
-                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("folder-name").semantics { contentDescription = "Folder name" },
-                                    placeholder = { Text("e.g. Creative projects", color = FolderMuted, fontSize = 14.sp) },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("folder-name").semantics { contentDescription = nameLabel },
+                                    placeholder = { Text(stringResource(Res.string.folder_name_hint), color = FolderMuted, fontSize = 14.sp) },
                                     singleLine = true, shape = RoundedCornerShape(12.dp),
                                     isError = duplicate || (attempted && name.isBlank()),
                                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                                     keyboardActions = KeyboardActions(onDone = { submit() }),
                                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF477C65), unfocusedBorderColor = Color(0xFFD6DFD7), focusedTextColor = FolderInk, unfocusedTextColor = FolderInk),
                                 )
-                                Text(if (duplicate) "A folder with this name already exists." else if (attempted && name.isBlank()) "Give your folder a name." else "Keep related notebooks and documents together.",
+                                Text(stringResource(if (duplicate) Res.string.folder_duplicate else if (attempted && name.isBlank()) Res.string.folder_name_required else Res.string.folder_name_help),
                                     color = if (duplicate || (attempted && name.isBlank())) MaterialTheme.colorScheme.error else FolderMuted,
                                     fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(top = 8.dp))
-                                Text("Folder color", color = FolderInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 22.dp, bottom = 8.dp))
+                                Text(stringResource(Res.string.folder_color_title), color = FolderInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 22.dp, bottom = 8.dp))
                                 Row(Modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
                                     FolderColors.forEach { (id, tint) ->
+                                        val colorLabel = stringResource(Res.string.folder_color_description, folderColorName(id))
                                         Box(Modifier.weight(1f).height(48.dp).clip(CircleShape).selectable(color == id, role = Role.RadioButton, onClick = { color = id })
-                                            .testTag("folder-color-$id").semantics { contentDescription = "$id folder color" }, contentAlignment = Alignment.Center) {
+                                            .testTag("folder-color-$id").semantics { contentDescription = colorLabel }, contentAlignment = Alignment.Center) {
                                             Box(Modifier.size(34.dp).border(if (color == id) 2.dp else 0.dp, if (color == id) FolderInk else Color.Transparent, CircleShape).padding(4.dp).background(tint, CircleShape), contentAlignment = Alignment.Center) {
                                                 if (color == id) SelectionCheck(Modifier.size(14.dp))
                                             }
@@ -129,22 +137,24 @@ fun FolderEditorDialog(
                             preview(Modifier.fillMaxWidth()); fields(Modifier.fillMaxWidth())
                         }
                         Row(Modifier.padding(top = 28.dp, bottom = 12.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Choose a style", color = FolderInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(Res.string.folder_style_title), color = FolderInk, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                             Spacer(Modifier.weight(1f))
-                            Text("A little personality", color = FolderMuted, fontSize = 11.sp)
+                            Text(stringResource(Res.string.folder_style_subtitle), color = FolderMuted, fontSize = 11.sp)
                         }
                         // Two rows on narrow screens preserve comfortable touch targets.
                         Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             val columns = if (wide) 4 else 2
                             styles.chunked(columns).forEach { row ->
                                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    row.forEach { (id, label) ->
+                                    row.forEach { id ->
+                                        val label = folderStyleName(id)
+                                        val styleLabel = stringResource(Res.string.folder_style_description, label)
                                         val chosen = style == id
                                         Column(Modifier.weight(1f).clip(RoundedCornerShape(14.dp))
                                             .background(if (chosen) Color(0xFFEBF2EB) else Color(0xFFF8F9F6))
                                             .border(if (chosen) 1.5.dp else 1.dp, if (chosen) Color(0xFF628873) else Color(0xFFE3E8E0), RoundedCornerShape(14.dp))
                                             .selectable(chosen, role = Role.RadioButton, onClick = { style = id }).testTag("folder-style-$id")
-                                            .semantics { contentDescription = "$label folder style" }.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                            .semantics { contentDescription = styleLabel }.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                             artwork(id, if (id == "mosaic") Modifier.size(44.dp, 58.dp) else Modifier.size(76.dp, 58.dp))
                                             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                                 if (chosen) SelectionCheck(Modifier.size(12.dp))
@@ -159,11 +169,11 @@ fun FolderEditorDialog(
                     }
                     HorizontalDivider(color = Color(0xFFE9EDE8))
                     Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
-                        TextButton(onClick = onDismiss) { Text("Cancel", color = FolderMuted) }
+                        TextButton(onClick = onDismiss) { Text(stringResource(Res.string.home_cancel), color = FolderMuted) }
                         Spacer(Modifier.width(12.dp))
                         Button(onClick = submit, enabled = valid, modifier = Modifier.height(48.dp).testTag("folder-save"), shape = RoundedCornerShape(14.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = FolderInk, contentColor = Color.White), contentPadding = PaddingValues(horizontal = 24.dp)) {
-                            Text(if (existing == null) "Create folder" else "Save changes", fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(if (existing == null) Res.string.folder_create else Res.string.folder_save_changes), fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

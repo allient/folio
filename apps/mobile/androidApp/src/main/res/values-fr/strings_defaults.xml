@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Noms par défaut des nouveaux contenus. Enregistrés comme texte de l'utilisateur, ils restent dans la langue de création. -->
+    <string name="default_first_notebook">Ma première note</string>
+    <string name="default_imported_notebook">Carnet importé</string>
+    <string name="default_recording_name">Enregistrement %1$s</string>
+</resources>

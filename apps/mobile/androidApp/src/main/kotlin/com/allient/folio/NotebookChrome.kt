@@ -34,6 +34,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -221,9 +222,11 @@ internal fun InkToolButton(
     enabled: Boolean = true,
     buttonSize: Dp = 36.dp,
     tint: Color = ChromeInk,
+    // Test tags stay English: pass the English label here when [label] is translated.
+    tag: String = label,
 ) {
     Box(
-        modifier.testTag("action-${stableControlSlug(label)}").size(buttonSize).clip(RoundedCornerShape(4.dp))
+        modifier.testTag("action-${stableControlSlug(tag)}").size(buttonSize).clip(RoundedCornerShape(4.dp))
             .background(if (selected) Color(0xFFEAEAEA) else Color.Transparent)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label; this.selected = selected },
@@ -252,7 +255,7 @@ internal fun ChromeDivider() {
 }
 
 @Composable
-internal fun BrushPreset(name: String, width: Float, color: Int, selected: Boolean, scale: Float = 1f, id: String = name, verticalDrag: Boolean = false,
+internal fun BrushPreset(name: String, width: Float, color: Int, selected: Boolean, scale: Float = 1f, id: String = name, glyph: String = name, verticalDrag: Boolean = false,
     onClick: () -> Unit, onReorderDrag: (String, Float) -> Unit = { _, _ -> }, onReorderStart: () -> Unit = {}, onReorderEnd: () -> Unit = {},
     modifier: Modifier = Modifier) {
     val currentId by androidx.compose.runtime.rememberUpdatedState(id)
@@ -261,6 +264,8 @@ internal fun BrushPreset(name: String, width: Float, color: Int, selected: Boole
     val currentStart by androidx.compose.runtime.rememberUpdatedState(onReorderStart)
     val currentEnd by androidx.compose.runtime.rememberUpdatedState(onReorderEnd)
     var dragging by remember { mutableStateOf(false) }
+    val widthText = stringResource(R.string.tools_decimal, width)
+    val description = stringResource(R.string.tools_brush_preset_description, name, widthText)
     Box(
         Modifier.testTag("preset-${stableControlSlug(id)}").width((32 * scale).dp).height(32.dp).clip(RoundedCornerShape(8.dp))
             .pointerInput(Unit) { var draggedId = ""; detectDragGesturesAfterLongPress(
@@ -271,12 +276,12 @@ internal fun BrushPreset(name: String, width: Float, color: Int, selected: Boole
             .then(if (dragging) Modifier.shadow(8.dp, RoundedCornerShape(8.dp)).border(2.dp, Color(0xFF287463), RoundedCornerShape(8.dp)) else Modifier)
             .then(modifier)
             .clickable(role = Role.Button, onClick = { if (!dragging) currentClick() })
-            .semantics { contentDescription = "$name, ${String.format(Locale.US, "%.1f", width)} width. Long press and drag to reorder"; this.selected = selected },
+            .semantics { contentDescription = description; this.selected = selected },
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(0.dp, Alignment.CenterVertically)) {
-            Text(String.format(Locale.US, "%.1f", width), fontSize = 7.sp, lineHeight = 8.sp, color = ChromeMuted)
-            BrushGlyph(name, color, Modifier.width((17 * scale).dp).height((19 * scale).dp))
+            Text(widthText, fontSize = 7.sp, lineHeight = 8.sp, color = ChromeMuted)
+            BrushGlyph(glyph, color, Modifier.width((17 * scale).dp).height((19 * scale).dp))
         }
         if (dragging) Text("⠿", Modifier.align(Alignment.TopEnd).padding(end = 1.dp), color = Color(0xFF155D4B), fontSize = 9.sp)
     }

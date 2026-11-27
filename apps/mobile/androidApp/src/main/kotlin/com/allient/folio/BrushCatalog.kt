@@ -1,5 +1,10 @@
 package com.allient.folio
 
+import android.content.res.Resources
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalResources
+
 /** Sizes are canvas pixels at 100% (600px document width), never device pixels or DPI. */
 internal object BrushCatalog {
     val presets = listOf(
@@ -61,4 +66,73 @@ internal object BrushCatalog {
     } ?: brushes.first { it.name == name }
     fun reset(style: BrushStyle): BrushStyle = (presets.firstOrNull { it.name == style.name && it.variant == style.variant } ?: default(style.name))
         .copy(presetId = style.presetId)
+
+    /** Translated name of a brush type. [name] is the stored id ("Fountain pen") and is never translated itself. */
+    @StringRes fun typeLabel(name: String): Int? = when (name) {
+        "Pen" -> R.string.brush_type_pen
+        "Pencil" -> R.string.brush_type_pencil
+        "Marker" -> R.string.brush_type_marker
+        "Fountain pen" -> R.string.brush_type_fountain_pen
+        "Brush pen" -> R.string.brush_type_brush_pen
+        "Fineliner" -> R.string.brush_type_fineliner
+        "Highlighter" -> R.string.brush_type_highlighter
+        "Gel pen" -> R.string.brush_type_gel_pen
+        "Calligraphy" -> R.string.brush_type_calligraphy
+        "Spray" -> R.string.brush_type_spray
+        "Chalk" -> R.string.brush_type_chalk
+        "Paint brush" -> R.string.brush_type_paint_brush
+        "Eraser" -> R.string.brush_type_eraser
+        else -> null
+    }
+
+    /** Catalog labels are saved in English inside brush presets; they are shown through these resources. */
+    private val presetLabels = mapOf(
+        "2H · Technical" to R.string.brush_preset_pencil_2h, "HB · Everyday" to R.string.brush_preset_pencil_hb,
+        "2B · Sketch" to R.string.brush_preset_pencil_2b, "4B · Soft" to R.string.brush_preset_pencil_4b,
+        "6B · Shading" to R.string.brush_preset_pencil_6b, "Coarse graphite" to R.string.brush_preset_pencil_coarse,
+        "Ballpoint · Fine" to R.string.brush_preset_pen_fine, "Ballpoint · Medium" to R.string.brush_preset_pen_medium,
+        "Ballpoint · Bold" to R.string.brush_preset_pen_bold, "Gel · Smooth" to R.string.brush_preset_gel_smooth,
+        "Gel · Bold" to R.string.brush_preset_gel_bold, "Fineliner · 1 px" to R.string.brush_preset_fineliner_1,
+        "Fineliner · 2 px" to R.string.brush_preset_fineliner_2, "Fountain · Fine" to R.string.brush_preset_fountain_fine,
+        "Fountain · Broad" to R.string.brush_preset_fountain_broad, "Italic · 35°" to R.string.brush_preset_calligraphy_italic,
+        "Broad edge · 45°" to R.string.brush_preset_calligraphy_broad, "Brush · Lettering" to R.string.brush_preset_brush_pen_lettering,
+        "Brush · Bold" to R.string.brush_preset_brush_pen_bold, "Marker · Fine" to R.string.brush_preset_marker_fine,
+        "Marker · Broad" to R.string.brush_preset_marker_broad, "Highlighter · Text" to R.string.brush_preset_highlighter_text,
+        "Highlighter · Wide" to R.string.brush_preset_highlighter_wide, "Chalk · Soft" to R.string.brush_preset_chalk_soft,
+        "Chalk · Block" to R.string.brush_preset_chalk_block, "Round · Wet" to R.string.brush_preset_paint_round,
+        "Dry brush" to R.string.brush_preset_paint_dry, "Spray · Fine mist" to R.string.brush_preset_spray_mist,
+        "Spray · Coarse" to R.string.brush_preset_spray_coarse,
+    )
+    private val numbered = Regex("^(.+) (\\d+)$")
+
+    /**
+     * What a brush is called on screen. Catalog labels, type names and the generated "Pen 2" labels are stored in English
+     * and translated here; a label the user typed is shown as saved.
+     */
+    fun displayLabel(resources: Resources, brush: BrushStyle): String = displayLabel(resources, brush.label)
+
+    fun displayLabel(resources: Resources, label: String): String {
+        presetLabels[label]?.let { return resources.getString(it) }
+        typeLabel(label)?.let { return resources.getString(it) }
+        numbered.matchEntire(label)?.let { match ->
+            val type = typeLabel(match.groupValues[1])
+            val number = match.groupValues[2].toIntOrNull()
+            if (type != null && number != null) return resources.getString(R.string.brush_numbered, resources.getString(type), number)
+        }
+        return label
+    }
+
+    fun displayType(resources: Resources, name: String): String = typeLabel(name)?.let { resources.getString(it) } ?: name
+}
+
+/** [BrushCatalog.displayLabel] for composables. */
+@Composable
+internal fun brushLabel(brush: BrushStyle): String {
+    return BrushCatalog.displayLabel(LocalResources.current, brush)
+}
+
+/** [BrushCatalog.displayType] for composables. */
+@Composable
+internal fun brushTypeLabel(name: String): String {
+    return BrushCatalog.displayType(LocalResources.current, name)
 }

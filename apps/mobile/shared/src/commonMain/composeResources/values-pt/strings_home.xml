@@ -1,0 +1,484 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Brazilian Portuguese (você). Keys match values/strings_home.xml. -->
+<resources>
+    <!-- Common actions -->
+    <string name="home_cancel">Cancelar</string>
+    <string name="home_close">Fechar</string>
+    <string name="home_create">Criar</string>
+    <string name="home_save">Salvar</string>
+    <string name="home_open">Abrir</string>
+    <string name="home_delete">Excluir</string>
+    <string name="home_move">Mover</string>
+    <string name="home_copy">Copiar</string>
+    <string name="home_rename">Renomear</string>
+    <string name="home_restore">Restaurar</string>
+    <string name="home_back">Voltar</string>
+    <string name="home_back_to_library">Voltar à biblioteca</string>
+    <string name="home_move_to_trash">Mover para a lixeira</string>
+    <string name="home_delete_permanently">Excluir permanentemente</string>
+    <string name="home_selected_suffix">%1$s, selecionado</string>
+    <string name="home_options_for">Opções de %1$s</string>
+    <string name="home_open_item">Abrir %1$s</string>
+
+    <!-- Tabs and sections -->
+    <string name="home_segment_all">Tudo</string>
+    <string name="home_segment_notes">Notas</string>
+    <string name="home_segment_canvas">Tela</string>
+    <string name="home_segment_books">Livros</string>
+    <string name="home_segment_live">Ao vivo</string>
+    <string name="home_section_folders">Pastas</string>
+    <string name="home_section_move_out">Tirar daqui</string>
+    <string name="home_drop_to_move_out">Solte aqui para tirar</string>
+    <string name="home_all_folders">Todas as pastas</string>
+    <string name="home_fold">Recolher</string>
+    <string name="home_unfold">Expandir (%1$d)</string>
+    <plurals name="home_count_notebooks">
+        <item quantity="one">%1$d caderno</item>
+        <item quantity="other">%1$d cadernos</item>
+    </plurals>
+    <plurals name="home_count_canvases">
+        <item quantity="one">%1$d tela</item>
+        <item quantity="other">%1$d telas</item>
+    </plurals>
+    <plurals name="home_count_books">
+        <item quantity="one">%1$d livro</item>
+        <item quantity="other">%1$d livros</item>
+    </plurals>
+    <plurals name="home_count_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d itens</item>
+    </plurals>
+    <plurals name="home_folder_detail">
+        <item quantity="one">%1$d pasta · %2$s</item>
+        <item quantity="other">%1$d pastas · %2$s</item>
+    </plurals>
+    <string name="home_default_notebook_name">Caderno-%1$d</string>
+    <string name="home_default_canvas_name">Tela-%1$d</string>
+
+    <!-- Top bar and library menu -->
+    <string name="home_toggle_sidebar">Mostrar ou ocultar barra lateral</string>
+    <string name="home_search_notebooks">Pesquisar cadernos</string>
+    <string name="home_library_menu">Menu da biblioteca</string>
+    <string name="home_select">Selecionar</string>
+    <string name="home_sort_by">Ordenar por</string>
+    <string name="home_sort_by_current">Ordenar por (%1$s)</string>
+    <string name="home_view_grid">Grade</string>
+    <string name="home_view_list">Lista</string>
+    <string name="home_search_tags">Pesquisar tags</string>
+    <string name="home_import_document">Importar caderno ou documento</string>
+    <string name="home_export_library">Exportar backup completo da biblioteca</string>
+    <string name="home_search_label">Pesquisar cadernos, livros, tags e texto</string>
+    <string name="home_close_search">Fechar pesquisa</string>
+    <string name="home_all_tags">Todas as tags</string>
+    <string name="home_tags_hint">Adicione tags no editor de um caderno</string>
+    <string name="home_close_tag_search">Fechar pesquisa de tags</string>
+    <string name="home_folder_options">Opções da pasta</string>
+    <string name="home_cancel_move">Cancelar movimentação</string>
+    <string name="home_clear_tag_filter">Limpar filtro de tag</string>
+    <string name="home_dismiss_message">Dispensar mensagem</string>
+    <string name="home_close_sidebar">Fechar barra lateral</string>
+    <string name="home_saving">Salvando neste dispositivo…</string>
+
+    <!-- Selection -->
+    <string name="home_cancel_selection">Cancelar seleção</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d selecionado</item>
+        <item quantity="other">%1$d selecionados</item>
+    </plurals>
+    <string name="home_clear_selection">Limpar seleção</string>
+    <string name="home_select_all">Selecionar tudo</string>
+    <string name="home_clear">Limpar</string>
+    <string name="home_move_selected">Mover seleção</string>
+    <string name="home_favorite_selected">Favoritar seleção</string>
+    <string name="home_delete_selected">Excluir seleção</string>
+    <string name="home_notice_select_to_move">Selecione pastas, cadernos ou livros para mover</string>
+    <string name="home_notice_added_favorites">Adicionado aos Favoritos</string>
+    <string name="home_notice_removed_favorites">Removido dos Favoritos</string>
+    <string name="home_notice_folders_no_favorites">Pastas não podem ser adicionadas aos Favoritos</string>
+
+    <!-- Library items -->
+    <string name="home_open_folder">Abrir pasta %1$s</string>
+    <string name="home_notebook_options">Opções do caderno</string>
+    <string name="home_book_options">Opções do livro</string>
+    <string name="home_infinite_badge">∞ Infinito</string>
+    <string name="home_badge_canvas">TELA</string>
+    <string name="home_badge_note">NOTA</string>
+    <string name="home_book_missing">Original ausente · importe de novo para ler</string>
+    <string name="home_book_list_detail">%1$s · %2$s lido · %3$s</string>
+    <string name="home_percent_read">%1$s lido</string>
+    <string name="home_notice_notebook_moved">Caderno movido</string>
+    <string name="home_notice_no_folder">Nenhuma pasta selecionada</string>
+
+    <!-- Empty states -->
+    <string name="home_empty_search">Nenhum item encontrado</string>
+    <string name="home_empty_favorites">Nenhum favorito ainda</string>
+    <string name="home_empty_recent">Abra um caderno ou livro para encontrá-lo aqui</string>
+    <string name="home_empty_folder">Esta pasta está vazia</string>
+    <string name="home_empty_books">Nenhum livro ainda</string>
+    <string name="home_empty">Nada aqui ainda</string>
+    <string name="home_empty_books_hint">Toque em + para importar um PDF ou EPUB sem DRM.</string>
+    <string name="home_empty_hint">Toque em + para criar um caderno ou importar um livro.</string>
+
+    <!-- Create menu -->
+    <string name="home_new_notebook">Novo caderno</string>
+    <string name="home_import_pdf_notebook">Importar PDF/EPUB como caderno</string>
+    <string name="home_new_canvas">Nova tela infinita</string>
+    <string name="home_new_folder">Nova pasta</string>
+    <string name="home_import_book">Importar livro PDF/EPUB</string>
+    <string name="home_import_backup">Importar caderno ou backup</string>
+
+    <!-- Details dialog -->
+    <string name="home_details_title">Geral</string>
+    <string name="home_close_details">Fechar detalhes</string>
+    <string name="home_details_information">Informações: %1$s</string>
+    <string name="home_details_type">Tipo: %1$s</string>
+    <string name="home_details_updated">Atualizado: %1$s</string>
+    <string name="home_details_folder_updated">Última atualização de caderno: %1$s</string>
+    <string name="home_details_infinite">Tela infinita</string>
+    <plurals name="home_details_pages">
+        <item quantity="one">%1$d página · Página %2$d</item>
+        <item quantity="other">%1$d páginas · Página %2$d</item>
+    </plurals>
+    <plurals name="home_page_count">
+        <item quantity="one">%1$d página</item>
+        <item quantity="other">%1$d páginas</item>
+    </plurals>
+    <string name="home_type_infinite_notebook">Caderno infinito</string>
+    <string name="home_type_notebook">Caderno</string>
+    <string name="home_type_canvas">Tela</string>
+    <string name="home_type_folder">Pasta</string>
+    <string name="home_type_book">Livro %1$s</string>
+    <plurals name="home_type_notebook_pages">
+        <item quantity="one">Caderno · %1$d página</item>
+        <item quantity="other">Caderno · %1$d páginas</item>
+    </plurals>
+    <string name="home_folder_contents">%1$s · %2$s</string>
+    <string name="home_no_notebooks_yet">Nenhum caderno ainda</string>
+    <string name="home_share_export">Compartilhar e exportar</string>
+    <string name="home_favorites_action">Favoritos</string>
+    <string name="home_unfavorite">Desfavoritar</string>
+    <string name="home_edit_folder">Editar pasta</string>
+    <string name="home_export_pdf">PDF · todas as páginas</string>
+    <string name="home_export_png">PNG · página atual</string>
+    <string name="home_export_folio">Backup do Folio (.folio) · editável</string>
+    <string name="home_rename_notebook">Renomear caderno</string>
+    <string name="home_notebook_name">Nome do caderno</string>
+
+    <!-- Move and delete -->
+    <string name="home_trash_folder_title">Mover a pasta para a lixeira?</string>
+    <string name="home_trash_folder_text">Os cadernos, livros e pastas dela continuam na sua biblioteca, sem pasta. Ao restaurar a pasta da lixeira, eles voltam para dentro dela.</string>
+    <string name="home_trash_notebook_title">Mover o caderno para a lixeira?</string>
+    <string name="home_trash_book_title">Mover o livro para a lixeira?</string>
+    <string name="home_trash_book_text">Os destaques, as notas e a posição de leitura são mantidos. %1$s</string>
+    <plurals name="home_restore_for_days">
+        <item quantity="one">Você pode restaurá-lo da lixeira por %1$d dia.</item>
+        <item quantity="other">Você pode restaurá-lo da lixeira por %1$d dias.</item>
+    </plurals>
+    <string name="home_restore_until_empty">Você pode restaurá-lo da lixeira até esvaziá-la.</string>
+    <plurals name="home_bulk_trash_title">
+        <item quantity="one">Mover %1$d item para a lixeira?</item>
+        <item quantity="other">Mover %1$d itens para a lixeira?</item>
+    </plurals>
+    <string name="home_bulk_trash_folders_note">Os cadernos e livros dentro das pastas excluídas continuam na sua biblioteca.</string>
+    <plurals name="home_restore_them_for_days">
+        <item quantity="one">Você pode restaurá-los da lixeira por %1$d dia.</item>
+        <item quantity="other">Você pode restaurá-los da lixeira por %1$d dias.</item>
+    </plurals>
+    <string name="home_restore_them_until_empty">Você pode restaurá-los da lixeira até esvaziá-la.</string>
+    <plurals name="home_notice_moved_to_trash">
+        <item quantity="one">%1$d item movido para a lixeira</item>
+        <item quantity="other">%1$d itens movidos para a lixeira</item>
+    </plurals>
+    <string name="home_main_library">Biblioteca principal (sem pasta)</string>
+    <string name="home_move_to_folder">Mover para pasta</string>
+    <string name="home_move_book_title">Mover livro para pasta</string>
+    <string name="home_move_folder_title">Mover pasta</string>
+    <string name="home_notice_moved_to">Movido para %1$s</string>
+    <string name="home_notice_moved_to_main">Movido para a biblioteca principal</string>
+    <string name="home_drag_on_home">Arrastar na tela inicial</string>
+    <string name="home_notice_drag_hint">Arraste o caderno selecionado até uma pasta ou toque em × para cancelar</string>
+
+    <!-- Trash screen -->
+    <string name="home_trash_title">Lixeira</string>
+    <string name="home_trash_empty_action">Esvaziar lixeira</string>
+    <plurals name="home_trash_retention">
+        <item quantity="one">Os itens são excluídos permanentemente %1$d dia depois de você excluí-los.</item>
+        <item quantity="other">Os itens são excluídos permanentemente %1$d dias depois de você excluí-los.</item>
+    </plurals>
+    <string name="home_trash_retention_off">A exclusão automática está desativada. Os itens ficam aqui até você excluí-los.</string>
+    <string name="home_trash_empty_title">A lixeira está vazia</string>
+    <string name="home_trash_empty_detail">Cadernos, pastas e livros excluídos aparecem aqui.</string>
+    <string name="home_trash_deleted_on">%1$s · Excluído em %2$s</string>
+    <string name="home_trash_kept">Mantido até você excluir</string>
+    <string name="home_trash_next_start">Excluído na próxima abertura</string>
+    <plurals name="home_trash_days_left">
+        <item quantity="one">Falta %1$d dia</item>
+        <item quantity="other">Faltam %1$d dias</item>
+    </plurals>
+    <string name="home_delete_permanently_title">Excluir permanentemente?</string>
+    <string name="home_delete_folder_forever">A pasta "%1$s" é removida. Os cadernos e livros dela continuam na sua biblioteca, sem pasta.</string>
+    <string name="home_delete_book_forever">"%1$s" e seus destaques, notas e posição de leitura são removidos do Folio. O arquivo original que você importou não é alterado.</string>
+    <string name="home_delete_note_forever">"%1$s" e todas as suas páginas são removidos deste dispositivo. Esta ação não pode ser desfeita.</string>
+    <string name="home_empty_trash_title">Esvaziar a lixeira?</string>
+    <plurals name="home_empty_trash_text">
+        <item quantity="one">%1$d item será excluído permanentemente. Esta ação não pode ser desfeita.</item>
+        <item quantity="other">%1$d itens serão excluídos permanentemente. Esta ação não pode ser desfeita.</item>
+    </plurals>
+
+    <!-- New notebook screen -->
+    <string name="home_clear_name">Limpar nome</string>
+    <string name="home_canvas_type">Tela</string>
+    <string name="home_type_pages">Páginas</string>
+    <string name="home_type_pages_detail">Páginas individuais</string>
+    <string name="home_type_infinite">Infinita</string>
+    <string name="home_type_infinite_detail">Uma tela · todas as direções</string>
+    <string name="home_canvas_fixed">O tipo de tela não pode ser alterado depois de criado.</string>
+    <string name="home_infinite_detail">Mova em qualquer direção e o papel acompanha. Toque e segure um espaço vazio para adicionar um marcador e voltar depois.</string>
+    <string name="home_pattern">Padrão</string>
+    <string name="home_spacing">Espaçamento %1$d</string>
+
+    <!-- Templates -->
+    <string name="template_page_template">Modelo de página</string>
+    <string name="template_browse">Ver modelos</string>
+    <string name="template_no_recent">Nenhum modelo recente ainda</string>
+    <string name="template_browse_all">Ver todos os modelos</string>
+    <string name="template_hub_title">Central de modelos</string>
+    <string name="template_back_from_hub">Voltar da central de modelos</string>
+    <string name="template_recent">Modelos recentes</string>
+    <string name="template_ready">Pronto para usar · Local</string>
+    <string name="template_use">Usar modelo</string>
+    <string name="template_add">Adicionar à biblioteca</string>
+    <string name="template_no_recent_hub">Nenhum modelo recente ainda. Selecione um modelo para adicioná-lo à sua biblioteca local.</string>
+    <string name="template_category_all">Todos</string>
+    <string name="template_category_recent">Recentes</string>
+    <string name="template_category_general">Geral</string>
+    <string name="template_category_planning">Planejamento</string>
+    <string name="template_category_work">Trabalho</string>
+    <string name="template_category_study">Estudo</string>
+    <string name="template_category_creative">Criativos</string>
+    <string name="template_category_custom">Personalizados</string>
+    <string name="template_blank">Em branco</string>
+    <string name="template_lined">Pautado</string>
+    <string name="template_wide_ruled">Pauta larga</string>
+    <string name="template_grid">Quadriculado</string>
+    <string name="template_big_grid">Quadriculado grande</string>
+    <string name="template_dots">Pontilhado</string>
+    <string name="template_graph">Papel milimetrado</string>
+    <string name="template_hex_grid">Grade hexagonal</string>
+    <string name="template_todo">Lista de tarefas</string>
+    <string name="template_todo_daily">Tarefas do dia</string>
+    <string name="template_daily">Agenda diária</string>
+    <string name="template_time_block">Blocos de tempo</string>
+    <string name="template_weekly">Agenda semanal</string>
+    <string name="template_monthly">Agenda mensal</string>
+    <string name="template_habit">Controle de hábitos</string>
+    <string name="template_priority">Matriz de prioridades</string>
+    <string name="template_meeting">Notas de reunião</string>
+    <string name="template_project">Planejador de projetos</string>
+    <string name="template_kanban">Quadro Kanban</string>
+    <string name="template_cornell">Notas Cornell</string>
+    <string name="template_lecture">Anotações de aula</string>
+    <string name="template_reading">Registro de leitura</string>
+    <string name="template_revision">Notas de revisão</string>
+    <string name="template_vocabulary">Lista de vocabulário</string>
+    <string name="template_lab">Relatório de laboratório</string>
+    <string name="template_math_grid">Grade de matemática</string>
+    <string name="template_english">Prática de caligrafia</string>
+    <string name="template_isometric">Grade isométrica</string>
+    <string name="template_music">Pauta musical</string>
+    <string name="template_storyboard">Storyboard</string>
+    <string name="template_comic">Quadrinhos</string>
+    <string name="template_mind_map">Mapa mental</string>
+    <string name="template_sketch">Página de esboço</string>
+    <string name="template_custom_grid">Grade personalizada</string>
+    <string name="template_custom_ruled">Pauta personalizada</string>
+    <string name="template_custom_dots">Pontos personalizados</string>
+    <string name="template_heading_todo">LISTA DE TAREFAS</string>
+    <string name="template_heading_meeting">NOTAS DE REUNIÃO</string>
+    <string name="template_heading_daily">AGENDA DIÁRIA</string>
+    <string name="template_heading_weekly">AGENDA SEMANAL</string>
+    <string name="template_heading_project">PLANO DE PROJETO</string>
+    <string name="template_heading_cornell">NOTAS CORNELL</string>
+    <string name="template_heading_lecture">ANOTAÇÕES DE AULA</string>
+    <string name="template_heading_reading">NOTAS DE LEITURA</string>
+    <string name="template_heading_time_block">BLOCOS DE TEMPO</string>
+    <string name="template_heading_monthly">AGENDA MENSAL</string>
+    <string name="template_heading_habit">HÁBITOS</string>
+    <string name="template_heading_priority">PRIORIDADES</string>
+    <string name="template_heading_kanban">QUADRO KANBAN</string>
+    <string name="template_heading_revision">NOTAS DE REVISÃO</string>
+    <string name="template_heading_vocabulary">VOCABULÁRIO</string>
+    <string name="template_heading_lab">RELATÓRIO DE LABORATÓRIO</string>
+    <string name="template_heading_comic">QUADRINHOS</string>
+    <string name="template_heading_mind_map">MAPA MENTAL</string>
+    <string name="template_heading_sketch">ESBOÇOS</string>
+    <string name="template_paper_blank">Papel em branco</string>
+    <string name="template_paper_graph">Papel milimetrado</string>
+    <string name="template_paper_grid">Quadriculado largo</string>
+    <string name="template_paper_lines">Papel pautado</string>
+    <string name="template_paper_dots">Papel pontilhado</string>
+    <string name="template_paper_sheet">Folha</string>
+    <string name="template_paper_white">Branco</string>
+    <string name="template_paper_beige">Bege</string>
+    <string name="template_paper_dark">Cinza-escuro</string>
+
+    <!-- Live boards -->
+    <string name="boards_empty_title">Nenhum quadro ainda</string>
+    <string name="boards_empty_detail">Toque em + para começar um quadro ao vivo. Desenhe com sua caneta e compartilhe um link na sua chamada.</string>
+    <string name="boards_badge">AO VIVO</string>
+    <string name="boards_new_title">Novo quadro</string>
+    <string name="boards_rename_title">Renomear quadro</string>
+    <string name="boards_delete_title">Excluir “%1$s”?</string>
+    <string name="boards_delete_text">O quadro e o desenho dele são removidos deste dispositivo.</string>
+    <string name="boards_untitled">Quadro sem título</string>
+
+    <!-- Sidebar -->
+    <string name="sidebar_notes">Notas</string>
+    <string name="sidebar_folders">Pastas</string>
+    <string name="sidebar_create_folder">Criar pasta</string>
+    <string name="sidebar_collapse_folders">Recolher pastas</string>
+    <string name="sidebar_expand_folders">Expandir pastas</string>
+    <string name="sidebar_no_folders">Nenhuma pasta ainda</string>
+    <string name="sidebar_recent">Recentes</string>
+    <string name="sidebar_favorites">Favoritos</string>
+
+    <!-- Preferences -->
+    <string name="prefs_title">Preferências</string>
+    <string name="prefs_accent_title">Cor de destaque</string>
+    <string name="prefs_accent_detail">Usada na biblioteca: na aba selecionada, no botão +, na barra lateral, nas marcas de seleção e nos links.</string>
+    <string name="prefs_corners_title">Cantos</string>
+    <string name="prefs_corners_detail">Vale para os cartões da biblioteca, o seletor de abas e a barra lateral.</string>
+    <string name="prefs_corners_sharp">Retos</string>
+    <string name="prefs_corners_rounded">Arredondados</string>
+    <string name="prefs_corners_soft">Suaves</string>
+    <string name="prefs_view_title">Visualização padrão</string>
+    <string name="prefs_view_detail">As opções Grade e Lista do menu da biblioteca também mudam isso.</string>
+    <string name="prefs_sort_title">Ordem padrão</string>
+    <string name="prefs_sort_detail">O menu Ordenar por da biblioteca também muda isso.</string>
+    <string name="prefs_notebooks_title">Cadernos</string>
+    <string name="prefs_fullscreen_title">Abrir cadernos em tela cheia (modo foco)</string>
+    <string name="prefs_fullscreen_detail">Os cadernos abertos pela biblioteca começam com as barras ocultas. Use o botão de saída para mostrá-las de novo.</string>
+    <string name="prefs_privacy_title">Privacidade</string>
+    <string name="prefs_usage_title">Compartilhar estatísticas de uso e relatórios de erros</string>
+    <string name="prefs_usage_detail">Dados de uso e relatórios de erros anônimos pelo Google Analytics e Crashlytics. Nunca o conteúdo, os títulos ou os nomes das suas notas e livros.</string>
+    <string name="prefs_trash_title">Lixeira</string>
+    <string name="prefs_trash_detail">Os itens excluídos ficam na lixeira por esse tempo e depois são apagados quando o Folio é aberto.</string>
+    <plurals name="prefs_retention_days">
+        <item quantity="one">%1$d dia</item>
+        <item quantity="other">%1$d dias</item>
+    </plurals>
+    <string name="prefs_retention_never">Nunca excluir automaticamente</string>
+    <string name="prefs_pen_title">Caneta</string>
+    <string name="prefs_pen_pressure_title">Pressão da caneta</string>
+    <string name="prefs_pen_pressure_detail">Ignorar a caneta flutuando e toques leves em notas, no leitor e na biblioteca; curvas de pressão</string>
+    <string name="prefs_backup_title">Backup</string>
+    <string name="prefs_backup_detail">Pasta de backup local, fazer backup agora, exportar e restaurar</string>
+    <string name="prefs_reset">Restaurar padrões</string>
+    <string name="prefs_reset_title">Restaurar as preferências?</string>
+    <string name="prefs_reset_text">A cor de destaque, os cantos, a visualização, a ordem, a tela cheia e o tempo na lixeira voltam ao padrão. Seus cadernos e livros não são alterados.</string>
+    <string name="prefs_reset_confirm">Restaurar</string>
+    <string name="accent_sage">Sálvia</string>
+    <string name="accent_morning">Manhã</string>
+    <string name="accent_evening">Entardecer</string>
+    <string name="accent_sea">Mar</string>
+    <string name="accent_forest">Floresta</string>
+    <string name="accent_lavender">Lavanda</string>
+    <string name="accent_desert">Deserto</string>
+    <string name="accent_graphite">Grafite</string>
+    <string name="sort_edited">Última edição</string>
+    <string name="sort_created">Data de criação</string>
+    <string name="sort_type">Tipo de arquivo</string>
+    <string name="sort_name">Nome</string>
+
+    <!-- About -->
+    <string name="about_title">Sobre</string>
+    <string name="about_tagline">Notas à mão e leitor de livros</string>
+    <string name="about_version">Versão %1$s</string>
+    <string name="about_open_allient">Abrir allient.io</string>
+    <string name="about_made_at">Feito na</string>
+    <string name="about_made_at_allient">Feito na Allient</string>
+    <string name="about_privacy_title">Suas notas ficam neste dispositivo</string>
+    <string name="about_privacy_body">Não há contas nem sincronização na nuvem. Cadernos, pastas e notas de leitura ficam no armazenamento privado do app, então ative os backups inteligentes ou exporte um arquivo .folio antes de desinstalar o app ou limpar os dados dele.</string>
+    <string name="about_privacy_internet">O Folio usa a internet apenas para quadros ao vivo, o download do modelo de escrita à mão, as atualizações do Google Play e as estatísticas de uso anônimas, que você pode desativar em Preferências.</string>
+    <string name="about_links">Links</string>
+    <string name="about_link_docs">Documentação e mais informações</string>
+    <string name="about_link_star">Gosta do Folio? Dê uma estrela no GitHub</string>
+    <string name="about_link_issues">Informar um problema</string>
+    <string name="about_link_issues_detail">Abra uma issue no GitHub</string>
+    <string name="about_link_privacy">Política de privacidade</string>
+    <string name="about_link_license">Licença</string>
+    <string name="about_libraries">Bibliotecas de código aberto</string>
+    <string name="about_lib_ink">Traços de escrita à mão e renderização</string>
+    <string name="about_lib_pdfium">Renderização de PDF</string>
+    <string name="about_lib_pdfbox">Exportação de PDF anotado</string>
+    <string name="about_lib_readium">Leitura de EPUB</string>
+    <string name="about_lib_mlkit">OCR no dispositivo</string>
+    <string name="about_lib_zstd">Compressão de backup</string>
+    <string name="about_lib_lucide">Ícones (ISC)</string>
+    <string name="about_lib_geist">Fonte da interface (SIL OFL)</string>
+    <string name="about_footer">O Folio é de código aberto sob a licença Apache 2.0. Feito pela Allient.</string>
+
+    <!-- Backup settings -->
+    <string name="backup_settings_title">Configurações de backup</string>
+    <string name="backup_restore_version_title">Restaurar esta versão?</string>
+    <string name="backup_restore_version_text">Cadernos, pastas e notas de leitura de %1$s são adicionados à sua biblioteca como cópias. Nada da sua biblioteca atual é removido.</string>
+    <string name="backup_smart_title">Backups inteligentes</string>
+    <string name="backup_explanation">Faz backup alguns minutos depois que você fecha uma nota ou sai do app, só quando algo mudou. Mantém as versões recentes e remove as antigas automaticamente. Arquivos PDF e EPUB não são copiados; suas notas e destaques são.</string>
+    <string name="backup_on_status">Ativado: faz backup após alterações</string>
+    <string name="backup_choose_to_start">Escolha uma pasta para começar</string>
+    <string name="backup_on_detail">Seu primeiro backup começa depois que você escolhe a pasta. Em sessões longas, o Folio também faz backup a cada 15 minutos, mais ou menos, e verifica a cada poucas horas caso algo tenha ficado de fora. O Android pode atrasar tarefas em segundo plano.</string>
+    <string name="backup_off_detail">Ative os backups para escolher uma pasta. Se você cancelar a escolha da pasta, os backups ficam desativados.</string>
+    <string name="backup_files_kept">Os arquivos de backup existentes são mantidos quando o backup está desativado.</string>
+    <string name="backup_folder">Pasta de backup</string>
+    <string name="backup_change_folder">Trocar pasta</string>
+    <string name="backup_last">Último backup</string>
+    <string name="backup_state_setting_up">Configurando</string>
+    <string name="backup_state_running">Fazendo backup…</string>
+    <string name="backup_state_attention">Precisa de atenção</string>
+    <string name="backup_state_on">Ativado</string>
+    <string name="backup_state_off">Desativado</string>
+    <string name="backup_saving_notes">Salvando suas notas mais recentes…</string>
+    <string name="backup_now">Fazer backup agora</string>
+    <string name="backup_versions">Versões mantidas</string>
+    <string name="backup_documents_title">Escolha uma pasta em Documentos</string>
+    <string name="backup_documents_detail">No seletor de pastas do Android, abra Documentos. Você pode criar uma pasta chamada Folio Backups, abri-la e tocar em Usar esta pasta.</string>
+    <string name="backup_format_detail">Um backup .folio inclui os cadernos e seus anexos, além dos títulos do leitor, referências de arquivos, posições de leitura, destaques e notas. Arquivos PDF e EPUB ficam no armazenamento deste dispositivo e não são copiados; depois de restaurar em outro dispositivo, importe o livro de novo para reabri-lo. Livros correspondentes se reconectam às anotações salvas. Restaurar adiciona cópias e nunca apaga sua biblioteca. Os backups ficam neste dispositivo; nada é enviado pela internet.</string>
+    <string name="backup_restore_from">Restaurar de um backup</string>
+
+    <!-- Folder editor -->
+    <string name="folder_eyebrow">SUA BIBLIOTECA, ORGANIZADA</string>
+    <string name="folder_title_new">Um lugar para suas ideias</string>
+    <string name="folder_title_edit">Deixe do seu jeito</string>
+    <string name="folder_close_editor">Fechar editor de pasta</string>
+    <string name="folder_live_preview">PRÉVIA</string>
+    <string name="folder_placeholder_name">Sua nova pasta</string>
+    <string name="folder_preview_summary">%1$s · %2$s</string>
+    <string name="folder_name_label">Nome da pasta</string>
+    <string name="folder_name_hint">ex.: Projetos criativos</string>
+    <string name="folder_duplicate">Já existe uma pasta com este nome.</string>
+    <string name="folder_name_required">Dê um nome à sua pasta.</string>
+    <string name="folder_name_help">Mantenha cadernos e documentos relacionados juntos.</string>
+    <string name="folder_color_title">Cor da pasta</string>
+    <string name="folder_color_description">Cor de pasta %1$s</string>
+    <string name="folder_style_title">Escolha um estilo</string>
+    <string name="folder_style_subtitle">Um toque de personalidade</string>
+    <string name="folder_style_description">Estilo de pasta %1$s</string>
+    <string name="folder_create">Criar pasta</string>
+    <string name="folder_save_changes">Salvar alterações</string>
+    <string name="folder_style_classic">Clássica</string>
+    <string name="folder_style_papers">Com papéis</string>
+    <string name="folder_style_tabbed">Com aba</string>
+    <string name="folder_style_open">Aberta</string>
+    <string name="folder_style_mosaic">Mosaico</string>
+    <string name="folder_color_sage">Sálvia</string>
+    <string name="folder_color_blue">Azul</string>
+    <string name="folder_color_lavender">Lavanda</string>
+    <string name="folder_color_rose">Rosa</string>
+    <string name="folder_color_peach">Pêssego</string>
+    <string name="folder_color_sand">Areia</string>
+    <!-- Preferences groups -->
+    <string name="prefs_group_general">Geral</string>
+    <string name="prefs_group_library">Biblioteca</string>
+    <string name="prefs_group_appearance">Aparência</string>
+    <string name="backup_group_file">Arquivo de backup</string>
+</resources>

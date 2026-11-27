@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Error messages shown to people. Exceptions keep English text for logs; see UserMessages.kt. -->
+<resources>
+    <!-- Backup folder labels -->
+    <string name="backup_label_internal_storage">इंटरनल स्टोरेज</string>
+    <string name="backup_label_sd_card">SD कार्ड / %1$s</string>
+    <string name="backup_label_selected_folder">चुना गया फ़ोल्डर</string>
+    <!-- Smart backups -->
+    <string name="error_backup_failed">बैकअप नहीं बनाया जा सका। फ़ोल्डर और उपलब्ध स्टोरेज जांचें।</string>
+    <string name="error_backup_low_space">बैकअप के लिए पर्याप्त जगह नहीं है: लगभग %1$s चाहिए और %2$s खाली है। कुछ जगह खाली करें; आपके अगले बदलाव के बाद Folio फिर से कोशिश करेगा। मौजूदा बैकअप सुरक्षित रखे गए हैं।</string>
+    <string name="error_backup_folder_access">फ़ोल्डर का ऐक्सेस अब उपलब्ध नहीं है। बैकअप फ़ोल्डर फिर से चुनें।</string>
+    <string name="error_backup_verify">बैकअप कॉपी आर्काइव से मेल नहीं खाती। पिछले बैकअप सुरक्षित रखे गए हैं।</string>
+    <string name="error_backup_folder_unreadable">बैकअप फ़ोल्डर पढ़ा नहीं जा सका।</string>
+    <string name="error_backup_create_file">चुने गए फ़ोल्डर में बैकअप नहीं बनाया जा सका।</string>
+    <string name="error_backup_documents_folder">बैकअप पूरा नहीं हो सका। इस डिवाइस पर Documents में कोई फ़ोल्डर चुनें।</string>
+    <string name="error_backup_open">बैकअप खोला नहीं जा सका।</string>
+    <string name="error_backup_folder_not_local">इस डिवाइस पर कोई फ़ोल्डर चुनें।</string>
+    <string name="error_backup_folder_read_only">Folio इस फ़ोल्डर में सेव नहीं कर सकता। कोई दूसरा फ़ोल्डर चुनें।</string>
+    <string name="error_backup_folder_open">यह फ़ोल्डर खोला नहीं जा सका। कोई दूसरा फ़ोल्डर चुनें।</string>
+    <string name="error_backup_folder_unusable">इस फ़ोल्डर का इस्तेमाल नहीं किया जा सका। कृपया कोई दूसरा चुनें।</string>
+    <!-- Backups and imports -->
+    <string name="error_attachment_missing">नोटबुक का एक अटैचमेंट मौजूद नहीं है।</string>
+    <string name="error_backup_too_many_files">इस बैकअप में रीस्टोर करने के लिए बहुत ज़्यादा फ़ाइलें हैं।</string>
+    <string name="error_backup_data_too_large">नोटबुक का डेटा 32 MiB की बैकअप सीमा से बड़ा है।</string>
+    <string name="error_backup_attachment_too_large">एक अटैचमेंट 128 MiB की बैकअप सीमा से बड़ा है।</string>
+    <string name="error_backup_attachment_too_large_named">एक अटैचमेंट 128 MiB की बैकअप सीमा से बड़ा है: %1$s</string>
+    <string name="error_backup_too_large">बैकअप 2 GiB की सीमा से बड़ा है।</string>
+    <string name="error_backup_unsupported">Folio का यह वर्शन इस बैकअप फ़ॉर्मैट के साथ काम नहीं करता।</string>
+    <string name="error_backup_not_library">यह Folio लाइब्रेरी का समर्थित बैकअप नहीं है।</string>
+    <string name="error_backup_is_library">यह पूरी लाइब्रेरी का बैकअप है, इसलिए इसे एक नोटबुक के रूप में इंपोर्ट नहीं किया जा सकता।</string>
+    <string name="error_backup_damaged">यह बैकअप खराब है या मान्य Folio बैकअप नहीं है।</string>
+    <string name="error_image_unsupported">यह इमेज फ़ॉर्मैट खोला नहीं जा सकता।</string>
+    <string name="error_pdf_page_count">%1$d–%2$d पेज वाली PDF इंपोर्ट करें।</string>
+    <string name="error_file_too_large">चुनी गई फ़ाइल बहुत बड़ी है।</string>
+    <string name="error_epub_not_epub">यह फ़ाइल EPUB किताब नहीं है।</string>
+    <string name="error_epub_chapter_too_large">इस EPUB का एक अध्याय इंपोर्ट करने के लिए बहुत बड़ा है।</string>
+    <string name="error_epub_drm_import">यह EPUB सुरक्षित (DRM) है और इसे इंपोर्ट नहीं किया जा सकता।</string>
+    <string name="error_epub_no_package">इस EPUB में पैकेज फ़ाइल नहीं है।</string>
+    <string name="error_epub_no_text">इस EPUB में इंपोर्ट करने के लिए कोई टेक्स्ट नहीं है।</string>
+    <string name="error_epub_too_long">यह किताब नोटबुक के रूप में इंपोर्ट करने के लिए बहुत लंबी है (%1$d से ज़्यादा पेज)। इसके बजाय इसे रीडर में खोलें।</string>
+    <string name="error_import_document">चुना गया दस्तावेज़ इंपोर्ट नहीं किया जा सका।</string>
+    <string name="error_import_file">यह फ़ाइल इंपोर्ट नहीं की जा सकी।</string>
+    <string name="error_insert_file">यह फ़ाइल जोड़ी नहीं जा सकी।</string>
+    <string name="error_library_restore">Folio लाइब्रेरी का बैकअप रीस्टोर नहीं किया जा सका।</string>
+    <string name="error_import_load_blocked">मौजूदा नोटबुक लोड नहीं हो सकीं। चुना गया दस्तावेज़ इंपोर्ट नहीं किया गया।</string>
+    <string name="error_import_destination_missing">लक्ष्य नोटबुक या पेज अब मौजूद नहीं है।</string>
+    <string name="error_import_layer">इमेज जोड़ने से पहले कोई दिखने वाली, अनलॉक लेयर चुनें।</string>
+    <string name="error_canvas_no_pages">अनंत कैनवास में पेज नहीं होते। इसके बजाय कोई इमेज जोड़ें या PDF अटैच करें।</string>
+    <!-- Notebook storage -->
+    <string name="error_save_first_notebook">आपकी पहली नोटबुक सेव नहीं हो सकी।</string>
+    <string name="error_save_notebooks">नोटबुक इस डिवाइस पर सेव नहीं हो सकीं।</string>
+    <string name="error_notebooks_loading">नोटबुक अभी लोड हो रही हैं। कृपया फिर से कोशिश करें।</string>
+    <string name="error_notebooks_not_loaded">मौजूदा नोटबुक लोड नहीं हो सकीं। मूल डेटा सुरक्षित रखा गया है।</string>
+    <!-- Recordings -->
+    <string name="error_recording_unavailable">ऑडियो रिकॉर्डिंग उपलब्ध नहीं है।</string>
+    <string name="error_recording_save">रिकॉर्डिंग सेव नहीं हो सकी।</string>
+    <string name="error_recording_pause">रिकॉर्डिंग रोकी नहीं जा सकी।</string>
+    <string name="error_recording_resume">रिकॉर्डिंग फिर से शुरू नहीं हो सकी।</string>
+    <string name="error_recording_running">एक रिकॉर्डिंग पहले से चल रही है।</string>
+    <string name="error_recording_empty">रिकॉर्डिंग खाली है।</string>
+    <!-- Reader -->
+    <string name="error_annotation_too_large">यह एनोटेशन बहुत बड़ा है।</string>
+    <string name="error_document_too_large">दस्तावेज़ 1 GiB से छोटे होने चाहिए।</string>
+    <string name="error_not_enough_storage">इस दस्तावेज़ को इंपोर्ट करने के लिए पर्याप्त खाली स्टोरेज नहीं है।</string>
+    <string name="error_book_not_supported">यह फ़ाइल PDF या EPUB किताब नहीं है।</string>
+    <string name="error_book_not_epub">यह फ़ाइल EPUB किताब नहीं है। कोई PDF या DRM-मुक्त EPUB इंपोर्ट करें।</string>
+    <string name="error_epub_damaged">यह EPUB खराब है और खोली नहीं जा सकती।</string>
+    <string name="error_epub_too_large">यह EPUB खोलने के लिए बहुत बड़ी है।</string>
+    <string name="error_epub_open">यह EPUB खोली नहीं जा सकी।</string>
+    <string name="error_epub_drm_open">यह किताब DRM से सुरक्षित है। कोई DRM-मुक्त EPUB इंपोर्ट करें।</string>
+    <string name="error_pdf_password">यह PDF पासवर्ड से सुरक्षित है। किसी दूसरे ऐप में पासवर्ड हटाएं, फिर इसे दोबारा इंपोर्ट करें।</string>
+    <string name="error_pdf_no_pages">इस PDF में कोई पेज नहीं है।</string>
+    <string name="error_export_pdf_password">यह PDF पासवर्ड से सुरक्षित है, इसलिए इसे एनोटेशन के साथ एक्सपोर्ट नहीं किया जा सकता। इसके बजाय अपने रीडिंग नोट्स एक्सपोर्ट करें।</string>
+    <string name="error_export_pdf_encrypted">यह PDF एन्क्रिप्टेड है, इसलिए इसे एनोटेशन के साथ एक्सपोर्ट नहीं किया जा सकता। इसके बजाय अपने रीडिंग नोट्स एक्सपोर्ट करें।</string>
+    <string name="error_export_pdf_no_annotations">यह PDF एनोटेशन की अनुमति नहीं देती।</string>
+    <string name="error_reader_select_text">टेक्स्ट चुना नहीं जा सका।</string>
+    <string name="error_reader_render_page">यह पेज दिखाया नहीं जा सका।</string>
+    <string name="error_reader_page_memory">इस ज़ूम पर यह पेज बनाने के लिए पर्याप्त मेमोरी नहीं है। ज़ूम आउट करें या दूसरी किताबें बंद करें और फिर से कोशिश करें।</string>
+    <string name="error_reader_annotations">एनोटेशन दिखाए नहीं जा सके।</string>
+    <string name="error_reader_save_ink">इंक सेव नहीं हो सकी।</string>
+    <string name="error_reader_chapter">यह अध्याय लोड नहीं हो सका।</string>
+    <string name="error_reader_search">इस किताब में खोजा नहीं जा सका।</string>
+    <!-- Handwriting -->
+    <string name="error_handwriting_language">इस भाषा में हैंडराइटिंग समर्थित नहीं है।</string>
+</resources>

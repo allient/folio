@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Library (home) screens in shared/commonMain. Stored IDs (template ids, accent ids, sort ids) never change; only these labels are translated. -->
+<resources>
+    <!-- Common actions -->
+    <string name="home_cancel">Abbrechen</string>
+    <string name="home_close">Schließen</string>
+    <string name="home_create">Erstellen</string>
+    <string name="home_save">Speichern</string>
+    <string name="home_open">Öffnen</string>
+    <string name="home_delete">Löschen</string>
+    <string name="home_move">Verschieben</string>
+    <string name="home_copy">Kopieren</string>
+    <string name="home_rename">Umbenennen</string>
+    <string name="home_restore">Wiederherstellen</string>
+    <string name="home_back">Zurück</string>
+    <string name="home_back_to_library">Zurück zur Bibliothek</string>
+    <string name="home_move_to_trash">In den Papierkorb</string>
+    <string name="home_delete_permanently">Endgültig löschen</string>
+    <string name="home_selected_suffix">%1$s, ausgewählt</string>
+    <string name="home_options_for">Optionen für %1$s</string>
+    <string name="home_open_item">%1$s öffnen</string>
+
+    <!-- Tabs and sections -->
+    <string name="home_segment_all">Alle</string>
+    <string name="home_segment_notes">Notizen</string>
+    <string name="home_segment_canvas">Leinwand</string>
+    <string name="home_segment_books">Bücher</string>
+    <string name="home_segment_live">Live</string>
+    <string name="home_section_folders">Ordner</string>
+    <string name="home_section_move_out">Herausnehmen</string>
+    <string name="home_drop_to_move_out">Ablegen zum Herausnehmen</string>
+    <string name="home_all_folders">Alle Ordner</string>
+    <string name="home_fold">Einklappen</string>
+    <string name="home_unfold">Ausklappen (%1$d)</string>
+    <plurals name="home_count_notebooks">
+        <item quantity="one">%1$d Notizbuch</item>
+        <item quantity="other">%1$d Notizbücher</item>
+    </plurals>
+    <plurals name="home_count_canvases">
+        <item quantity="one">%1$d Leinwand</item>
+        <item quantity="other">%1$d Leinwände</item>
+    </plurals>
+    <plurals name="home_count_books">
+        <item quantity="one">%1$d Buch</item>
+        <item quantity="other">%1$d Bücher</item>
+    </plurals>
+    <plurals name="home_count_items">
+        <item quantity="one">%1$d Element</item>
+        <item quantity="other">%1$d Elemente</item>
+    </plurals>
+    <!-- %1$d subfolders, %2$s the item count, for example "3 items". -->
+    <plurals name="home_folder_detail">
+        <item quantity="one">%1$d Ordner · %2$s</item>
+        <item quantity="other">%1$d Ordner · %2$s</item>
+    </plurals>
+    <string name="home_default_notebook_name">Notizbuch-%1$d</string>
+    <string name="home_default_canvas_name">Leinwand-%1$d</string>
+
+    <!-- Top bar and library menu -->
+    <string name="home_toggle_sidebar">Seitenleiste ein-/ausblenden</string>
+    <string name="home_search_notebooks">Notizbücher durchsuchen</string>
+    <string name="home_library_menu">Bibliotheksmenü</string>
+    <string name="home_select">Auswählen</string>
+    <string name="home_sort_by">Sortieren nach</string>
+    <string name="home_sort_by_current">Sortieren nach (%1$s)</string>
+    <string name="home_view_grid">Raster</string>
+    <string name="home_view_list">Liste</string>
+    <string name="home_search_tags">Tags durchsuchen</string>
+    <string name="home_import_document">Notizbuch oder Dokument importieren</string>
+    <string name="home_export_library">Vollständige Bibliothekssicherung exportieren</string>
+    <string name="home_search_label">Notizbücher, Bücher, Tags und Text durchsuchen</string>
+    <string name="home_close_search">Suche schließen</string>
+    <string name="home_all_tags">Alle Tags</string>
+    <string name="home_tags_hint">Füge Tags im Editor eines Notizbuchs hinzu</string>
+    <string name="home_close_tag_search">Tag-Suche schließen</string>
+    <string name="home_folder_options">Ordneroptionen</string>
+    <string name="home_cancel_move">Verschieben abbrechen</string>
+    <string name="home_clear_tag_filter">Tag-Filter entfernen</string>
+    <string name="home_dismiss_message">Meldung schließen</string>
+    <string name="home_close_sidebar">Seitenleiste schließen</string>
+    <string name="home_saving">Wird auf diesem Gerät gespeichert…</string>
+
+    <!-- Selection -->
+    <string name="home_cancel_selection">Auswahl abbrechen</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
+    <string name="home_clear_selection">Auswahl aufheben</string>
+    <string name="home_select_all">Alle auswählen</string>
+    <string name="home_clear">Leeren</string>
+    <string name="home_move_selected">Auswahl verschieben</string>
+    <string name="home_favorite_selected">Auswahl zu Favoriten</string>
+    <string name="home_delete_selected">Auswahl löschen</string>
+    <string name="home_notice_select_to_move">Wähle Ordner, Notizbücher oder Bücher zum Verschieben aus</string>
+    <string name="home_notice_added_favorites">Zu Favoriten hinzugefügt</string>
+    <string name="home_notice_removed_favorites">Aus Favoriten entfernt</string>
+    <string name="home_notice_folders_no_favorites">Ordner können nicht zu Favoriten hinzugefügt werden</string>
+
+    <!-- Library items -->
+    <string name="home_open_folder">Ordner %1$s öffnen</string>
+    <string name="home_notebook_options">Notizbuchoptionen</string>
+    <string name="home_book_options">Buchoptionen</string>
+    <string name="home_infinite_badge">∞ Unendlich</string>
+    <string name="home_badge_canvas">LEINWAND</string>
+    <string name="home_badge_note">NOTIZ</string>
+    <string name="home_book_missing">Original fehlt · zum Lesen neu importieren</string>
+    <!-- %1$s format (PDF, EPUB), %2$s progress such as 45%, %3$s date. -->
+    <string name="home_book_list_detail">%1$s · %2$s gelesen · %3$s</string>
+    <string name="home_percent_read">%1$s gelesen</string>
+    <string name="home_notice_notebook_moved">Notizbuch verschoben</string>
+    <string name="home_notice_no_folder">Kein Ordner ausgewählt</string>
+
+    <!-- Empty states -->
+    <string name="home_empty_search">Keine passenden Elemente</string>
+    <string name="home_empty_favorites">Noch keine Favoriten</string>
+    <string name="home_empty_recent">Öffne ein Notizbuch oder Buch, um es hier zu finden</string>
+    <string name="home_empty_folder">Dieser Ordner ist leer</string>
+    <string name="home_empty_books">Noch keine Bücher</string>
+    <string name="home_empty">Hier ist noch nichts</string>
+    <string name="home_empty_books_hint">Tippe auf +, um ein PDF oder ein DRM-freies EPUB zu importieren.</string>
+    <string name="home_empty_hint">Tippe auf +, um ein Notizbuch zu erstellen oder ein Buch zu importieren.</string>
+
+    <!-- Create menu -->
+    <string name="home_new_notebook">Neues Notizbuch</string>
+    <string name="home_import_pdf_notebook">PDF/EPUB als Notizbuch importieren</string>
+    <string name="home_new_canvas">Neue unendliche Leinwand</string>
+    <string name="home_new_folder">Neuer Ordner</string>
+    <string name="home_import_book">PDF/EPUB-Buch importieren</string>
+    <string name="home_import_backup">Notizbuch oder Sicherung importieren</string>
+
+    <!-- Details dialog -->
+    <string name="home_details_title">Allgemein</string>
+    <string name="home_close_details">Details schließen</string>
+    <string name="home_details_information">Informationen: %1$s</string>
+    <string name="home_details_type">Typ: %1$s</string>
+    <string name="home_details_updated">Aktualisiert: %1$s</string>
+    <string name="home_details_folder_updated">Letzte Notizbuchänderung: %1$s</string>
+    <string name="home_details_infinite">Unendliche Leinwand</string>
+    <!-- %1$d page count, %2$d current page. -->
+    <plurals name="home_details_pages">
+        <item quantity="one">%1$d Seite · Seite %2$d</item>
+        <item quantity="other">%1$d Seiten · Seite %2$d</item>
+    </plurals>
+    <plurals name="home_page_count">
+        <item quantity="one">%1$d Seite</item>
+        <item quantity="other">%1$d Seiten</item>
+    </plurals>
+    <string name="home_type_infinite_notebook">Unendliches Notizbuch</string>
+    <string name="home_type_notebook">Notizbuch</string>
+    <string name="home_type_canvas">Leinwand</string>
+    <string name="home_type_folder">Ordner</string>
+    <string name="home_type_book">%1$s-Buch</string>
+    <plurals name="home_type_notebook_pages">
+        <item quantity="one">Notizbuch · %1$d Seite</item>
+        <item quantity="other">Notizbuch · %1$d Seiten</item>
+    </plurals>
+    <string name="home_folder_contents">%1$s · %2$s</string>
+    <string name="home_no_notebooks_yet">Noch keine Notizbücher</string>
+    <string name="home_share_export">Teilen und exportieren</string>
+    <string name="home_favorites_action">Favoriten</string>
+    <string name="home_unfavorite">Aus Favoriten entfernen</string>
+    <string name="home_edit_folder">Ordner bearbeiten</string>
+    <string name="home_export_pdf">PDF · alle Seiten</string>
+    <string name="home_export_png">PNG · aktuelle Seite</string>
+    <string name="home_export_folio">Folio-Sicherung (.folio) · bearbeitbar</string>
+    <string name="home_rename_notebook">Notizbuch umbenennen</string>
+    <string name="home_notebook_name">Name des Notizbuchs</string>
+
+    <!-- Move and delete -->
+    <string name="home_trash_folder_title">Ordner in den Papierkorb verschieben?</string>
+    <string name="home_trash_folder_text">Seine Notizbücher, Bücher und Ordner bleiben ohne Ordner in deiner Bibliothek. Wenn du den Ordner aus dem Papierkorb wiederherstellst, kommen sie wieder hinein.</string>
+    <string name="home_trash_notebook_title">Notizbuch in den Papierkorb verschieben?</string>
+    <string name="home_trash_book_title">Buch in den Papierkorb verschieben?</string>
+    <!-- %1$s is home_restore_for_days or home_restore_until_empty. -->
+    <string name="home_trash_book_text">Markierungen, Notizen und Leseposition bleiben erhalten. %1$s</string>
+    <plurals name="home_restore_for_days">
+        <item quantity="one">Du kannst es %1$d Tag lang aus dem Papierkorb wiederherstellen.</item>
+        <item quantity="other">Du kannst es %1$d Tage lang aus dem Papierkorb wiederherstellen.</item>
+    </plurals>
+    <string name="home_restore_until_empty">Du kannst es aus dem Papierkorb wiederherstellen, bis du ihn leerst.</string>
+    <plurals name="home_bulk_trash_title">
+        <item quantity="one">%1$d Element in den Papierkorb verschieben?</item>
+        <item quantity="other">%1$d Elemente in den Papierkorb verschieben?</item>
+    </plurals>
+    <string name="home_bulk_trash_folders_note">Notizbücher und Bücher in gelöschten Ordnern bleiben in deiner Bibliothek.</string>
+    <plurals name="home_restore_them_for_days">
+        <item quantity="one">Du kannst sie %1$d Tag lang aus dem Papierkorb wiederherstellen.</item>
+        <item quantity="other">Du kannst sie %1$d Tage lang aus dem Papierkorb wiederherstellen.</item>
+    </plurals>
+    <string name="home_restore_them_until_empty">Du kannst sie aus dem Papierkorb wiederherstellen, bis du ihn leerst.</string>
+    <plurals name="home_notice_moved_to_trash">
+        <item quantity="one">%1$d Element in den Papierkorb verschoben</item>
+        <item quantity="other">%1$d Elemente in den Papierkorb verschoben</item>
+    </plurals>
+    <string name="home_main_library">Hauptbibliothek (kein Ordner)</string>
+    <string name="home_move_to_folder">In Ordner verschieben</string>
+    <string name="home_move_book_title">Buch in Ordner verschieben</string>
+    <string name="home_move_folder_title">Ordner verschieben</string>
+    <string name="home_notice_moved_to">Verschoben nach %1$s</string>
+    <string name="home_notice_moved_to_main">In die Hauptbibliothek verschoben</string>
+    <string name="home_drag_on_home">Auf dem Startbildschirm ziehen</string>
+    <string name="home_notice_drag_hint">Ziehe das ausgewählte Notizbuch auf einen Ordner oder tippe zum Abbrechen auf ×</string>
+
+    <!-- Trash screen -->
+    <string name="home_trash_title">Papierkorb</string>
+    <string name="home_trash_empty_action">Papierkorb leeren</string>
+    <plurals name="home_trash_retention">
+        <item quantity="one">Elemente werden %1$d Tag nach dem Löschen endgültig gelöscht.</item>
+        <item quantity="other">Elemente werden %1$d Tage nach dem Löschen endgültig gelöscht.</item>
+    </plurals>
+    <string name="home_trash_retention_off">Automatisches Löschen ist aus. Elemente bleiben hier, bis du sie löschst.</string>
+    <string name="home_trash_empty_title">Der Papierkorb ist leer</string>
+    <string name="home_trash_empty_detail">Gelöschte Notizbücher, Ordner und Bücher erscheinen hier.</string>
+    <!-- %1$s item kind and size, %2$s deletion date. -->
+    <string name="home_trash_deleted_on">%1$s · Gelöscht %2$s</string>
+    <string name="home_trash_kept">Bleibt, bis du es löschst</string>
+    <string name="home_trash_next_start">Wird beim nächsten Start gelöscht</string>
+    <plurals name="home_trash_days_left">
+        <item quantity="one">Noch %1$d Tag</item>
+        <item quantity="other">Noch %1$d Tage</item>
+    </plurals>
+    <string name="home_delete_permanently_title">Endgültig löschen?</string>
+    <string name="home_delete_folder_forever">Der Ordner „%1$s“ wird entfernt. Seine Notizbücher und Bücher bleiben ohne Ordner in deiner Bibliothek.</string>
+    <string name="home_delete_book_forever">„%1$s“ und seine Markierungen, Notizen und Leseposition werden aus Folio entfernt. Die importierte Originaldatei wird nicht verändert.</string>
+    <string name="home_delete_note_forever">„%1$s“ und alle Seiten werden von diesem Gerät entfernt. Das kann nicht rückgängig gemacht werden.</string>
+    <string name="home_empty_trash_title">Papierkorb leeren?</string>
+    <plurals name="home_empty_trash_text">
+        <item quantity="one">%1$d Element wird endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">%1$d Elemente werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.</item>
+    </plurals>
+
+    <!-- New notebook screen -->
+    <string name="home_clear_name">Name löschen</string>
+    <string name="home_canvas_type">Leinwand</string>
+    <string name="home_type_pages">Seiten</string>
+    <string name="home_type_pages_detail">Einzelne Seiten</string>
+    <string name="home_type_infinite">Unendlich</string>
+    <string name="home_type_infinite_detail">Eine Leinwand · alle Richtungen</string>
+    <string name="home_canvas_fixed">Der Leinwandtyp kann nach dem Erstellen nicht geändert werden.</string>
+    <string name="home_infinite_detail">Verschiebe in jede Richtung, das Papier folgt. Halte eine leere Stelle gedrückt, um einen Pin zu setzen und später dorthin zurückzuspringen.</string>
+    <string name="home_pattern">Muster</string>
+    <string name="home_spacing">Abstand %1$d</string>
+
+    <!-- Templates -->
+    <string name="template_page_template">Seitenvorlage</string>
+    <string name="template_browse">Vorlagen durchsuchen</string>
+    <string name="template_no_recent">Noch keine zuletzt verwendeten Vorlagen</string>
+    <string name="template_browse_all">Alle Vorlagen durchsuchen</string>
+    <string name="template_hub_title">Vorlagen-Hub</string>
+    <string name="template_back_from_hub">Zurück vom Vorlagen-Hub</string>
+    <string name="template_recent">Zuletzt verwendete Vorlagen</string>
+    <string name="template_ready">Einsatzbereit · Lokal</string>
+    <string name="template_use">Vorlage verwenden</string>
+    <string name="template_add">Zur Bibliothek hinzufügen</string>
+    <string name="template_no_recent_hub">Noch keine zuletzt verwendeten Vorlagen. Wähle eine Vorlage aus, um sie deiner lokalen Bibliothek hinzuzufügen.</string>
+    <string name="template_category_all">Alle</string>
+    <string name="template_category_recent">Zuletzt</string>
+    <string name="template_category_general">Allgemein</string>
+    <string name="template_category_planning">Planung</string>
+    <string name="template_category_work">Arbeit</string>
+    <string name="template_category_study">Lernen</string>
+    <string name="template_category_creative">Kreativ</string>
+    <string name="template_category_custom">Eigene</string>
+    <string name="template_blank">Leer</string>
+    <string name="template_lined">Liniert</string>
+    <string name="template_wide_ruled">Weit liniert</string>
+    <string name="template_grid">Kariert</string>
+    <string name="template_big_grid">Großes Karo</string>
+    <string name="template_dots">Punktraster</string>
+    <string name="template_graph">Millimeterpapier</string>
+    <string name="template_hex_grid">Sechseckraster</string>
+    <string name="template_todo">To-do-Liste</string>
+    <string name="template_todo_daily">Tägliche To-dos</string>
+    <string name="template_daily">Tagesplaner</string>
+    <string name="template_time_block">Zeitblöcke</string>
+    <string name="template_weekly">Wochenplaner</string>
+    <string name="template_monthly">Monatsplaner</string>
+    <string name="template_habit">Gewohnheitstracker</string>
+    <string name="template_priority">Prioritätenmatrix</string>
+    <string name="template_meeting">Besprechungsnotizen</string>
+    <string name="template_project">Projektplaner</string>
+    <string name="template_kanban">Kanban-Board</string>
+    <string name="template_cornell">Cornell-Notizen</string>
+    <string name="template_lecture">Vorlesungsnotizen</string>
+    <string name="template_reading">Lesetagebuch</string>
+    <string name="template_revision">Lernzettel</string>
+    <string name="template_vocabulary">Vokabelliste</string>
+    <string name="template_lab">Laborbericht</string>
+    <string name="template_math_grid">Matheraster</string>
+    <string name="template_english">Schreibübung</string>
+    <string name="template_isometric">Isometrisches Raster</string>
+    <string name="template_music">Notenlinien</string>
+    <string name="template_storyboard">Storyboard</string>
+    <string name="template_comic">Comic-Panels</string>
+    <string name="template_mind_map">Mindmap</string>
+    <string name="template_sketch">Skizzenseite</string>
+    <string name="template_custom_grid">Eigenes Raster</string>
+    <string name="template_custom_ruled">Eigene Linien</string>
+    <string name="template_custom_dots">Eigene Punkte</string>
+    <!-- Headings printed at the top of template previews. -->
+    <string name="template_heading_todo">TO-DO-LISTE</string>
+    <string name="template_heading_meeting">BESPRECHUNGSNOTIZEN</string>
+    <string name="template_heading_daily">TAGESPLANER</string>
+    <string name="template_heading_weekly">WOCHENPLANER</string>
+    <string name="template_heading_project">PROJEKTPLANER</string>
+    <string name="template_heading_cornell">CORNELL-NOTIZEN</string>
+    <string name="template_heading_lecture">VORLESUNGSNOTIZEN</string>
+    <string name="template_heading_reading">LESENOTIZEN</string>
+    <string name="template_heading_time_block">ZEITBLÖCKE</string>
+    <string name="template_heading_monthly">MONATSPLANER</string>
+    <string name="template_heading_habit">GEWOHNHEITSTRACKER</string>
+    <string name="template_heading_priority">PRIORITÄTENMATRIX</string>
+    <string name="template_heading_kanban">KANBAN-BOARD</string>
+    <string name="template_heading_revision">LERNZETTEL</string>
+    <string name="template_heading_vocabulary">VOKABELN</string>
+    <string name="template_heading_lab">LABORBERICHT</string>
+    <string name="template_heading_comic">COMIC-PANELS</string>
+    <string name="template_heading_mind_map">MINDMAP</string>
+    <string name="template_heading_sketch">SKIZZENSEITE</string>
+    <!-- Infinite canvas paper -->
+    <string name="template_paper_blank">Leeres Papier</string>
+    <string name="template_paper_graph">Millimeterpapier</string>
+    <string name="template_paper_grid">Weit kariertes Papier</string>
+    <string name="template_paper_lines">Liniertes Papier</string>
+    <string name="template_paper_dots">Gepunktetes Papier</string>
+    <string name="template_paper_sheet">Blatt</string>
+    <string name="template_paper_white">Weiß</string>
+    <string name="template_paper_beige">Beige</string>
+    <string name="template_paper_dark">Dunkelgrau</string>
+
+    <!-- Live boards -->
+    <string name="boards_empty_title">Noch keine Boards</string>
+    <string name="boards_empty_detail">Tippe auf +, um ein Live-Board zu starten. Zeichne mit deinem Stift und teile in deinem Anruf einen Link.</string>
+    <string name="boards_badge">LIVE</string>
+    <string name="boards_new_title">Neues Board</string>
+    <string name="boards_rename_title">Board umbenennen</string>
+    <string name="boards_delete_title">„%1$s“ löschen?</string>
+    <string name="boards_delete_text">Das Board und seine Zeichnung werden von diesem Gerät entfernt.</string>
+    <string name="boards_untitled">Unbenanntes Board</string>
+
+    <!-- Sidebar -->
+    <string name="sidebar_notes">Notizen</string>
+    <string name="sidebar_folders">Ordner</string>
+    <string name="sidebar_create_folder">Ordner erstellen</string>
+    <string name="sidebar_collapse_folders">Ordner einklappen</string>
+    <string name="sidebar_expand_folders">Ordner ausklappen</string>
+    <string name="sidebar_no_folders">Noch keine Ordner</string>
+    <string name="sidebar_recent">Zuletzt</string>
+    <string name="sidebar_favorites">Favoriten</string>
+
+    <!-- Preferences -->
+    <string name="prefs_title">Einstellungen</string>
+    <string name="prefs_accent_title">Akzentfarbe</string>
+    <string name="prefs_accent_detail">Für die Bibliothek: den ausgewählten Tab, die Schaltfläche +, die Seitenleiste, Häkchen und Links.</string>
+    <string name="prefs_corners_title">Ecken</string>
+    <string name="prefs_corners_detail">Gilt für Bibliothekskarten, die Tab-Steuerung und die Seitenleiste.</string>
+    <string name="prefs_corners_sharp">Eckig</string>
+    <string name="prefs_corners_rounded">Abgerundet</string>
+    <string name="prefs_corners_soft">Weich</string>
+    <string name="prefs_view_title">Standardansicht</string>
+    <string name="prefs_view_detail">Auch die Menüpunkte „Raster“ und „Liste“ der Bibliothek ändern dies.</string>
+    <string name="prefs_sort_title">Standardsortierung</string>
+    <string name="prefs_sort_detail">Auch das Menü „Sortieren nach“ der Bibliothek ändert dies.</string>
+    <string name="prefs_notebooks_title">Notizbücher</string>
+    <string name="prefs_fullscreen_title">Notizbücher im Vollbild starten (Fokusmodus)</string>
+    <string name="prefs_fullscreen_detail">Aus der Bibliothek geöffnete Notizbücher starten mit ausgeblendeten Werkzeugleisten. Mit der Schaltfläche zum Beenden zeigst du sie wieder an.</string>
+    <string name="prefs_privacy_title">Datenschutz</string>
+    <string name="prefs_usage_title">Nutzungsstatistiken und Absturzberichte teilen</string>
+    <string name="prefs_usage_detail">Anonyme Nutzungs- und Absturzberichte über Google Analytics und Crashlytics. Niemals Inhalte, Titel oder Namen deiner Notizen und Bücher.</string>
+    <string name="prefs_trash_title">Papierkorb</string>
+    <string name="prefs_trash_detail">Gelöschte Elemente bleiben so lange im Papierkorb und werden dann beim Start von Folio gelöscht.</string>
+    <plurals name="prefs_retention_days">
+        <item quantity="one">%1$d Tag</item>
+        <item quantity="other">%1$d Tage</item>
+    </plurals>
+    <string name="prefs_retention_never">Nie automatisch löschen</string>
+    <string name="prefs_pen_title">Stift</string>
+    <string name="prefs_pen_pressure_title">Stiftdruck</string>
+    <string name="prefs_pen_pressure_detail">Schweben und leichte Berührung in Notizen, im Reader und in der Bibliothek ignorieren; Druckkurven</string>
+    <string name="prefs_backup_title">Sicherung</string>
+    <string name="prefs_backup_detail">Lokaler Sicherungsordner, jetzt sichern, exportieren und wiederherstellen</string>
+    <string name="prefs_reset">Auf Standard zurücksetzen</string>
+    <string name="prefs_reset_title">Einstellungen zurücksetzen?</string>
+    <string name="prefs_reset_text">Akzentfarbe, Ecken, Ansicht, Sortierung, Vollbild und Aufbewahrung im Papierkorb werden auf ihre Standardwerte zurückgesetzt. Deine Notizbücher und Bücher werden nicht verändert.</string>
+    <string name="prefs_reset_confirm">Zurücksetzen</string>
+    <string name="accent_sage">Salbei</string>
+    <string name="accent_morning">Morgen</string>
+    <string name="accent_evening">Abend</string>
+    <string name="accent_sea">Meer</string>
+    <string name="accent_forest">Wald</string>
+    <string name="accent_lavender">Lavendel</string>
+    <string name="accent_desert">Wüste</string>
+    <string name="accent_graphite">Graphit</string>
+    <string name="sort_edited">Letzte Bearbeitung</string>
+    <string name="sort_created">Erstellungsdatum</string>
+    <string name="sort_type">Dateityp</string>
+    <string name="sort_name">Name</string>
+
+    <!-- About -->
+    <string name="about_title">Über</string>
+    <string name="about_tagline">Handschriftliche Notizen &amp; E-Reader</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_open_allient">allient.io öffnen</string>
+    <string name="about_made_at">Entwickelt bei</string>
+    <string name="about_made_at_allient">Entwickelt bei Allient</string>
+    <string name="about_privacy_title">Deine Notizen bleiben auf diesem Gerät</string>
+    <string name="about_privacy_body">Es gibt keine Konten und keine Cloud-Synchronisierung. Notizbücher, Ordner und Lesenotizen liegen im privaten Speicher der App. Aktiviere daher intelligente Sicherungen oder exportiere eine .folio-Datei, bevor du die App deinstallierst oder ihre Daten löschst.</string>
+    <string name="about_privacy_internet">Folio nutzt das Internet nur für Live-Boards, den Download des Handschriftmodells, Updates über Google Play und anonyme Nutzungsstatistiken, die du in den Einstellungen ausschalten kannst.</string>
+    <string name="about_links">Links</string>
+    <string name="about_link_docs">Dokumentation und weitere Infos</string>
+    <string name="about_link_star">Gefällt dir Folio? Gib einen Stern auf GitHub</string>
+    <string name="about_link_issues">Problem melden</string>
+    <string name="about_link_issues_detail">Ein Issue auf GitHub eröffnen</string>
+    <string name="about_link_privacy">Datenschutzerklärung</string>
+    <string name="about_link_license">Lizenz</string>
+    <string name="about_libraries">Open-Source-Bibliotheken</string>
+    <string name="about_lib_ink">Handschriftstriche und Darstellung</string>
+    <string name="about_lib_pdfium">PDF-Darstellung</string>
+    <string name="about_lib_pdfbox">Export von PDFs mit Anmerkungen</string>
+    <string name="about_lib_readium">EPUB-Lesen</string>
+    <string name="about_lib_mlkit">OCR auf dem Gerät</string>
+    <string name="about_lib_zstd">Komprimierung der Sicherungen</string>
+    <string name="about_lib_lucide">Symbole (ISC)</string>
+    <string name="about_lib_geist">Schriftart der Oberfläche (SIL OFL)</string>
+    <string name="about_footer">Folio ist Open Source unter der Apache License 2.0. Entwickelt von Allient.</string>
+
+    <!-- Backup settings -->
+    <string name="backup_settings_title">Sicherungseinstellungen</string>
+    <string name="backup_restore_version_title">Diese Version wiederherstellen?</string>
+    <string name="backup_restore_version_text">Notizbücher, Ordner und Lesenotizen vom %1$s werden deiner Bibliothek als Kopien hinzugefügt. In deiner aktuellen Bibliothek wird nichts entfernt.</string>
+    <string name="backup_smart_title">Intelligente Sicherungen</string>
+    <string name="backup_explanation">Sichert wenige Minuten, nachdem du eine Notiz schließt oder die App verlässt, und nur, wenn sich etwas geändert hat. Behält aktuelle Versionen und entfernt alte automatisch. PDF- und EPUB-Dateien werden nicht kopiert, deine Notizen und Markierungen schon.</string>
+    <string name="backup_on_status">An: sichert nach Änderungen</string>
+    <string name="backup_choose_to_start">Wähle einen Ordner, um zu beginnen</string>
+    <string name="backup_on_detail">Deine erste Sicherung startet nach der Ordnerauswahl. Bei langen Sitzungen sichert Folio außerdem etwa alle 15 Minuten und prüft alle paar Stunden, ob etwas verpasst wurde. Android kann Hintergrundarbeit verzögern.</string>
+    <string name="backup_off_detail">Aktiviere Sicherungen, um einen Ordner auszuwählen. Wird die Ordnerauswahl abgebrochen, bleiben Sicherungen aus.</string>
+    <string name="backup_files_kept">Vorhandene Sicherungsdateien bleiben erhalten, wenn die Sicherung aus ist.</string>
+    <string name="backup_folder">Sicherungsordner</string>
+    <string name="backup_change_folder">Ordner ändern</string>
+    <string name="backup_last">Letzte Sicherung</string>
+    <string name="backup_state_setting_up">Wird eingerichtet</string>
+    <string name="backup_state_running">Wird gesichert…</string>
+    <string name="backup_state_attention">Aktion erforderlich</string>
+    <string name="backup_state_on">An</string>
+    <string name="backup_state_off">Aus</string>
+    <string name="backup_saving_notes">Deine neuesten Notizen werden gespeichert…</string>
+    <string name="backup_now">Jetzt sichern</string>
+    <string name="backup_versions">Aufbewahrte Versionen</string>
+    <string name="backup_documents_title">Wähle einen Ordner in „Documents“</string>
+    <string name="backup_documents_detail">Öffne in der Android-Ordnerauswahl „Documents“. Du kannst einen Ordner namens „Folio Backups“ erstellen, ihn öffnen und dann auf „Diesen Ordner verwenden“ tippen.</string>
+    <string name="backup_format_detail">Eine .folio-Sicherung enthält Notizbücher und ihre Anhänge sowie Buchtitel aus dem Reader, Dateiverweise, Lesepositionen, Markierungen und Notizen. PDF- und EPUB-Dateien bleiben im Speicher dieses Geräts und werden nicht kopiert; importiere ein Buch nach dem Wiederherstellen auf einem anderen Gerät erneut, um es wieder zu öffnen. Passende Bücher werden wieder mit ihren gespeicherten Anmerkungen verknüpft. Das Wiederherstellen fügt Kopien hinzu und löscht nie deine Bibliothek. Sicherungen bleiben auf diesem Gerät; nichts wird online gesendet.</string>
+    <string name="backup_restore_from">Aus Sicherung wiederherstellen</string>
+
+    <!-- Folder editor -->
+    <string name="folder_eyebrow">DEINE BIBLIOTHEK, ORGANISIERT</string>
+    <string name="folder_title_new">Ein Ort für deine Ideen</string>
+    <string name="folder_title_edit">Mach ihn zu deinem</string>
+    <string name="folder_close_editor">Ordnereditor schließen</string>
+    <string name="folder_live_preview">LIVE-VORSCHAU</string>
+    <string name="folder_placeholder_name">Dein neuer Ordner</string>
+    <!-- %1$s folder style, %2$s folder colour. -->
+    <string name="folder_preview_summary">%1$s · %2$s</string>
+    <string name="folder_name_label">Ordnername</string>
+    <string name="folder_name_hint">z. B. Kreative Projekte</string>
+    <string name="folder_duplicate">Ein Ordner mit diesem Namen existiert bereits.</string>
+    <string name="folder_name_required">Gib deinem Ordner einen Namen.</string>
+    <string name="folder_name_help">Halte zusammengehörige Notizbücher und Dokumente beisammen.</string>
+    <string name="folder_color_title">Ordnerfarbe</string>
+    <string name="folder_color_description">Ordnerfarbe %1$s</string>
+    <string name="folder_style_title">Wähle einen Stil</string>
+    <string name="folder_style_subtitle">Ein bisschen Persönlichkeit</string>
+    <string name="folder_style_description">Ordnerstil %1$s</string>
+    <string name="folder_create">Ordner erstellen</string>
+    <string name="folder_save_changes">Änderungen speichern</string>
+    <string name="folder_style_classic">Klassisch</string>
+    <string name="folder_style_papers">Mit Papieren</string>
+    <string name="folder_style_tabbed">Mit Reiter</string>
+    <string name="folder_style_open">Offen</string>
+    <string name="folder_style_mosaic">Mosaik</string>
+    <string name="folder_color_sage">Salbei</string>
+    <string name="folder_color_blue">Blau</string>
+    <string name="folder_color_lavender">Lavendel</string>
+    <string name="folder_color_rose">Rosé</string>
+    <string name="folder_color_peach">Pfirsich</string>
+    <string name="folder_color_sand">Sand</string>
+    <!-- Preferences groups -->
+    <string name="prefs_group_general">Allgemein</string>
+    <string name="prefs_group_library">Bibliothek</string>
+    <string name="prefs_group_appearance">Darstellung</string>
+    <string name="backup_group_file">Sicherungsdatei</string>
+</resources>

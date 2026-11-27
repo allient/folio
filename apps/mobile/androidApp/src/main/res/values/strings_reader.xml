@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PDF/EPUB reader and Live boards. Keys: reader_*, board_*. Keep top-bar labels short (50 dp actions, 10.5 sp). -->
+<resources>
+    <!-- Opening a book -->
+    <string name="reader_error_not_in_library">This document is no longer in your library</string>
+    <string name="reader_error_file_missing">The original file is not on this device. Re-import the same PDF or EPUB to continue; your saved notes and reading position will reconnect automatically.</string>
+    <string name="reader_error_open">Could not open document</string>
+    <string name="reader_error_open_title">Could not open this document</string>
+    <string name="reader_error_memory_open">Not enough memory to open this document. Your notes are safe on this device; close other apps and try again.</string>
+    <string name="reader_error_memory">Not enough memory to open this. Your notes are safe on this device; close other apps and try again.</string>
+    <string name="reader_error_save">Could not save reader changes</string>
+    <string name="reader_error_operation">Reader operation failed</string>
+    <string name="reader_error_export">Could not export document</string>
+    <string name="reader_error_ocr">Could not recognize text</string>
+    <string name="reader_error_fit">Could not fit page content</string>
+    <string name="reader_error_no_text">No selectable text here. This may be a scanned page; OCR is required for text highlights.</string>
+    <string name="reader_error_no_app_link">No app can open this link</string>
+    <string name="reader_title">Reader</string>
+    <string name="reader_ok">OK</string>
+    <string name="reader_cancel">Cancel</string>
+    <string name="reader_delete">Delete</string>
+    <string name="reader_save">Save</string>
+    <string name="reader_dismiss">Dismiss</string>
+    <string name="reader_back_to_library">Back to library</string>
+    <string name="reader_back_to_reading">Back to reading</string>
+
+    <!-- Pages and chapters -->
+    <string name="reader_chapter_number">Chapter %1$d</string>
+    <string name="reader_page_number">Page %1$d</string>
+    <string name="reader_page_of">Page %1$d of %2$d</string>
+    <string name="reader_page_range">1–%1$d</string>
+    <string name="reader_previous_page">Previous page</string>
+    <string name="reader_next_page">Next page</string>
+    <string name="reader_previous">Previous</string>
+    <string name="reader_next">Next</string>
+    <string name="reader_percent_read">%1$s read</string>
+    <string name="reader_go_to_page">Go to page</string>
+    <string name="reader_go_to_a_page">Go to a page</string>
+    <string name="reader_go">Go</string>
+    <string name="reader_battery">Battery %1$s</string>
+
+    <!-- Top bar -->
+    <string name="reader_open_books">Open books</string>
+    <string name="reader_read">Read</string>
+    <string name="reader_read_mode_description">Read mode, put the pen down</string>
+    <string name="reader_brush_description">%1$s, %2$s. Tap again for pen settings</string>
+    <string name="reader_pen_edit_hint">Tap the selected pen again to edit it.</string>
+    <string name="reader_eraser">Eraser</string>
+    <string name="reader_undo">Undo</string>
+    <string name="reader_redo">Redo</string>
+    <string name="reader_doc">Doc</string>
+    <string name="reader_gestures">Gestures</string>
+    <string name="reader_notes">Notes</string>
+    <string name="reader_bookmark">Bookmark</string>
+    <string name="reader_more">More</string>
+    <string name="reader_close_eraser_options">Close eraser options</string>
+    <string name="reader_stroke_eraser">Stroke eraser</string>
+    <string name="reader_erase_page_ink">Erase all ink on this page</string>
+    <string name="reader_clear_page_question">Clear this page?</string>
+    <string name="reader_erase_all">Erase all</string>
+    <string name="reader_hint_bar_toggle">Tap the middle of the page with a finger to show or hide the bar.</string>
+    <string name="reader_hint_select">Drag across text to select a passage. Long-press a word to select it.</string>
+    <string name="reader_hint_pen">Write directly on the page. Switch to Read to pan or zoom.</string>
+
+    <!-- Selection -->
+    <string name="reader_highlight">Highlight</string>
+    <string name="reader_underline">Underline</string>
+    <string name="reader_add_note">Add note</string>
+    <string name="reader_clip_passage">Passage</string>
+    <string name="reader_share_passage">Share passage</string>
+    <string name="reader_move_toolbar">Move toolbar</string>
+    <string name="reader_solid_underline">Solid underline</string>
+    <string name="reader_wavy_underline">Wavy underline</string>
+    <string name="reader_dashed_underline">Dashed underline</string>
+    <string name="reader_annotation_color">Annotation color</string>
+    <string name="reader_edit_highlight">Edit highlight</string>
+    <string name="reader_edit_underline">Edit underline</string>
+    <string name="reader_copy">Copy</string>
+    <string name="reader_more_selection_actions">More selection actions</string>
+    <string name="reader_search_in_book">Search in book</string>
+    <string name="reader_share">Share</string>
+    <string name="reader_remove_marks">Remove marks</string>
+    <string name="reader_dismiss_selection">Dismiss selection</string>
+
+    <!-- Mark editor and colours -->
+    <string name="reader_mark_preview">A passage of the book</string>
+    <string name="reader_color">Color</string>
+    <string name="reader_color_yellow">Yellow</string>
+    <string name="reader_color_orange">Orange</string>
+    <string name="reader_color_coral">Coral</string>
+    <string name="reader_color_pink">Pink</string>
+    <string name="reader_color_purple">Purple</string>
+    <string name="reader_color_blue">Blue</string>
+    <string name="reader_color_cyan">Cyan</string>
+    <string name="reader_color_green">Green</string>
+    <string name="reader_color_lime">Lime</string>
+    <string name="reader_color_sand">Sand</string>
+    <string name="reader_color_gray">Gray</string>
+    <string name="reader_color_custom">Custom</string>
+    <string name="reader_swatch_description">%1$s highlight</string>
+    <string name="reader_swatch_select">Select %1$s highlight</string>
+    <string name="reader_custom_color">Custom color</string>
+    <string name="reader_pick_custom_color">Pick a custom color</string>
+
+    <!-- Bottom controls -->
+    <string name="reader_tab_progress">Progress</string>
+    <string name="reader_tab_format">Format</string>
+    <string name="reader_tab_contrast">Contrast</string>
+    <string name="reader_tab_navigation">Navigation</string>
+    <string name="reader_tab_split_view">Split View</string>
+    <string name="reader_search">Search</string>
+    <string name="reader_select">Select</string>
+    <string name="reader_handwriting">Handwriting</string>
+    <string name="reader_export_notes">Export notes</string>
+    <string name="reader_page_display">Page Display</string>
+    <string name="reader_single_page">Single-page</string>
+    <string name="reader_scrolling_view">Scrolling View</string>
+    <string name="reader_ltr">LTR</string>
+    <string name="reader_rtl">RTL</string>
+    <string name="reader_zoom">Zoom</string>
+    <string name="reader_zoom_in">Zoom In</string>
+    <string name="reader_zoom_out">Zoom Out</string>
+    <string name="reader_marquee_zoom">Marquee Zoom</string>
+    <string name="reader_marquee_zoom_hint">Drag a rectangle to zoom into that area.</string>
+    <string name="reader_reset_zoom">Reset Zoom</string>
+    <string name="reader_crop">Crop</string>
+    <string name="reader_fit_screen">Fit Screen</string>
+    <string name="reader_fit_width">Fit Width</string>
+    <string name="reader_marquee_crop">Marquee Crop</string>
+    <string name="reader_crop_hint">Drag to select an area. Drag its corners to adjust.</string>
+    <string name="reader_apply_crop">Apply crop</string>
+    <string name="reader_reset">Reset</string>
+    <string name="reader_margin">Margin</string>
+    <string name="reader_text_enhancement">Text Enhancement</string>
+    <string name="reader_text_size">Text size</string>
+    <string name="reader_text_size_value">Text size · %1$s</string>
+    <string name="reader_line_spacing">Line spacing</string>
+    <string name="reader_continuous_scrolling">Continuous scrolling</string>
+    <string name="reader_decrease">Decrease %1$s</string>
+    <string name="reader_increase">Increase %1$s</string>
+    <string name="reader_theme_light">Light</string>
+    <string name="reader_theme_sepia">Sepia</string>
+    <string name="reader_theme_dark">Dark</string>
+    <string name="reader_reading_theme">Reading theme</string>
+    <string name="reader_embolden">Embolden</string>
+    <string name="reader_sharpen">Sharpen Img</string>
+    <string name="reader_watermark_bleaching">Watermark Bleaching</string>
+    <string name="reader_dark_color_enhancement">Dark Color Enhancement</string>
+    <string name="reader_image_smoothing">Image Smoothing</string>
+
+    <!-- Split view -->
+    <string name="reader_split_current_doc">Current Doc</string>
+    <string name="reader_split_another_doc">Another Doc</string>
+    <string name="reader_split_handwritten_notes">Handwritten Notes</string>
+    <string name="reader_split_text_notes">Text Notes</string>
+    <string name="reader_split_style">Split screen style</string>
+    <string name="reader_horizontal">Horizontal</string>
+    <string name="reader_vertical">Vertical</string>
+    <string name="reader_landscape_orientation">Landscape orientation</string>
+    <string name="reader_landscape_auto">Auto</string>
+    <string name="reader_landscape_left">Landscape left</string>
+    <string name="reader_landscape_right">Landscape right</string>
+    <string name="reader_landscape_hint">Rotate your tablet to use landscape. The reader follows the screen orientation.</string>
+    <string name="reader_close_split_view">Close split view</string>
+    <string name="reader_split_document">Split document</string>
+    <string name="reader_split_import_first">Import another PDF or EPUB from the library first.</string>
+    <string name="reader_write_note">Write a note</string>
+    <string name="reader_save_note_here">Save note at current location</string>
+    <string name="reader_split_context_pdf">PDF page %1$d</string>
+    <string name="reader_split_context_epub">EPUB · %1$s</string>
+    <string name="reader_split_context_line">From %1$s · %2$s</string>
+    <string name="reader_split_notebook_title">Notes · %1$s</string>
+
+    <!-- Contents -->
+    <string name="reader_contents">Contents</string>
+    <string name="reader_close_contents">Close contents</string>
+    <string name="reader_collapse_chapter">Collapse %1$s</string>
+    <string name="reader_expand_chapter">Expand %1$s</string>
+    <string name="reader_no_outline">This PDF has no chapter outline. Browse by page.</string>
+    <string name="reader_no_toc">No table of contents available.</string>
+    <string name="reader_toc">TOC</string>
+    <string name="reader_bookmarks">Bookmarks</string>
+    <string name="reader_annotations">Annotations</string>
+    <string name="reader_empty_bookmarks">No bookmarks yet</string>
+    <string name="reader_empty_annotations">No annotations yet</string>
+    <string name="reader_empty_handwriting">No handwriting yet</string>
+    <string name="reader_saved_location">Saved location</string>
+    <string name="reader_kind_highlight">Highlight</string>
+    <string name="reader_kind_underline">Underline</string>
+    <string name="reader_kind_ink">Ink</string>
+    <string name="reader_kind_note">Note</string>
+    <string name="reader_kind_bookmark">Bookmark</string>
+    <string name="reader_annotations_empty">Select text to highlight it, write with Pen, or add a note from the menu.</string>
+
+    <!-- Panels -->
+    <string name="reader_pen_settings">Pen settings</string>
+    <string name="reader_pen_settings_named">Pen settings (%1$s)</string>
+    <string name="reader_pen_settings_hint">Tap the selected pen in the top bar, or long-press any pen, to open these settings while writing.</string>
+    <string name="reader_document">Document</string>
+    <plurals name="reader_document_pages">
+        <item quantity="one">%1$s · %2$d page</item>
+        <item quantity="other">%1$s · %2$d pages</item>
+    </plurals>
+    <string name="reader_document_epub">%1$s · EPUB book</string>
+    <string name="reader_saving">Saving…</string>
+    <string name="reader_saved_on_device">Saved on this device</string>
+    <string name="reader_appearance">Appearance</string>
+    <string name="reader_hide_bar_writing">Hide the bar while writing</string>
+    <string name="reader_gesture_click">Click / Long Press</string>
+    <string name="reader_gesture_slide">Slide / Drag the page</string>
+    <string name="reader_gesture_pinch">Pinch-to-zoom</string>
+    <string name="reader_gesture_system_bars">System Bar Gestures</string>
+    <string name="reader_gesture_bottom">Bottom Gestures</string>
+    <string name="reader_gesture_sides">Side Gestures</string>
+    <string name="reader_gesture_back">Back Button</string>
+    <string name="reader_gestures_help">Center tap always opens controls. Bottom swipe up opens controls; side taps turn pages. Disabling System Bar Gestures keeps system bars visible. Disabling Back opens these settings instead of leaving the reader.</string>
+    <string name="reader_show_footer">Show reading footer</string>
+    <string name="reader_show_book_tabs">Show book tabs</string>
+    <string name="reader_contents_and_bookmarks">Contents and bookmarks</string>
+    <string name="reader_search_this_book">Search this book</string>
+    <string name="reader_highlights_notes_bookmarks">Highlights, notes &amp; bookmarks</string>
+    <string name="reader_recognizing">Recognizing text…</string>
+    <string name="reader_recognize_scanned">Recognize scanned page</string>
+    <plurals name="reader_ocr_recognized">
+        <item quantity="one">Recognized %1$d word on page %2$d. Drag across text to highlight.</item>
+        <item quantity="other">Recognized %1$d words on page %2$d. Drag across text to highlight.</item>
+    </plurals>
+    <string name="reader_ocr_none">No text was recognized on this page.</string>
+    <string name="reader_add_note_here">Add a note at this location</string>
+    <string name="reader_export_reading_notes">Export reading notes (.md)</string>
+    <string name="reader_export_annotated_pdf">Export annotated PDF</string>
+    <string name="reader_original_unchanged">Your original file stays unchanged. Highlights, notes and bookmarks save automatically.</string>
+    <string name="reader_preparing_export">Preparing export…</string>
+
+    <!-- Search -->
+    <string name="reader_search_min_chars">Enter at least two characters</string>
+    <string name="reader_search_match">Match</string>
+    <string name="reader_search_document">Search this document</string>
+    <string name="reader_restart_search">Restart search</string>
+    <string name="reader_find">Find</string>
+    <plurals name="reader_search_matches">
+        <item quantity="one">%1$d match</item>
+        <item quantity="other">%1$d matches</item>
+    </plurals>
+    <string name="reader_search_matches_capped">%1$d matches (first %2$d)</string>
+
+    <!-- Notes -->
+    <string name="reader_add_reading_note">Add reading note</string>
+    <string name="reader_edit_note">Edit note</string>
+    <string name="reader_your_note">Your note</string>
+    <string name="reader_save_note">Save note</string>
+
+    <!-- Live boards -->
+    <string name="board_back_to_boards">Back to boards</string>
+    <string name="board_live_session">Live session</string>
+    <string name="board_live_board">Live board</string>
+    <string name="board_fingers_on">Fingers on: pan and zoom</string>
+    <string name="board_fingers_off">Fingers off: pen only</string>
+    <string name="board_pen_on_board">Pen on the board</string>
+    <string name="board_share">Share</string>
+    <string name="board_rename_title">Rename board</string>
+    <string name="board_rename">Rename</string>
+    <string name="board_untitled">Untitled board</string>
+    <string name="board_cancel">Cancel</string>
+    <string name="board_done">Done</string>
+    <string name="board_share_title">Share board</string>
+    <string name="board_link_help">People with this link see the board and draw on it live, from any browser. The session is end-to-end encrypted.</string>
+    <string name="board_clip_label">Folio live board</string>
+    <string name="board_copied">Copied</string>
+    <string name="board_copy_link">Copy link</string>
+    <string name="board_join_message">Join my Folio board: %1$s</string>
+    <string name="board_send_live_link">Send live link</string>
+    <string name="board_send_link">Send link…</string>
+    <string name="board_stop_session">Stop session…</string>
+    <string name="board_start_help">Start a session and send the link in your call. Others watch and draw from any browser; the session is end-to-end encrypted.</string>
+    <string name="board_start_session">Start live session</string>
+    <string name="board_join_session">Join a session</string>
+    <string name="board_paste">Paste</string>
+    <string name="board_join">Join</string>
+    <string name="board_export">Export</string>
+    <string name="board_export_image">Image (PNG)</string>
+    <string name="board_export_file">Excalidraw file</string>
+    <string name="board_pressure_help">The activation threshold and pressure curve come from your pen settings. These options apply to live boards only.</string>
+    <string name="board_sensitivity">Sensitivity</string>
+    <string name="board_sensitivity_help">Higher reaches full width with a lighter touch. %1$s is linear.</string>
+    <string name="board_lightest_stroke">Lightest stroke</string>
+    <string name="board_strongest_stroke">Strongest stroke</string>
+    <string name="board_smoothing">Smoothing</string>
+    <string name="board_reset_defaults">Reset to defaults</string>
+    <string name="board_pen_settings">Pen settings…</string>
+</resources>

@@ -31,6 +31,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -47,6 +50,43 @@ import kotlin.math.hypot
 
 internal enum class CurveChannel(val label: String, val key: String, val legacyKey: String) {
     Pressure("Pressure", "pressure", "curve"), Velocity("Velocity", "velocity", "velocityCurve"), Tilt("Tilt", "tilt", "tiltCurve")
+}
+
+/** Translated names; [CurveChannel.label], [CurvePreset.label] and profile names stay English ids. */
+private val CurveChannel.labelRes: Int @StringRes get() = when (this) {
+    CurveChannel.Pressure -> R.string.tools_channel_pressure
+    CurveChannel.Velocity -> R.string.tools_channel_velocity
+    CurveChannel.Tilt -> R.string.tools_channel_tilt
+}
+
+private val CurveChannel.curveRes: Int @StringRes get() = when (this) {
+    CurveChannel.Pressure -> R.string.tools_curve_named_pressure
+    CurveChannel.Velocity -> R.string.tools_curve_named_velocity
+    CurveChannel.Tilt -> R.string.tools_curve_named_tilt
+}
+
+private val CurvePreset.labelRes: Int @StringRes get() = when (this) {
+    CurvePreset.Linear -> R.string.tools_curve_linear
+    CurvePreset.Exponential -> R.string.tools_curve_exponential
+    CurvePreset.Logarithmic -> R.string.tools_curve_logarithmic
+    CurvePreset.SCurve -> R.string.tools_curve_s
+    CurvePreset.InverseS -> R.string.tools_curve_inverse_s
+    CurvePreset.Custom -> R.string.tools_curve_custom
+}
+
+private val CurvePreset.curveRes: Int @StringRes get() = when (this) {
+    CurvePreset.Linear -> R.string.tools_curve_named_linear
+    CurvePreset.Exponential -> R.string.tools_curve_named_exponential
+    CurvePreset.Logarithmic -> R.string.tools_curve_named_logarithmic
+    CurvePreset.SCurve -> R.string.tools_curve_s
+    CurvePreset.InverseS -> R.string.tools_curve_named_inverse_s
+    CurvePreset.Custom -> R.string.tools_curve_named_custom
+}
+
+@StringRes private fun profileLabel(name: String): Int = when (name) {
+    "Soft" -> R.string.tools_profile_soft
+    "Firm" -> R.string.tools_profile_firm
+    else -> R.string.tools_profile_balanced
 }
 
 private val GraphBackground = Color(0xFFFAFAF8)
@@ -104,8 +144,8 @@ internal fun PressureDialog(
         FolioDialogSurface(Modifier.fillMaxWidth(.94f).widthIn(max = 520.dp).heightIn(max = screenHeight * .92f)) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Global curves", modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.Medium, color = ChromeInk)
-                    TextButton(onClick = onDismiss) { Text("Done") }
+                    Text(stringResource(R.string.tools_curves_title), modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.Medium, color = ChromeInk)
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.tools_done)) }
                 }
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -117,15 +157,15 @@ internal fun PressureDialog(
                 Box(Modifier.fillMaxWidth().height(1.dp).background(ChromeLine))
                 Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Activation threshold", modifier = Modifier.weight(1f), fontSize = 13.sp, color = ChromeInk)
-                    Text("${(threshold * 100).toInt()}%", fontSize = 13.sp, color = ChromeInk)
+                    Text(stringResource(R.string.tools_activation_threshold), modifier = Modifier.weight(1f), fontSize = 13.sp, color = ChromeInk)
+                    Text(stringResource(R.string.tools_percent, (threshold * 100).toInt()), fontSize = 13.sp, color = ChromeInk)
                 }
-                Text("Ignores hover and light contact below this pressure.", fontSize = 11.sp, color = ChromeMuted)
-                LineSlider(threshold, 0f..0.5f, "Activation threshold", onValueChange = onThreshold)
+                Text(stringResource(R.string.tools_activation_hint), fontSize = 11.sp, color = ChromeMuted)
+                LineSlider(threshold, 0f..0.5f, stringResource(R.string.tools_activation_threshold), onValueChange = onThreshold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     pressureProfiles.forEach { profile ->
                         FilterChip(selected = profileName == profile.name, onClick = { onProfile(profile) },
-                            label = { Text("${profile.name} ${(profile.threshold * 100).toInt()}%", fontSize = 11.sp) })
+                            label = { Text(stringResource(R.string.tools_profile_chip, stringResource(profileLabel(profile.name)), (profile.threshold * 100).toInt()), fontSize = 11.sp) })
                     }
                 }
             }
@@ -141,10 +181,12 @@ internal fun PressureDialog(
 
 @Composable
 private fun GlobalCurveCard(channel: CurveChannel, curve: ResponseCurve, enabled: Boolean, onOpen: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier.semantics { contentDescription = "${channel.label} curve" }, horizontalAlignment = Alignment.CenterHorizontally) {
+    val description = stringResource(channel.curveRes)
+    val heading = stringResource(channel.labelRes).uppercase(LocalConfiguration.current.locales[0])
+    Column(modifier.semantics { contentDescription = description }, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.fillMaxWidth().height(34.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFF1F1EF))
             .clickable(role = Role.Button, onClick = onOpen), contentAlignment = Alignment.Center) {
-            Text(channel.label.uppercase() + if (enabled) "" else " · OFF", fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+            Text(if (enabled) heading else stringResource(R.string.tools_channel_off, heading),fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
                 letterSpacing = 1.sp, color = if (enabled) ChromeInk else ChromeMuted)
         }
         Spacer(Modifier.height(8.dp))
@@ -189,8 +231,8 @@ private fun CurveEditorDialog(
         FolioDialogSurface(Modifier.fillMaxWidth(.92f).widthIn(max = 460.dp)) {
             Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    InkToolButton(InkIcon.Undo, "Undo curve change", { history.lastOrNull()?.let { history = history.dropLast(1); currentOnCurve(it) } },
-                        enabled = history.isNotEmpty(), buttonSize = 40.dp)
+                    InkToolButton(InkIcon.Undo, stringResource(R.string.tools_undo_curve), { history.lastOrNull()?.let { history = history.dropLast(1); currentOnCurve(it) } },
+                        enabled = history.isNotEmpty(), buttonSize = 40.dp, tag = "Undo curve change")
                     Spacer(Modifier.weight(1f))
                     CurvePreset.entries.filter { it != CurvePreset.Custom }.forEach { preset ->
                         PresetButton(preset, curve.preset == preset) { apply(ResponseCurve.of(preset)) }
@@ -199,21 +241,24 @@ private fun CurveEditorDialog(
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.width(22.dp), contentAlignment = Alignment.Center) {
-                        Text("Strength", fontSize = 11.sp, color = ChromeMuted, softWrap = false, modifier = Modifier.wrapContentSize(unbounded = true).rotate(-90f))
+                        Text(stringResource(R.string.tools_strength), fontSize = 11.sp, color = ChromeMuted, softWrap = false, modifier = Modifier.wrapContentSize(unbounded = true).rotate(-90f))
                     }
                     CurveGraphEditor(curve, Modifier.weight(1f).aspectRatio(1f), onDragStart = { history = history + current }, onChange = { currentOnCurve(it) })
                 }
-                Text(channel.label, fontSize = 11.sp, color = ChromeMuted, modifier = Modifier.fillMaxWidth().padding(start = 22.dp, top = 4.dp),
+                Text(stringResource(channel.labelRes), fontSize = 11.sp, color = ChromeMuted, modifier = Modifier.fillMaxWidth().padding(start = 22.dp, top = 4.dp),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (channel == CurveChannel.Pressure) "Apply pressure curve" else "Apply ${channel.label.lowercase()} to strokes",
-                        modifier = Modifier.weight(1f), fontSize = 13.sp, color = ChromeInk)
+                    Text(stringResource(when (channel) {
+                        CurveChannel.Pressure -> R.string.tools_apply_pressure
+                        CurveChannel.Velocity -> R.string.tools_apply_velocity
+                        CurveChannel.Tilt -> R.string.tools_apply_tilt
+                    }), modifier = Modifier.weight(1f), fontSize = 13.sp, color = ChromeInk)
                     Switch(checked = enabled, onCheckedChange = onEnabled)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(curve.preset.label, modifier = Modifier.weight(1f), fontSize = 12.sp, color = ChromeMuted)
-                    TextButton(onClick = onDismiss) { Text("Done") }
+                    Text(stringResource(curve.preset.labelRes), modifier = Modifier.weight(1f), fontSize = 12.sp, color = ChromeMuted)
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.tools_done)) }
                 }
             }
         }
@@ -223,10 +268,11 @@ private fun CurveEditorDialog(
 @Composable
 private fun PresetButton(preset: CurvePreset, selected: Boolean, size: Dp = 40.dp, onClick: () -> Unit) {
     val curve = remember(preset) { ResponseCurve.of(preset) }
+    val description = stringResource(preset.curveRes)
     Canvas(Modifier.size(size).clip(RoundedCornerShape(6.dp)).background(if (selected) Color(0xFFE6E6E3) else Color.Transparent)
         .border(BorderStroke(if (selected) 1.5.dp else 1.dp, if (selected) ChromeInk else ChromeLine), RoundedCornerShape(6.dp))
         .clickable(role = Role.Button, onClick = onClick)
-        .semantics { contentDescription = "${preset.label} curve"; this.selected = selected }) {
+        .semantics { contentDescription = description; this.selected = selected }) {
         drawCurveGraph(curve, 7.dp.toPx(), ChromeInk, 1.6.dp.toPx(), grid = false)
     }
 }
@@ -236,9 +282,11 @@ private fun CurveGraphEditor(curve: ResponseCurve, modifier: Modifier, onDragSta
     val current by rememberUpdatedState(curve)
     val currentStart by rememberUpdatedState(onDragStart)
     val currentChange by rememberUpdatedState(onChange)
+    val editorDescription = stringResource(R.string.tools_curve_editor)
+    val pointsDescription = pluralStringResource(R.plurals.tools_control_points, curve.points.size, curve.points.size)
     Canvas(
         modifier.clip(RoundedCornerShape(10.dp)).background(GraphBackground).border(1.dp, ChromeLine, RoundedCornerShape(10.dp))
-            .semantics { contentDescription = "Curve editor"; stateDescription = "${curve.points.size} draggable control points" }
+            .semantics { contentDescription = editorDescription; stateDescription = pointsDescription }
             .pointerInput(Unit) {
                 val pad = 16.dp.toPx()
                 awaitEachGesture {
