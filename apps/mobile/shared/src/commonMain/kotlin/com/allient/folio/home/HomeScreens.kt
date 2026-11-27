@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -152,7 +153,8 @@ internal fun PreferenceRow(title: String, detail: String? = null, modifier: Modi
  * The button is tagged [tag]; each option keeps the tag the old radio rows had (`"$optionTag-<id>"`).
  */
 @Composable
-private fun <T> PreferenceSelect(options: List<Pair<T, String>>, selected: T, tag: String, optionTag: String, onSelect: (T) -> Unit) {
+private fun <T> PreferenceSelect(options: List<Pair<T, String>>, selected: T, tag: String, optionTag: String,
+                                  leading: (@Composable (T) -> Unit)? = null, onSelect: (T) -> Unit) {
     val style = LocalHomeStyle.current
     var open by remember { mutableStateOf(false) }
     val current = options.firstOrNull { it.first == selected }?.second.orEmpty()
@@ -161,6 +163,7 @@ private fun <T> PreferenceSelect(options: List<Pair<T, String>>, selected: T, ta
             .border(1.dp, HomeLine, RoundedCornerShape(style.item)).background(HomeBackground)
             .clickable(role = Role.DropdownList, onClickLabel = current) { open = true }.padding(start = 14.dp, end = 10.dp).testTag(tag),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            leading?.invoke(selected)
             Text(current, Modifier.weight(1f, fill = false), fontSize = 14.sp, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
             HomeSymbol(Symbol.ChevronDown, Modifier.size(16.dp))
         }
@@ -169,11 +172,20 @@ private fun <T> PreferenceSelect(options: List<Pair<T, String>>, selected: T, ta
                 val chosen = id == selected
                 DropdownMenuItem(text = { Text(label, fontSize = 14.sp, fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Normal, color = HomeInk) },
                     onClick = { open = false; if (!chosen) onSelect(id) },
+                    leadingIcon = leading?.let { { it(id) } },
                     trailingIcon = { if (chosen) HomeSymbol(Symbol.Check, Modifier.size(16.dp), tint = style.accent) else Spacer(Modifier.size(16.dp)) },
                     modifier = Modifier.testTag("$optionTag-$id").semantics { this.selected = chosen })
             }
         }
     }
+}
+
+/** The device-language phone icon, or the language's flag. */
+@Composable
+private fun LanguageMark(tag: String) {
+    val flag = com.allient.folio.AppLanguages.supported.firstOrNull { it.tag == tag }?.flag
+    if (flag == null) HomeSymbol(Symbol.Smartphone, Modifier.size(18.dp))
+    else Text(flag, fontSize = 18.sp, modifier = Modifier.clearAndSetSemantics { })
 }
 
 @Composable
@@ -212,7 +224,8 @@ internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreference
                 PreferenceGroup(stringResource(Res.string.prefs_group_general)) {
                     val languages = listOf("" to stringResource(Res.string.pref_language_system)) + com.allient.folio.AppLanguages.supported.map { it.tag to it.nativeName }
                     PreferenceRow(stringResource(Res.string.pref_language_title), stringResource(Res.string.pref_language_detail)) {
-                        PreferenceSelect(languages, value.language, "pref-language", "language") { onChange(value.copy(language = it)) }
+                        // A flag beside each language and a phone for "Device language" make the list quick to scan.
+                        PreferenceSelect(languages, value.language, "pref-language", "language", leading = { tag -> LanguageMark(tag) }) { onChange(value.copy(language = it)) }
                     }
                     PreferenceDivider()
                     PreferenceRow(stringResource(Res.string.prefs_fullscreen_title), stringResource(Res.string.prefs_fullscreen_detail),

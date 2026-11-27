@@ -10,13 +10,20 @@ class AppLanguagesTest {
         assertEquals("en", AppLanguages.resolve(listOf("en-GB")))
     }
 
+    @Test fun newerLanguagesAreUsedFromTheSystem() {
+        assertEquals("fr", AppLanguages.resolve(listOf("fr-CA")))
+        assertEquals("de", AppLanguages.resolve(listOf("de-AT")))
+        assertEquals("hi", AppLanguages.resolve(listOf("hi-IN")))
+        assertEquals("zh", AppLanguages.resolve(listOf("zh-Hans-CN")))
+    }
+
     @Test fun unsupportedSystemLanguageFallsBackToEnglish() {
-        assertEquals("en", AppLanguages.resolve(listOf("fr-FR")))
+        assertEquals("en", AppLanguages.resolve(listOf("it-IT")))
         assertEquals("en", AppLanguages.resolve(emptyList()))
     }
 
     @Test fun firstSupportedLanguageInThePreferenceListWins() {
-        assertEquals("pt", AppLanguages.resolve(listOf("fr-FR", "pt-PT", "es-ES")))
+        assertEquals("pt", AppLanguages.resolve(listOf("it-IT", "pt-PT", "es-ES")))
     }
 
     @Test fun tagsAreMatchedByLanguageWhateverTheirCaseOrSeparator() {
@@ -25,13 +32,17 @@ class AppLanguagesTest {
 
     @Test fun choiceMeansSystemWhenEmptyOrUnknown() {
         assertEquals("", AppLanguages.choice(""))
-        assertEquals("", AppLanguages.choice("fr"))
+        assertEquals("", AppLanguages.choice("it"))
         assertEquals("pt", AppLanguages.choice("pt-BR"))
         assertEquals("es", AppLanguages.choice("es"))
     }
 
+    @Test fun everyLanguageHasAFlag() {
+        assertEquals(listOf("🇺🇸", "🇪🇸", "🇧🇷", "🇫🇷", "🇩🇪", "🇮🇳", "🇨🇳"), AppLanguages.supported.map { it.flag })
+    }
+
     @Test fun everyLanguageHasItsOwnName() {
-        assertEquals(listOf("en", "es", "pt"), AppLanguages.supported.map { it.tag })
-        assertEquals(listOf("English", "Español", "Português (Brasil)"), AppLanguages.supported.map { it.nativeName })
+        assertEquals(listOf("en", "es", "pt", "fr", "de", "hi", "zh"), AppLanguages.supported.map { it.tag })
+        assertEquals(listOf("English", "Español", "Português (Brasil)", "Français", "Deutsch", "हिन्दी", "简体中文"), AppLanguages.supported.map { it.nativeName })
     }
 }

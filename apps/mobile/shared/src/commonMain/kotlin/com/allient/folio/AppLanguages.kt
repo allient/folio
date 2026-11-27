@@ -1,7 +1,10 @@
 package com.allient.folio
 
-/** A language Folio ships translations for. [tag] is the BCP 47 language (the `values-<tag>` resource folders). */
-data class AppLanguage(val tag: String, val nativeName: String)
+/**
+ * A language Folio ships translations for. [tag] is the BCP 47 language (the `values-<tag>` resource folders);
+ * [flag] is the emoji shown next to its name in the language picker.
+ */
+data class AppLanguage(val tag: String, val nativeName: String, val flag: String)
 
 /**
  * The languages Folio is translated into. English is the default and the fallback for any other system language.
@@ -13,9 +16,14 @@ object AppLanguages {
     const val DEFAULT = "en"
 
     val supported = listOf(
-        AppLanguage("en", "English"),
-        AppLanguage("es", "Español"),
-        AppLanguage("pt", "Português (Brasil)"),
+        AppLanguage("en", "English", "🇺🇸"),
+        AppLanguage("es", "Español", "🇪🇸"),
+        AppLanguage("pt", "Português (Brasil)", "🇧🇷"),
+        AppLanguage("fr", "Français", "🇫🇷"),
+        AppLanguage("de", "Deutsch", "🇩🇪"),
+        AppLanguage("hi", "हिन्दी", "🇮🇳"),
+        // values-zh holds Simplified Chinese, so every Chinese locale (including Traditional) gets it rather than English.
+        AppLanguage("zh", "简体中文", "🇨🇳"),
     )
 
     private fun language(tag: String) = tag.replace('_', '-').substringBefore('-').lowercase()

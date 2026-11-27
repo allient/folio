@@ -83,7 +83,7 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 - Export pages as PDF or PNG, or a notebook as an editable `.folio` file.
 
 **In your language**
-- English, Spanish and Brazilian Portuguese. Folio follows your device language (English if it isn't one of these), or pick one in **Preferences → Language**.
+- English, Spanish, Brazilian Portuguese, French, German, Hindi and Simplified Chinese. Folio follows your device language (English if it isn't one of these), or pick one in **Preferences → Language**.
 
 ## Privacy
 

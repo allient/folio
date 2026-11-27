@@ -71,7 +71,7 @@ internal enum class Symbol(val icon: ImageVector) {
     Trash(Lucide.Trash2), Copy(Lucide.Copy), Rename(Lucide.PencilLine), Share(Lucide.Share2), Folder(Lucide.Folder),
     All(Lucide.LayoutGrid), Star(Lucide.Star), Clock(Lucide.Clock), Hub(Lucide.Presentation), Tag(Lucide.Tag),
     Search(Lucide.Search), Menu(Lucide.Menu), Back(Lucide.ArrowLeft), Plus(Lucide.Plus), Close(Lucide.X), More(Lucide.Menu),
-    Download(Lucide.Download), Sidebar(Lucide.PanelLeft), ChevronDown(Lucide.ChevronDown), ChevronRight(Lucide.ChevronRight),
+    Download(Lucide.Download), Sidebar(Lucide.PanelLeft), ChevronDown(Lucide.ChevronDown), Smartphone(Lucide.Smartphone), ChevronRight(Lucide.ChevronRight),
     Check(Lucide.Check), Gear(Lucide.Settings), Info(Lucide.Info), Book(Lucide.BookOpen), Notes(Lucide.NotebookText),
     Dots(Lucide.EllipsisVertical), Select(Lucide.SquareCheck), Open(Lucide.ExternalLink),
     // Create menu: one distinct icon per action.
