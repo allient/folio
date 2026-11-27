@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -40,19 +41,23 @@ internal fun ReaderSelectionToolbar(
     var underlineMenu by remember { mutableStateOf(false) }
     var moreMenu by remember { mutableStateOf(false) }
     val view = LocalView.current
-    @Composable fun action(icon: InkIcon, label: String, enabled: Boolean = true, action: () -> Unit) {
-        IconButton(onClick = action, enabled = enabled, modifier = Modifier.size(40.dp).testTag("reader-selection-${stableControlSlug(label)}")
+    // [tag] is the English name behind the stable test tag; [label] is the translated description.
+    @Composable fun action(icon: InkIcon, label: String, tag: String, enabled: Boolean = true, action: () -> Unit) {
+        IconButton(onClick = action, enabled = enabled, modifier = Modifier.size(40.dp).testTag("reader-selection-${stableControlSlug(tag)}")
             .semantics { contentDescription = label }) {
             InkSymbol(icon, Modifier.size(20.dp), if (enabled) ink else ink.copy(alpha = .3f))
         }
     }
-    @Composable fun menuItem(icon: InkIcon, label: String, enabled: Boolean = true, action: () -> Unit) {
-        DropdownMenuItem(text = { Text(label) }, enabled = enabled, onClick = action, modifier = Modifier.testTag("reader-selection-${stableControlSlug(label)}"),
+    @Composable fun menuItem(icon: InkIcon, label: String, tag: String, enabled: Boolean = true, action: () -> Unit) {
+        DropdownMenuItem(text = { Text(label) }, enabled = enabled, onClick = action, modifier = Modifier.testTag("reader-selection-${stableControlSlug(tag)}"),
             leadingIcon = { InkSymbol(icon, Modifier.size(20.dp), if (enabled) ink else ink.copy(alpha = .3f)) })
     }
+    val moveToolbar = stringResource(R.string.reader_move_toolbar)
+    val annotationColor = stringResource(R.string.reader_annotation_color)
+    val editHighlight = stringResource(R.string.reader_edit_highlight)
     Row(modifier.height(44.dp).padding(horizontal = 2.dp), verticalAlignment = Alignment.CenterVertically) {
         // The popup window moves while it is dragged, so deltas come from screen coordinates, not from the moving window.
-        Box(Modifier.width(26.dp).fillMaxHeight().testTag("reader-selection-move").semantics { contentDescription = "Move toolbar" }
+        Box(Modifier.width(26.dp).fillMaxHeight().testTag("reader-selection-move").semantics { contentDescription = moveToolbar }
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -69,17 +74,17 @@ internal fun ReaderSelectionToolbar(
             }, contentAlignment = Alignment.Center) {
             LucideGlyph(Lucide.GripVertical, Modifier.size(18.dp), ink.copy(alpha = .45f))
         }
-        action(InkIcon.ReaderHighlight, "Highlight", action = onHighlight)
+        action(InkIcon.ReaderHighlight, stringResource(R.string.reader_highlight), "Highlight", action = onHighlight)
         Box {
-            action(InkIcon.ReaderUnderline, "Underline") { if (supportsLineStyles) underlineMenu = true else onUnderline("solid") }
+            action(InkIcon.ReaderUnderline, stringResource(R.string.reader_underline), "Underline") { if (supportsLineStyles) underlineMenu = true else onUnderline("solid") }
             DropdownMenu(underlineMenu, { underlineMenu = false }) {
-                menuItem(InkIcon.ReaderUnderline, "Solid underline") { underlineMenu = false; onUnderline("solid") }
-                menuItem(InkIcon.ReaderWavy, "Wavy underline") { underlineMenu = false; onUnderline("wavy") }
-                menuItem(InkIcon.ReaderDashed, "Dashed underline") { underlineMenu = false; onUnderline("dashed") }
+                menuItem(InkIcon.ReaderUnderline, stringResource(R.string.reader_solid_underline), "Solid underline") { underlineMenu = false; onUnderline("solid") }
+                menuItem(InkIcon.ReaderWavy, stringResource(R.string.reader_wavy_underline), "Wavy underline") { underlineMenu = false; onUnderline("wavy") }
+                menuItem(InkIcon.ReaderDashed, stringResource(R.string.reader_dashed_underline), "Dashed underline") { underlineMenu = false; onUnderline("dashed") }
             }
         }
         Box {
-            IconButton(onClick = { colorMenu = true }, modifier = Modifier.size(40.dp).testTag("reader-selection-color").semantics { contentDescription = "Annotation color" }) {
+            IconButton(onClick = { colorMenu = true }, modifier = Modifier.size(40.dp).testTag("reader-selection-color").semantics { contentDescription = annotationColor }) {
                 Box(Modifier.size(20.dp).background(Color(color), RoundedCornerShape(5.dp)).border(1.dp, ink.copy(alpha = .5f), RoundedCornerShape(5.dp)))
             }
             DropdownMenu(colorMenu, { colorMenu = false }) {
@@ -88,20 +93,20 @@ internal fun ReaderSelectionToolbar(
         }
         // A long press selects a word even inside a saved mark; this opens that mark's editor (type, color, delete).
         onEditMark?.let { edit ->
-            IconButton(onClick = edit, modifier = Modifier.size(40.dp).testTag("reader-selection-edit-mark").semantics { contentDescription = "Edit highlight" }) {
+            IconButton(onClick = edit, modifier = Modifier.size(40.dp).testTag("reader-selection-edit-mark").semantics { contentDescription = editHighlight }) {
                 LucideGlyph(Lucide.Palette, Modifier.size(20.dp), ink)
             }
         }
-        action(InkIcon.Copy, "Copy", action = onCopy)
-        action(InkIcon.Rename, "Add note", action = onNote)
+        action(InkIcon.Copy, stringResource(R.string.reader_copy), "Copy", action = onCopy)
+        action(InkIcon.Rename, stringResource(R.string.reader_add_note), "Add note", action = onNote)
         Box {
-            action(InkIcon.More, "More selection actions") { moreMenu = true }
+            action(InkIcon.More, stringResource(R.string.reader_more_selection_actions), "More selection actions") { moreMenu = true }
             DropdownMenu(moreMenu, { moreMenu = false }) {
-                menuItem(InkIcon.Search, "Search in book") { moreMenu = false; onSearch() }
-                menuItem(InkIcon.Share, "Share") { moreMenu = false; onShare() }
-                menuItem(InkIcon.Trash, "Remove marks", canRemove) { moreMenu = false; onRemove() }
+                menuItem(InkIcon.Search, stringResource(R.string.reader_search_in_book), "Search in book") { moreMenu = false; onSearch() }
+                menuItem(InkIcon.Share, stringResource(R.string.reader_share), "Share") { moreMenu = false; onShare() }
+                menuItem(InkIcon.Trash, stringResource(R.string.reader_remove_marks), "Remove marks", canRemove) { moreMenu = false; onRemove() }
             }
         }
-        action(InkIcon.Close, "Dismiss selection", action = onDismiss)
+        action(InkIcon.Close, stringResource(R.string.reader_dismiss_selection), "Dismiss selection", action = onDismiss)
     }
 }

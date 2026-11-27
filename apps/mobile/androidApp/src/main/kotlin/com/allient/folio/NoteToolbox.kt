@@ -26,6 +26,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
 import kotlin.math.roundToInt
 
 private val toolboxTools = linkedMapOf(
@@ -37,6 +39,24 @@ private val toolboxTools = linkedMapOf(
     "Table" to InkIcon.Table, "Stickers" to InkIcon.Sticker, "Sticky" to InkIcon.Sticky, "Ruler" to InkIcon.Ruler,
 )
 private val defaultTools = listOf("Undo", "Redo", "Eraser")
+
+/** Tool ids are saved in preferences and sent to the editor; only their labels are translated. */
+@StringRes private fun toolLabel(tool: String): Int = when (tool) {
+    "Undo" -> R.string.tools_tool_undo; "Redo" -> R.string.tools_tool_redo; "Eraser" -> R.string.tools_tool_eraser
+    "Shapes" -> R.string.tools_tool_shapes; "Lasso" -> R.string.tools_tool_lasso; "Layers" -> R.string.tools_tool_layers
+    "Templates" -> R.string.tools_tool_templates; "Pressure" -> R.string.tools_tool_pressure; "Zoom" -> R.string.tools_tool_zoom
+    "Text" -> R.string.tools_tool_text; "Insert" -> R.string.tools_tool_insert; "Page +" -> R.string.tools_tool_add_page
+    "Pages" -> R.string.tools_tool_pages; "Share" -> R.string.tools_tool_share; "Gestures" -> R.string.tools_tool_gestures
+    "Table" -> R.string.tools_tool_table; "Stickers" -> R.string.tools_tool_stickers; "Sticky" -> R.string.tools_tool_sticky
+    else -> R.string.tools_tool_ruler
+}
+
+/** Built-in toolboxes keep their English names in preferences; names the user typed are shown as saved. */
+private val builtInToolboxes = mapOf("Default" to R.string.tools_toolbox_default, "Meeting" to R.string.tools_toolbox_meeting,
+    "Sketching" to R.string.tools_toolbox_sketching, "Journaling" to R.string.tools_toolbox_journaling)
+
+@Composable
+private fun toolboxName(name: String): String = builtInToolboxes[name]?.let { stringResource(it) } ?: name
 
 /** The floating toolbar's row (horizontal) or column (vertical); both scroll when the screen is too small. */
 @Composable
@@ -96,12 +116,13 @@ internal fun NoteToolbox(
             shape = RoundedCornerShape(if (vertical) 24.dp else 28.dp), color = Color(0xFFFAFAFA), shadowElevation = 4.dp,
             border = androidx.compose.foundation.BorderStroke(1.dp, ChromeLine)) {
             ToolboxBar(vertical) {
-                Box(Modifier.then(if (vertical) Modifier.width(44.dp).height(24.dp) else Modifier.width(24.dp).height(44.dp)).semantics { contentDescription = "Drag floating toolbar" }
+                val dragDescription = stringResource(R.string.tools_drag_toolbar)
+                Box(Modifier.then(if (vertical) Modifier.width(44.dp).height(24.dp) else Modifier.width(24.dp).height(44.dp)).semantics { contentDescription = dragDescription }
                     .pointerInput(limitX, limitY) { detectDragGestures(onDragEnd = { prefs.edit().putFloat("x", position.x).putFloat("y", position.y).apply() }) { change, delta ->
                         change.consume(); position = Offset((position.x + delta.x).coerceIn(0f, limitX), (position.y + delta.y).coerceIn(0f, limitY))
                     } }, contentAlignment = Alignment.Center) { Text("⠿", color = ChromeMuted) }
-                InkToolButton(InkIcon.Collapse, "Exit full screen", onExit)
-                if (brushReordering) Text("Reordering brushes", Modifier.padding(horizontal = 4.dp), fontSize = 9.sp, color = Color(0xFF287463))
+                InkToolButton(InkIcon.Collapse, stringResource(R.string.tools_exit_full_screen), onExit, tag = "Exit full screen")
+                if (brushReordering) Text(stringResource(R.string.tools_reordering_brushes),Modifier.padding(horizontal = 4.dp), fontSize = 9.sp, color = Color(0xFF287463))
                 // At most five brushes are visible; extra presets scroll inside this strip only.
                 val shown = brushes.filter { it.presetId in brushNames }.distinctBy { it.presetId }
                 val brushListState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -112,7 +133,8 @@ internal fun NoteToolbox(
                         brushListState.animateScrollToItem((index - 2).coerceAtLeast(0))
                 }
                 val brushItem: @Composable (BrushStyle) -> Unit = { brush ->
-                    BrushPreset(brush.label, widthMillimetres(brush), brush.color, !selected.eraser && selected.presetId == brush.presetId, scale = scale, verticalDrag = vertical, onClick = {
+                    BrushPreset(brushLabel(brush), widthMillimetres(brush), brush.color, !selected.eraser && selected.presetId == brush.presetId, scale = scale,
+                        id = brush.label, glyph = brush.label, verticalDrag = vertical, onClick = {
                         if (!selected.eraser && selected.presetId == brush.presetId) panel = "brush" else onBrush(brush)
                     }, onReorderStart = { brushReordering = true }, onReorderDrag = { draggedId, delta ->
                         brushDragRemainder += delta
@@ -134,61 +156,66 @@ internal fun NoteToolbox(
                     state = brushListState, userScrollEnabled = shown.size > 5, horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically) { items(shown, key = { it.presetId }) { brushItem(it) } }
                 if (vertical) HorizontalDivider(Modifier.padding(vertical = 3.dp).width(24.dp), color = ChromeLine) else ChromeDivider()
-                tools.forEach { tool -> InkToolButton(toolboxTools.getValue(tool), tool, { onAction(tool) },
-                    enabled = when(tool) { "Undo" -> canUndo; "Redo" -> canRedo; else -> true }) }
+                tools.forEach { tool -> InkToolButton(toolboxTools.getValue(tool), stringResource(toolLabel(tool)), { onAction(tool) },
+                    enabled = when(tool) { "Undo" -> canUndo; "Redo" -> canRedo; else -> true }, tag = tool) }
                 Box {
-                    InkToolButton(InkIcon.More, "More toolbar options", { panel = "more" })
+                    InkToolButton(InkIcon.More, stringResource(R.string.tools_more_toolbar_options), { panel = "more" }, tag = "More toolbar options")
                     DropdownMenu(panel == "more", { panel = null }, modifier = Modifier.penPressureFilter()) {
-                        DropdownMenuItem(text = { Text("Brush options") }, onClick = { panel = "brush" })
-                        DropdownMenuItem(text = { Text("Customize Toolbar") }, onClick = { panel = "customize" })
-                        DropdownMenuItem(text = { Text(if (vertical) "Horizontal toolbar" else "Vertical toolbar") }, onClick = {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.tools_brush_options)) }, onClick = { panel = "brush" })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.tools_customize_toolbar)) }, onClick = { panel = "customize" })
+                        DropdownMenuItem(text = { Text(stringResource(if (vertical) R.string.tools_horizontal_toolbar else R.string.tools_vertical_toolbar)) }, onClick = {
                             vertical = !vertical; prefs.edit().putBoolean("vertical", vertical).apply(); panel = null
                         })
-                        DropdownMenuItem(text = { Text("Reset toolbar position") }, onClick = { position = Offset(12f, 12f); prefs.edit().putFloat("x", 12f).putFloat("y", 12f).apply(); panel = null })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.tools_reset_toolbar_position)) }, onClick = { position = Offset(12f, 12f); prefs.edit().putFloat("x", 12f).putFloat("y", 12f).apply(); panel = null })
                     }
                 }
                 Box {
-                    InkToolButton(InkIcon.Tools, "ToolBox: $scenario", { panel = "toolbox" })
+                    InkToolButton(InkIcon.Tools, stringResource(R.string.tools_toolbox_named, toolboxName(scenario)), { panel = "toolbox" }, tag = "ToolBox: $scenario")
                     DropdownMenu(panel == "toolbox", { panel = null }, modifier = Modifier.penPressureFilter()) {
-                        names.forEach { name -> DropdownMenuItem(text = { Text(if (name == scenario) "✓ $name" else name) }, onClick = {
+                        names.forEach { name -> DropdownMenuItem(text = { Text(if (name == scenario) "✓ ${toolboxName(name)}" else toolboxName(name)) }, onClick = {
                             saveBrushes(scenario); val restored = restoreBrushes(name)
                             scenario = name; tools = toolsFor(name)
                             brushNames = prefs.getString("brushes-$name", null)?.split('|')?.filter { n -> brushes.any { it.presetId == n } } ?: brushes.map { it.presetId }
                             persist(); onRestoreBrushes(restored); panel = null
                         }) }
-                        DropdownMenuItem(text = { Text("Save as new toolbox…") }, onClick = { newName = ""; panel = "new" })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.tools_save_new_toolbox)) }, onClick = { newName = ""; panel = "new" })
                     }
                 }
             }
         }
     }
-    if (panel == "brush") ToolDialog("Brush options", { panel = null }, expanded = true) { brushSettings() }
-    if (panel == "new") AlertDialog(onDismissRequest = { panel = null }, title = { Text("Save toolbox") }, text = {
-        OutlinedTextField(newName, { newName = it }, label = { Text("Name") }, singleLine = true)
+    if (panel == "brush") ToolDialog(stringResource(R.string.tools_brush_options), { panel = null }, expanded = true, tag = "Brush options") { brushSettings() }
+    if (panel == "new") AlertDialog(onDismissRequest = { panel = null }, title = { Text(stringResource(R.string.tools_save_toolbox)) }, text = {
+        OutlinedTextField(newName, { newName = it }, label = { Text(stringResource(R.string.tools_name)) }, singleLine = true)
     }, confirmButton = { TextButton(enabled = newName.trim().isNotEmpty() && newName.trim() !in names, onClick = {
         scenario = newName.trim(); saveBrushes(scenario); names = names + scenario; prefs.edit().putStringSet("names", names.toSet()).apply(); persist(); panel = null
-    }) { Text("Save") } }, dismissButton = { TextButton(onClick = { panel = null }) { Text("Cancel") } })
-    if (panel == "customize") AlertDialog(onDismissRequest = { panel = null }, title = { Text("Customize Toolbar · $scenario") }, text = {
+    }) { Text(stringResource(R.string.tools_save)) } }, dismissButton = { TextButton(onClick = { panel = null }) { Text(stringResource(R.string.tools_cancel)) } })
+    if (panel == "customize") AlertDialog(onDismissRequest = { panel = null }, title = { Text(stringResource(R.string.tools_customize_toolbar_named, toolboxName(scenario))) }, text = {
         Column(Modifier.heightIn(max = 520.dp).verticalScrollCompat()) {
-            Text("Size", fontSize = 13.sp)
+            Text(stringResource(R.string.tools_size), fontSize = 13.sp)
             Slider(scale, { scale = it; persist() }, valueRange = .8f..1.2f)
-            Text("Brushes", fontSize = 14.sp)
+            Text(stringResource(R.string.tools_brushes), fontSize = 14.sp)
             brushes.forEach { brush -> Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(brush.presetId in brushNames, { checked -> brushNames = if (checked) brushNames + brush.presetId else brushNames - brush.presetId; persist() })
-                BrushGlyph(brush.name, brush.color, Modifier.size(22.dp, 26.dp)); Text(brush.label, Modifier.padding(start = 8.dp), fontSize = 13.sp)
+                BrushGlyph(brush.name, brush.color, Modifier.size(22.dp, 26.dp)); Text(brushLabel(brush), Modifier.padding(start = 8.dp), fontSize = 13.sp)
             } }
-            Text("Tools · use arrows to reorder", fontSize = 14.sp)
+            Text(stringResource(R.string.tools_tools_reorder), fontSize = 14.sp)
             (tools + toolboxTools.keys.filterNot { it in tools }).forEach { tool -> Row(verticalAlignment = Alignment.CenterVertically) {
+                val label = stringResource(toolLabel(tool))
                 Checkbox(tool in tools, { checked -> tools = if (checked) tools + tool else tools - tool; persist() })
-                Text(tool, Modifier.weight(1f), fontSize = 13.sp)
+                Text(label, Modifier.weight(1f), fontSize = 13.sp)
                 if (tool in tools) {
-                    TextButton(enabled = tools.indexOf(tool) > 0, onClick = { val list = tools.toMutableList(); val i = list.indexOf(tool); list.add(i - 1, list.removeAt(i)); tools = list; persist() }) { Text("↑") }
-                    TextButton(enabled = tools.indexOf(tool) < tools.lastIndex, onClick = { val list = tools.toMutableList(); val i = list.indexOf(tool); list.add(i + 1, list.removeAt(i)); tools = list; persist() }) { Text("↓") }
+                    val upDescription = stringResource(R.string.tools_move_tool_up, label)
+                    val downDescription = stringResource(R.string.tools_move_tool_down, label)
+                    TextButton(enabled = tools.indexOf(tool) > 0, onClick = { val list = tools.toMutableList(); val i = list.indexOf(tool); list.add(i - 1, list.removeAt(i)); tools = list; persist() },
+                        modifier = Modifier.semantics { contentDescription = upDescription }) { Text("↑") }
+                    TextButton(enabled = tools.indexOf(tool) < tools.lastIndex, onClick = { val list = tools.toMutableList(); val i = list.indexOf(tool); list.add(i + 1, list.removeAt(i)); tools = list; persist() },
+                        modifier = Modifier.semantics { contentDescription = downDescription }) { Text("↓") }
                 }
             } }
-            Text("Exit full screen, More and ToolBox always remain available.", fontSize = 11.sp, color = ChromeMuted)
+            Text(stringResource(R.string.tools_always_available), fontSize = 11.sp, color = ChromeMuted)
         }
-    }, confirmButton = { TextButton(onClick = { panel = null }) { Text("Done") } }, dismissButton = { TextButton(onClick = { tools = defaultTools; brushNames = brushes.map { it.presetId }; scale = 1f; persist() }) { Text("Reset") } })
+    }, confirmButton = { TextButton(onClick = { panel = null }) { Text(stringResource(R.string.tools_done)) } }, dismissButton = { TextButton(onClick = { tools = defaultTools; brushNames = brushes.map { it.presetId }; scale = 1f; persist() }) { Text(stringResource(R.string.tools_reset)) } })
 }
 
 @Composable

@@ -82,6 +82,9 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 - Smart backups to a folder you choose, with daily, weekly and monthly versions.
 - Export pages as PDF or PNG, or a notebook as an editable `.folio` file.
 
+**In your language**
+- English, Spanish, Brazilian Portuguese, French, German, Hindi and Simplified Chinese. Folio follows your device language (English if it isn't one of these), or pick one in **Preferences → Language**.
+
 ## Privacy
 
 Folio works offline and your notes and books never leave your device. There is no account and no advertising. Folio shares anonymous usage statistics (which screens and features are used, never your content) through Google Analytics; you can turn this off in Preferences, and users in the EU, UK and Switzerland are asked first. The microphone is used only when you record a voice note. Read the full [privacy policy](apps/docs/src/pages/privacy.astro).

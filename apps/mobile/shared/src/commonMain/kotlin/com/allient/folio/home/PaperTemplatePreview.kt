@@ -19,16 +19,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun PaperTemplatePreview(template: String, modifier: Modifier = Modifier) {
     val text = rememberTextMeasurer()
-    val title = remember(template) {
-        when (template) {
-            "daily" -> "DAILY PLANNER"; "time-block" -> "TIME BLOCKS"; "weekly" -> "WEEKLY PLANNER"
-            "monthly" -> "MONTHLY PLANNER"; "habit" -> "HABIT TRACKER"; "priority" -> "PRIORITY MATRIX"
-            "kanban" -> "KANBAN BOARD"; "revision" -> "REVISION NOTES"; "vocabulary" -> "VOCABULARY"
-            "lab" -> "LAB REPORT"; "comic" -> "COMIC PANELS"; "mind-map" -> "MIND MAP"
-            "sketch" -> "SKETCH PAGE"
-            else -> ""
-        }
-    }
+    val title = com.allient.folio.templateHeading(template)
     Canvas(modifier.background(Color.White)) {
         val ink = Color(0xFF9EA6A3)
         val left = size.width * .07f; val right = size.width * .93f

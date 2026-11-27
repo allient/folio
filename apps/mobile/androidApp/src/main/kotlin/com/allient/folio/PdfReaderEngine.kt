@@ -49,10 +49,10 @@ internal class PdfReaderSession(file: File, password: String? = null) : Closeabl
     private val descriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
     private val document = try { PdfiumCore().newDocument(descriptor, password) } catch (error: Throwable) {
         descriptor.close()
-        if (error is io.legere.pdfiumandroid.api.PdfPasswordException) throw IllegalArgumentException("This PDF is password protected. Remove the password in another app, then import it again.", error)
+        if (error is io.legere.pdfiumandroid.api.PdfPasswordException) throw UserInputException(R.string.error_pdf_password, "This PDF is password protected. Remove the password in another app, then import it again.", cause = error)
         throw error
     }
-    val pageCount = document.getPageCount().also { if (it <= 0) { document.close(); descriptor.close(); throw IllegalArgumentException("This PDF has no pages.") } }
+    val pageCount = document.getPageCount().also { if (it <= 0) { document.close(); descriptor.close(); throw UserInputException(R.string.error_pdf_no_pages, "This PDF has no pages.") } }
     private var closed = false
     @Synchronized fun contents(): List<ReaderContentsEntry> {
         check(!closed)
@@ -451,7 +451,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                 if (publish) onSelection(preview)
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
-                onError(error.message ?: "Could not select text")
+                onError(error.userMessage(resources, R.string.error_reader_select_text))
             }
         }
     }
@@ -587,11 +587,11 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                 contentDescription = "PDF page ${index+1}. ${if(textLines.isEmpty()) "Scanned page. Use Recognize text to enable highlighting." else "${textLines.size} text passages. Select a passage to annotate."}"
                 accessibility.invalidateRoot()
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { onError(error.message ?: "Could not render page") }
+            catch (error: Exception) { onError(error.userMessage(resources, R.string.error_reader_render_page)) }
             catch (error: OutOfMemoryError) {
                 // A page too big for this device's memory must not close the reader (and, with a saved zoom, every reopen).
                 bitmap = null; invalidate()
-                onError("Not enough memory to draw this page at this zoom. Zoom out or close other books and try again.")
+                onError(resources.getString(R.string.error_reader_page_memory))
             }
         }
     }
@@ -619,7 +619,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                 pendingInk.removeAll { pending -> pending.anchor?.let { saved -> records.any { it.anchor == saved } } == true }
                 invalidate() }
             catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { onError(error.message ?: "Could not display annotations") }
+            catch (error: Exception) { onError(error.userMessage(resources, R.string.error_reader_annotations)) }
         }
     }
     private fun clipPage(canvas: Canvas, b: RectF) {
@@ -857,7 +857,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                                 ) < .06f }?.selection ?: current.select(index, beginning, end)
                             }
                         } else current.select(index, beginning, end)
-                    }) } catch (error: Exception) { if (error is CancellationException) throw error; onError(error.message ?: "Could not select text") } }
+                    }) } catch (error: Exception) { if (error is CancellationException) throw error; onError(error.userMessage(resources, R.string.error_reader_select_text)) } }
                 }
                 if (drawing && cropHandle < 0 && tool in listOf("MarqueeCrop", "MarqueeZoom") && abs(dx) > dp(16f) && abs(dy) > dp(16f)) {
                     val end = normalize(event.x, event.y)
@@ -904,7 +904,7 @@ internal class PdfPageReaderView(context: Context) : View(context) {
                         pending.anchor = saved
                         // Safety net: the saved copy normally replaces the preview within a frame or two.
                         postDelayed({ if (pendingInk.remove(pending)) invalidate() }, 4000)
-                        onInk(saved) } catch (error: Exception) { pendingInk.remove(pending); invalidate(); if (error is CancellationException) throw error; onError(error.message ?: "Could not save ink") } }
+                        onInk(saved) } catch (error: Exception) { pendingInk.remove(pending); invalidate(); if (error is CancellationException) throw error; onError(error.userMessage(resources, R.string.error_reader_save_ink)) } }
                 }
                 selecting = false; draggingHandle = -1; drawing = false; invalidate(); performClick()
             }

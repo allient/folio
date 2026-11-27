@@ -12,6 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -69,7 +71,7 @@ internal object HandwritingRecognizer {
      * are scaled to document units so the recognizer sees the real proportions of the writing.
      */
     suspend fun recognize(strokes: List<InkStroke>, tag: String): List<String> {
-        val model = model(tag) ?: throw IllegalArgumentException("Handwriting in this language isn't supported.")
+        val model = model(tag) ?: throw UserInputException(R.string.error_handwriting_language, "Handwriting in this language isn't supported.")
         val manager = RemoteModelManager.getInstance()
         if (!manager.isModelDownloaded(model).await()) manager.download(model, DownloadConditions.Builder().build()).await()
         val ink = Ink.builder().apply {
@@ -113,38 +115,45 @@ private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { conti
 @Composable
 internal fun ConvertToTextPanel(strokes: List<InkStroke>, onReplace: (String) -> Unit, onAdd: (String) -> Unit, onCopy: (String) -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     var language by remember { mutableStateOf(HandwritingRecognizer.language(context)) }
     var choosing by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
+    // The spinner shows while reading or downloading; it used to be inferred from a trailing "…" in English text.
+    var busy by remember { mutableStateOf(false) }
     var candidates by remember { mutableStateOf<List<String>>(emptyList()) }
     var text by remember { mutableStateOf("") }
     fun run() = scope.launch {
         candidates = emptyList()
-        status = if (HandwritingRecognizer.isDownloaded(language)) "Reading your handwriting…" else "Downloading the ${displayName(language)} handwriting model (about 20 MB, once)…"
+        busy = true
+        status = if (HandwritingRecognizer.isDownloaded(language)) resources.getString(R.string.tools_hw_reading)
+            else resources.getString(R.string.tools_hw_downloading, displayName(language))
         try {
             candidates = HandwritingRecognizer.recognize(strokes, language)
             text = candidates.firstOrNull().orEmpty()
-            status = if (candidates.isEmpty()) "No text found. Select clearer handwriting or try another language." else null
+            status = if (candidates.isEmpty()) resources.getString(R.string.tools_hw_no_text) else null
             AppAnalytics.event("handwriting_converted", "language" to language.substringBefore('-'))
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
-            status = if (error is MlKitException && error.errorCode == MlKitException.UNAVAILABLE) "Couldn't download the language model. Connect to the internet once and try again."
-            else error.message ?: "Couldn't read the handwriting."
+            status = if (error is MlKitException && error.errorCode == MlKitException.UNAVAILABLE) resources.getString(R.string.tools_hw_download_failed)
+            else error.userMessage(resources, R.string.tools_hw_read_failed)
+        } finally {
+            busy = false
         }
     }
     LaunchedEffect(language, strokes) { if (strokes.isNotEmpty()) run() }
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Language", Modifier.weight(1f), fontSize = 13.sp, color = ChromeMuted)
+            Text(stringResource(R.string.tools_hw_language), Modifier.weight(1f), fontSize = 13.sp, color = ChromeMuted)
             TextButton(onClick = { choosing = true }) { Text(displayName(language), color = ChromeInk, fontWeight = FontWeight.Medium) }
         }
-        if (strokes.isEmpty()) Text("Select handwriting with the lasso first.", fontSize = 13.sp, color = ChromeMuted)
+        if (strokes.isEmpty()) Text(stringResource(R.string.tools_hw_select_first), fontSize = 13.sp, color = ChromeMuted)
         status?.let { message ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (message.endsWith("…")) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                 Text(message, fontSize = 13.sp, color = ChromeMuted)
             }
         }
@@ -154,16 +163,16 @@ internal fun ConvertToTextPanel(strokes: List<InkStroke>, onReplace: (String) ->
             }
         }
         // Gboard's pen handwriting works in this field too, for corrections.
-        OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth(), label = { Text("Text") }, minLines = 2, enabled = candidates.isNotEmpty() || text.isNotEmpty())
+        OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.tools_hw_text)) }, minLines = 2, enabled = candidates.isNotEmpty() || text.isNotEmpty())
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { onReplace(text.trim()) }, enabled = text.isNotBlank(), shape = RoundedCornerShape(12.dp)) { Text("Replace handwriting") }
-            OutlinedButton(onClick = { onAdd(text.trim()) }, enabled = text.isNotBlank(), shape = RoundedCornerShape(12.dp)) { Text("Add as text") }
+            Button(onClick = { onReplace(text.trim()) }, enabled = text.isNotBlank(), shape = RoundedCornerShape(12.dp)) { Text(stringResource(R.string.tools_hw_replace)) }
+            OutlinedButton(onClick = { onAdd(text.trim()) }, enabled = text.isNotBlank(), shape = RoundedCornerShape(12.dp)) { Text(stringResource(R.string.tools_hw_add_as_text)) }
         }
-        TextButton(onClick = { onCopy(text.trim()) }, enabled = text.isNotBlank()) { Text("Copy text") }
+        TextButton(onClick = { onCopy(text.trim()) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.tools_hw_copy_text)) }
     }
 
     if (choosing) AlertDialog(onDismissRequest = { choosing = false },
-        title = { Text("Handwriting language") },
+        title = { Text(stringResource(R.string.tools_hw_language_title)) },
         text = {
             LazyColumn(Modifier.heightIn(max = 420.dp)) {
                 items(HandwritingRecognizer.languages, key = { it.first }) { (tag, name) ->
@@ -174,7 +183,7 @@ internal fun ConvertToTextPanel(strokes: List<InkStroke>, onReplace: (String) ->
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { choosing = false }) { Text("Close") } })
+        confirmButton = { TextButton(onClick = { choosing = false }) { Text(stringResource(R.string.tools_close)) } })
 }
 
 private fun displayName(tag: String): String =

@@ -16,10 +16,10 @@ internal object EpubReaderEngine {
     suspend fun open(context: Context, file: File): Publication {
         val http = DefaultHttpClient()
         val assets = AssetRetriever(context.contentResolver, http)
-        val asset = assets.retrieve(file.toUrl(isDirectory = false)).getOrElse { throw IllegalArgumentException("Could not read EPUB: ${it.message}") }
+        val asset = assets.retrieve(file.toUrl(isDirectory = false)).getOrElse { throw UserInputException(R.string.error_epub_open, "Could not read EPUB: ${it.message}") }
         val publication = PublicationOpener(DefaultPublicationParser(context, http, assets, pdfFactory = null))
-            .open(asset, allowUserInteraction = false).getOrElse { throw IllegalArgumentException("Could not open EPUB: ${it.message}") }
-        if (publication.isRestricted) { publication.close(); throw IllegalArgumentException("This book is DRM protected. Import a DRM-free EPUB.") }
+            .open(asset, allowUserInteraction = false).getOrElse { throw UserInputException(R.string.error_epub_open, "Could not open EPUB: ${it.message}") }
+        if (publication.isRestricted) { publication.close(); throw UserInputException(R.string.error_epub_drm_open, "This book is DRM protected. Import a DRM-free EPUB.") }
         return publication
     }
 }

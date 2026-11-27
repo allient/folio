@@ -77,13 +77,20 @@ android {
     namespace = "com.allient.folio"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    // Per-app language (Android 13+): AGP builds the locale list from the res/values-<language> folders and
+    // res/resources.properties (default English). Languages are listed in shared AppLanguages.
+    androidResources { generateLocaleConfig = true }
+    // Every install carries all languages: Preferences → Language can pick one the device isn't set to, and Play's
+    // per-language splits would leave it without its strings.
+    bundle { language { enableSplit = false } }
+
     defaultConfig {
         applicationId = "com.allient.folio"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         // fastlane passes -PversionCode (next code on Play) and -PversionName.
-        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 13
-        versionName = (findProperty("versionName") as String?) ?: "1.0.13"
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 14
+        versionName = (findProperty("versionName") as String?) ?: "1.0.14"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {

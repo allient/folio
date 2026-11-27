@@ -33,11 +33,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.testTag
-import java.util.Locale
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import kotlin.math.sin
 
 @Composable
-internal fun InkColorOptions(color: Int, onChange: (Int) -> Unit, onPickFromPage: ((Int) -> Unit) -> Unit, onClear: (() -> Unit)? = null, transparentSelected: Boolean = false, title: String = "Colors") {
+internal fun InkColorOptions(color: Int, onChange: (Int) -> Unit, onPickFromPage: ((Int) -> Unit) -> Unit, onClear: (() -> Unit)? = null, transparentSelected: Boolean = false, title: String = stringResource(R.string.tools_colors)) {
+    val noFill = stringResource(R.string.tools_no_fill)
     var custom by remember { mutableStateOf(false) }
     val alpha = if (color ushr 24 == 0) 0xFF000000.toInt() else color and 0xFF000000.toInt()
     val pick = { custom = false; onPickFromPage { picked -> onChange(alpha or (picked and 0xFFFFFF)) } }
@@ -53,26 +56,32 @@ internal fun InkColorOptions(color: Int, onChange: (Int) -> Unit, onPickFromPage
     swatches.chunked(columns).forEach { row -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         row.forEach { value -> if (value == null) {
             Canvas(Modifier.size(30.dp).clip(CircleShape).border(if (transparentSelected) 3.dp else 1.dp, if (transparentSelected) Color(0xFF287463) else ChromeLine, CircleShape)
-                .clickable { onClear?.invoke() }.semantics { contentDescription = "No fill"; selected = transparentSelected }) {
+                .clickable { onClear?.invoke() }.semantics { contentDescription = noFill; selected = transparentSelected }) {
                 val cell = size.width / 6f
                 for (y in 0..5) for (x in 0..5) drawRect(if ((x+y)%2 == 0) Color.White else Color(0xFFCECECE), Offset(x*cell,y*cell), androidx.compose.ui.geometry.Size(cell,cell))
             }
-        } else Box(Modifier.size(30.dp).clip(CircleShape).background(Color(value))
+        } else {
+            val swatchDescription = stringResource(R.string.tools_color_value, String.format(java.util.Locale.US, "#%06X", value and 0xFFFFFF))
+            Box(Modifier.size(30.dp).clip(CircleShape).background(Color(value))
             .border(if (!transparentSelected && (color and 0xFFFFFF) == (value.toInt() and 0xFFFFFF)) 3.dp else 1.dp, if (!transparentSelected && (color and 0xFFFFFF) == (value.toInt() and 0xFFFFFF)) Color(0xFF287463) else ChromeLine, CircleShape)
             .clickable { onChange(alpha or (value.toInt() and 0xFFFFFF)) }
-            .semantics { contentDescription = String.format(java.util.Locale.US, "Color #%06X", value and 0xFFFFFF) }) }
+            .semantics { contentDescription = swatchDescription })
+        } }
         repeat(columns - row.size) { Spacer(Modifier.size(30.dp)) }
     } }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = { custom = true }, modifier = Modifier.weight(1f)) { Text("Custom color", fontSize = 11.sp) }
-        OutlinedButton(onClick = pick, modifier = Modifier.weight(1f)) { InkSymbol(InkIcon.Eyedropper, Modifier.size(16.dp)); Spacer(Modifier.width(5.dp)); Text("Pick from page", fontSize = 11.sp) }
+        OutlinedButton(onClick = { custom = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.tools_custom_color), fontSize = 11.sp) }
+        OutlinedButton(onClick = pick, modifier = Modifier.weight(1f)) { InkSymbol(InkIcon.Eyedropper, Modifier.size(16.dp)); Spacer(Modifier.width(5.dp)); Text(stringResource(R.string.tools_pick_from_page), fontSize = 11.sp) }
     }
 }
 
 @Composable
 internal fun DrawingChoice(label: String, selected: Boolean, onClick: () -> Unit,
-                           modifier: Modifier = Modifier, symbol: @Composable () -> Unit) {
-    Surface(onClick = onClick, modifier = modifier.testTag("drawing-${stableControlSlug(label)}").heightIn(min = 76.dp)
+                           modifier: Modifier = Modifier,
+                           // Test tags stay English: pass the English label here when [label] is translated.
+                           tag: String = label,
+                           symbol: @Composable () -> Unit) {
+    Surface(onClick = onClick, modifier = modifier.testTag("drawing-${stableControlSlug(tag)}").heightIn(min = 76.dp)
         .semantics(mergeDescendants = true) { contentDescription = label; this.selected = selected },
         shape = RoundedCornerShape(14.dp),
         color = if (selected) Color(0xFFE8F0EB) else Color(0xFFF7F8F7),
@@ -92,7 +101,7 @@ internal fun ShapeChoices(kind: ShapeKind, onChange: (ShapeKind) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             ShapeLibrary.groups.forEachIndexed { i, (title, _) ->
-                FilterChip(selected = tab == i, onClick = { tab = i }, label = { Text(title, fontSize = 12.sp) },
+                FilterChip(selected = tab == i, onClick = { tab = i }, label = { Text(stringResource(shapeGroupLabel(title)), fontSize = 12.sp) },
                     modifier = Modifier.testTag("shape-tab-${stableControlSlug(title)}"))
             }
         }
@@ -109,7 +118,8 @@ internal fun ShapeChoices(kind: ShapeKind, onChange: (ShapeKind) -> Unit) {
 
 @Composable
 private fun ShapeCell(shape: ShapeKind, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
-    Surface(onClick = onClick, modifier = modifier.height(42.dp).semantics(mergeDescendants = true) { contentDescription = shape.label; this.selected = selected },
+    val label = stringResource(shape.labelRes)
+    Surface(onClick = onClick, modifier = modifier.height(42.dp).semantics(mergeDescendants = true) { contentDescription = label; this.selected = selected },
         shape = RoundedCornerShape(10.dp), color = if (selected) Color(0xFFE5EFEC) else Color(0xFFF7F8F7),
         border = BorderStroke(1.dp, if (selected) Color(0xFF357568) else ChromeLine)) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -145,36 +155,142 @@ internal fun EraserControls(mode: EraserMode, widthMm: Float, minWidthMm: Float,
                            onScope: (Boolean) -> Unit, onAutoReturn: (Boolean) -> Unit,
                            onClearLayer: () -> Unit, onClearAll: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        EraserMode.entries.forEach { option -> DrawingChoice(option.label, mode == option, { onMode(option) }, Modifier.weight(1f)) {
+        EraserMode.entries.forEach { option -> DrawingChoice(stringResource(option.labelRes), mode == option, { onMode(option) }, Modifier.weight(1f), tag = option.label) {
             InkSymbol(when (option) { EraserMode.Pixel -> InkIcon.PartialEraser; EraserMode.Stroke -> InkIcon.Eraser; EraserMode.Lasso -> InkIcon.LassoEraser })
         } }
     }
-    Text(when (mode) {
-        EraserMode.Pixel -> "Drag across the area you want to erase."
-        EraserMode.Stroke -> "Touch any part of a stroke to erase the whole stroke."
-        EraserMode.Lasso -> "Draw a loop around ink to erase the selected strokes."
-    }, fontSize = 12.sp, color = ChromeMuted)
+    Text(stringResource(when (mode) {
+        EraserMode.Pixel -> R.string.tools_eraser_pixel_hint
+        EraserMode.Stroke -> R.string.tools_eraser_stroke_hint
+        EraserMode.Lasso -> R.string.tools_eraser_lasso_hint
+    }), fontSize = 12.sp, color = ChromeMuted)
     if (mode != EraserMode.Lasso) {
+        val diameter = stringResource(R.string.tools_eraser_diameter)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Eraser diameter", Modifier.weight(1f), fontSize = 13.sp)
-            InkToolButton(InkIcon.Previous, "Decrease eraser diameter", { onWidth((widthMm - .1f).coerceAtLeast(minWidthMm)) }, buttonSize = 30.dp)
-            Text(String.format(Locale.US, "%.1f mm", widthMm), fontSize = 12.sp)
-            InkToolButton(InkIcon.Next, "Increase eraser diameter", { onWidth((widthMm + .1f).coerceAtMost(maxWidthMm)) }, buttonSize = 30.dp)
+            Text(diameter, Modifier.weight(1f), fontSize = 13.sp)
+            InkToolButton(InkIcon.Previous, stringResource(R.string.tools_eraser_decrease), { onWidth((widthMm - .1f).coerceAtLeast(minWidthMm)) }, buttonSize = 30.dp, tag = "Decrease eraser diameter")
+            Text(stringResource(R.string.tools_millimetres, widthMm), fontSize = 12.sp)
+            InkToolButton(InkIcon.Next, stringResource(R.string.tools_eraser_increase), { onWidth((widthMm + .1f).coerceAtMost(maxWidthMm)) }, buttonSize = 30.dp, tag = "Increase eraser diameter")
         }
-        VariableWidthSlider(widthMm, minWidthMm, maxWidthMm, Modifier.fillMaxWidth().height(34.dp), "Eraser diameter", onWidth)
+        VariableWidthSlider(widthMm, minWidthMm, maxWidthMm, Modifier.fillMaxWidth().height(34.dp), diameter, onWidth)
     }
-    ToolToggle("Active layer only", "Off erases across visible, unlocked layers.", activeLayerOnly, onScope)
-    ToolToggle("Auto-deselect Eraser", "Return to the previous writing brush after erasing.", autoReturn, onAutoReturn)
+    ToolToggle(stringResource(R.string.tools_active_layer_only), stringResource(R.string.tools_active_layer_only_hint), activeLayerOnly, onScope)
+    ToolToggle(stringResource(R.string.tools_auto_deselect_eraser), stringResource(R.string.tools_auto_deselect_eraser_hint), autoReturn, onAutoReturn)
     HorizontalDivider(color = ChromeLine)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedButton(onClick = onClearLayer, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
-            InkSymbol(InkIcon.Eraser, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Erase current layer", fontSize = 11.sp, maxLines = 1)
+            InkSymbol(InkIcon.Eraser, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.tools_erase_current_layer), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         OutlinedButton(onClick = onClearAll, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) {
-            InkSymbol(InkIcon.Layers, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Erase all layers", fontSize = 11.sp, maxLines = 1)
+            InkSymbol(InkIcon.Layers, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+            Text(stringResource(R.string.tools_erase_all_layers), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
-    Text("Templates are kept. Clear actions can be undone.", fontSize = 11.sp, color = ChromeMuted)
+    Text(stringResource(R.string.tools_erase_note), fontSize = 11.sp, color = ChromeMuted)
+}
+
+/** Translated names for the tool enums. Their English `label` and enum names are ids (test tags, saved settings). */
+internal val ShapeKind.labelRes: Int @StringRes get() = when (this) {
+    ShapeKind.Line -> R.string.tools_shape_line
+    ShapeKind.WavyLine -> R.string.tools_shape_wavy_line
+    ShapeKind.Curve -> R.string.tools_shape_curve
+    ShapeKind.Arrow -> R.string.tools_shape_arrow
+    ShapeKind.DoubleArrow -> R.string.tools_shape_double_arrow
+    ShapeKind.Rectangle -> R.string.tools_shape_rectangle
+    ShapeKind.RoundedRectangle -> R.string.tools_shape_rounded_rectangle
+    ShapeKind.Square -> R.string.tools_shape_square
+    ShapeKind.Parallelogram -> R.string.tools_shape_parallelogram
+    ShapeKind.Trapezoid -> R.string.tools_shape_trapezoid
+    ShapeKind.Triangle -> R.string.tools_shape_triangle
+    ShapeKind.RightTriangle -> R.string.tools_shape_right_triangle
+    ShapeKind.Diamond -> R.string.tools_shape_diamond
+    ShapeKind.Pentagon -> R.string.tools_shape_pentagon
+    ShapeKind.Hexagon -> R.string.tools_shape_hexagon
+    ShapeKind.Ellipse -> R.string.tools_shape_ellipse
+    ShapeKind.Circle -> R.string.tools_shape_circle
+    ShapeKind.Star -> R.string.tools_shape_star
+    ShapeKind.Cross -> R.string.tools_shape_cross
+    ShapeKind.Cube -> R.string.tools_shape_cube
+    ShapeKind.Cuboid -> R.string.tools_shape_cuboid
+    ShapeKind.Pyramid -> R.string.tools_shape_pyramid
+    ShapeKind.Cone -> R.string.tools_shape_cone
+    ShapeKind.Cylinder -> R.string.tools_shape_cylinder
+    ShapeKind.Sphere -> R.string.tools_shape_sphere
+    ShapeKind.Capsule -> R.string.tools_shape_capsule
+    ShapeKind.Octagon -> R.string.tools_shape_octagon
+    ShapeKind.Heart -> R.string.tools_shape_heart
+    ShapeKind.Cloud -> R.string.tools_shape_cloud
+    ShapeKind.Pie -> R.string.tools_shape_pie
+    ShapeKind.Crescent -> R.string.tools_shape_crescent
+    ShapeKind.Arc -> R.string.tools_shape_arc
+    ShapeKind.PredefinedProcess -> R.string.tools_shape_predefined_process
+    ShapeKind.InternalStorage -> R.string.tools_shape_internal_storage
+    ShapeKind.Document -> R.string.tools_shape_document
+    ShapeKind.ManualInput -> R.string.tools_shape_manual_input
+    ShapeKind.ManualOperation -> R.string.tools_shape_manual_operation
+    ShapeKind.OffPage -> R.string.tools_shape_off_page
+    ShapeKind.Delay -> R.string.tools_shape_delay
+    ShapeKind.Display -> R.string.tools_shape_display
+    ShapeKind.SummingJunction -> R.string.tools_shape_summing_junction
+    ShapeKind.OrJunction -> R.string.tools_shape_or_junction
+    ShapeKind.Merge -> R.string.tools_shape_merge
+    ShapeKind.BlockRight -> R.string.tools_shape_block_right
+    ShapeKind.BlockLeft -> R.string.tools_shape_block_left
+    ShapeKind.BlockUp -> R.string.tools_shape_block_up
+    ShapeKind.BlockDown -> R.string.tools_shape_block_down
+    ShapeKind.BlockLeftRight -> R.string.tools_shape_block_left_right
+    ShapeKind.BlockUpDown -> R.string.tools_shape_block_up_down
+    ShapeKind.BlockFourWay -> R.string.tools_shape_block_four_way
+    ShapeKind.Chevron -> R.string.tools_shape_chevron
+    ShapeKind.HomePlate -> R.string.tools_shape_home_plate
+    ShapeKind.CalloutRect -> R.string.tools_shape_callout_rect
+    ShapeKind.CalloutRounded -> R.string.tools_shape_callout_rounded
+    ShapeKind.CalloutOval -> R.string.tools_shape_callout_oval
+    ShapeKind.Starburst -> R.string.tools_shape_starburst
+    ShapeKind.Hemisphere -> R.string.tools_shape_hemisphere
+    ShapeKind.TriPrism -> R.string.tools_shape_tri_prism
+    ShapeKind.Frustum -> R.string.tools_shape_frustum
+    ShapeKind.Axes2D -> R.string.tools_shape_axes_2d
+    ShapeKind.Axes3D -> R.string.tools_shape_axes_3d
+    ShapeKind.NumberGrid -> R.string.tools_shape_number_grid
+    ShapeKind.Angle -> R.string.tools_shape_angle
+    ShapeKind.RightAngle -> R.string.tools_shape_right_angle
+    ShapeKind.Brace -> R.string.tools_shape_brace
+    ShapeKind.Bracket -> R.string.tools_shape_bracket
+    ShapeKind.Paren -> R.string.tools_shape_paren
+    ShapeKind.ElbowLine -> R.string.tools_shape_elbow_line
+    ShapeKind.ElbowArrow -> R.string.tools_shape_elbow_arrow
+    ShapeKind.ElbowDouble -> R.string.tools_shape_elbow_double
+    ShapeKind.SCurve -> R.string.tools_shape_scurve
+    ShapeKind.SCurveArrow -> R.string.tools_shape_scurve_arrow
+    ShapeKind.SCurveDouble -> R.string.tools_shape_scurve_double
+    ShapeKind.Inheritance -> R.string.tools_shape_inheritance
+    ShapeKind.Aggregation -> R.string.tools_shape_aggregation
+    ShapeKind.Composition -> R.string.tools_shape_composition
+}
+
+internal val EraserMode.labelRes: Int @StringRes get() = when (this) {
+    EraserMode.Pixel -> R.string.tools_eraser_pixel
+    EraserMode.Stroke -> R.string.tools_eraser_stroke
+    EraserMode.Lasso -> R.string.tools_eraser_lasso
+}
+
+internal val ShapeLineStyle.labelRes: Int @StringRes get() = when (this) {
+    ShapeLineStyle.Solid -> R.string.tools_line_solid
+    ShapeLineStyle.Dotted -> R.string.tools_line_dotted
+    ShapeLineStyle.Dashed -> R.string.tools_line_dashed
+    ShapeLineStyle.DashDot -> R.string.tools_line_dash_dot
+}
+
+/** [ShapeLibrary.groups] titles are English ids (test tags `shape-tab-…`). */
+@StringRes private fun shapeGroupLabel(title: String): Int = when (title) {
+    "Basic" -> R.string.tools_shape_group_basic
+    "Flowchart" -> R.string.tools_shape_group_flowchart
+    "Arrows & callouts" -> R.string.tools_shape_group_arrows
+    "3D & math" -> R.string.tools_shape_group_math
+    "Connectors" -> R.string.tools_shape_group_connectors
+    else -> R.string.tools_shape_group_uml
 }
 
 /** Preview uses exactly the same versioned rendering path as live and saved strokes. */
@@ -208,7 +324,8 @@ internal fun ShapeLineStyleChoices(selectedStyle: String, onChange: (ShapeLineSt
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
         ShapeLineStyle.entries.forEach { style ->
             val chosen = selectedStyle == style.name.lowercase()
-            Surface(onClick = { onChange(style) }, modifier = Modifier.size(60.dp, 40.dp).semantics { contentDescription = style.label; selected = chosen },
+            val label = stringResource(style.labelRes)
+            Surface(onClick = { onChange(style) }, modifier = Modifier.size(60.dp, 40.dp).semantics { contentDescription = label; selected = chosen },
                 shape = RoundedCornerShape(12.dp), color = if (chosen) Color(0xFFE5EFEC) else Color(0xFFF7F8F7), border = BorderStroke(1.dp, if (chosen) Color(0xFF287463) else ChromeLine)) {
                 Canvas(Modifier.fillMaxSize().padding(10.dp)) {
                     val effect = when (style) {

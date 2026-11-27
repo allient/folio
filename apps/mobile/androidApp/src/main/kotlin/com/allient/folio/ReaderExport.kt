@@ -18,9 +18,9 @@ internal object ReaderExport {
         PDFBoxResourceLoader.init(context.applicationContext)
         try {
             val loaded = try { PDDocument.load(File(original.path), MemoryUsageSetting.setupMixed(24L * 1024 * 1024)) }
-                catch (locked: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) { throw IllegalArgumentException("This PDF is password protected, so it can't be exported with annotations. Export your reading notes instead.", locked) }
+                catch (locked: com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException) { throw UserInputException(R.string.error_export_pdf_password, "This PDF is password protected, so it can't be exported with annotations. Export your reading notes instead.", cause = locked) }
             loaded.use { document ->
-                require(document.currentAccessPermission.canModifyAnnotations()) { "This PDF does not permit annotations." }
+                requireUser(document.currentAccessPermission.canModifyAnnotations(), R.string.error_export_pdf_no_annotations) { "This PDF does not permit annotations." }
                 annotations.filter { it.kind != AnnotationKind.BOOKMARK }.forEach { a ->
                     val anchor = JSONObject(a.anchor); val index = anchor.getInt("page")
                     require(index in 0 until document.numberOfPages) { "Invalid annotation page" }
@@ -65,7 +65,7 @@ internal object ReaderExport {
                     annotation.constructAppearances()
                 }
                 try { document.save(output) }
-                catch (error: java.io.IOException) { if (document.isEncrypted) throw IllegalArgumentException("This PDF is encrypted, so it can't be exported with annotations. Export your reading notes instead.", error) else throw error }
+                catch (error: java.io.IOException) { if (document.isEncrypted) throw UserInputException(R.string.error_export_pdf_encrypted, "This PDF is encrypted, so it can't be exported with annotations. Export your reading notes instead.", cause = error) else throw error }
             }
             return output
         } catch(error:Throwable){output.delete();throw error}

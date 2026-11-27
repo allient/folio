@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PDF/EPUB reader and Live boards. Keys: reader_*, board_*. Keep top-bar labels short (50 dp actions, 10.5 sp). -->
+<resources>
+    <!-- Opening a book -->
+    <string name="reader_error_not_in_library">यह दस्तावेज़ अब आपकी लाइब्रेरी में नहीं है</string>
+    <string name="reader_error_file_missing">मूल फ़ाइल इस डिवाइस पर नहीं है। जारी रखने के लिए वही PDF या EPUB फिर से इंपोर्ट करें; आपके सेव किए गए नोट और पढ़ने की जगह अपने-आप फिर से जुड़ जाएंगे।</string>
+    <string name="reader_error_open">दस्तावेज़ खोला नहीं जा सका</string>
+    <string name="reader_error_open_title">यह दस्तावेज़ खोला नहीं जा सका</string>
+    <string name="reader_error_memory_open">यह दस्तावेज़ खोलने के लिए पर्याप्त मेमोरी नहीं है। आपके नोट इस डिवाइस पर सुरक्षित हैं; दूसरे ऐप बंद करें और फिर से कोशिश करें।</string>
+    <string name="reader_error_memory">इसे खोलने के लिए पर्याप्त मेमोरी नहीं है। आपके नोट इस डिवाइस पर सुरक्षित हैं; दूसरे ऐप बंद करें और फिर से कोशिश करें।</string>
+    <string name="reader_error_save">रीडर के बदलाव सेव नहीं हो सके</string>
+    <string name="reader_error_operation">रीडर की कार्रवाई विफल रही</string>
+    <string name="reader_error_export">दस्तावेज़ एक्सपोर्ट नहीं हो सका</string>
+    <string name="reader_error_ocr">टेक्स्ट पहचाना नहीं जा सका</string>
+    <string name="reader_error_fit">पेज का कॉन्टेंट फ़िट नहीं हो सका</string>
+    <string name="reader_error_no_text">यहां चुनने लायक टेक्स्ट नहीं है। यह स्कैन किया गया पेज हो सकता है; टेक्स्ट हाइलाइट के लिए OCR ज़रूरी है।</string>
+    <string name="reader_error_no_app_link">यह लिंक खोलने के लिए कोई ऐप नहीं है</string>
+    <string name="reader_title">रीडर</string>
+    <string name="reader_ok">ठीक है</string>
+    <string name="reader_cancel">रद्द करें</string>
+    <string name="reader_delete">मिटाएं</string>
+    <string name="reader_save">सेव करें</string>
+    <string name="reader_dismiss">खारिज करें</string>
+    <string name="reader_back_to_library">लाइब्रेरी पर वापस जाएं</string>
+    <string name="reader_back_to_reading">पढ़ने पर वापस जाएं</string>
+
+    <!-- Pages and chapters -->
+    <string name="reader_chapter_number">अध्याय %1$d</string>
+    <string name="reader_page_number">पेज %1$d</string>
+    <string name="reader_page_of">पेज %1$d / %2$d</string>
+    <string name="reader_page_range">1–%1$d</string>
+    <string name="reader_previous_page">पिछला पेज</string>
+    <string name="reader_next_page">अगला पेज</string>
+    <string name="reader_previous">पिछला</string>
+    <string name="reader_next">अगला</string>
+    <string name="reader_percent_read">%1$s पढ़ा गया</string>
+    <string name="reader_go_to_page">पेज पर जाएं</string>
+    <string name="reader_go_to_a_page">किसी पेज पर जाएं</string>
+    <string name="reader_go">जाएं</string>
+    <string name="reader_battery">बैटरी %1$s</string>
+
+    <!-- Top bar -->
+    <string name="reader_open_books">खुली किताबें</string>
+    <string name="reader_read">पढ़ें</string>
+    <string name="reader_read_mode_description">पढ़ने का मोड, पेन रख दें</string>
+    <string name="reader_brush_description">%1$s, %2$s। पेन सेटिंग के लिए फिर से टैप करें</string>
+    <string name="reader_pen_edit_hint">बदलने के लिए चुने गए पेन पर फिर से टैप करें।</string>
+    <string name="reader_eraser">इरेज़र</string>
+    <string name="reader_undo">पूर्ववत</string>
+    <string name="reader_redo">फिर करें</string>
+    <string name="reader_doc">दस्तावेज़</string>
+    <string name="reader_gestures">जेस्चर</string>
+    <string name="reader_notes">नोट</string>
+    <string name="reader_bookmark">बुकमार्क</string>
+    <string name="reader_more">और</string>
+    <string name="reader_close_eraser_options">इरेज़र के विकल्प बंद करें</string>
+    <string name="reader_stroke_eraser">स्ट्रोक इरेज़र</string>
+    <string name="reader_erase_page_ink">इस पेज की सारी इंक मिटाएं</string>
+    <string name="reader_clear_page_question">यह पेज साफ़ करें?</string>
+    <string name="reader_erase_all">सब मिटाएं</string>
+    <string name="reader_hint_bar_toggle">बार दिखाने या छिपाने के लिए उंगली से पेज के बीच में टैप करें।</string>
+    <string name="reader_hint_select">कोई अंश चुनने के लिए टेक्स्ट पर खींचें। किसी शब्द को चुनने के लिए उसे देर तक दबाएं।</string>
+    <string name="reader_hint_pen">सीधे पेज पर लिखें। खिसकाने या ज़ूम करने के लिए पढ़ें पर जाएं।</string>
+
+    <!-- Selection -->
+    <string name="reader_highlight">हाइलाइट</string>
+    <string name="reader_underline">रेखांकित</string>
+    <string name="reader_add_note">नोट जोड़ें</string>
+    <string name="reader_clip_passage">अंश</string>
+    <string name="reader_share_passage">अंश शेयर करें</string>
+    <string name="reader_move_toolbar">टूलबार खिसकाएं</string>
+    <string name="reader_solid_underline">ठोस रेखांकन</string>
+    <string name="reader_wavy_underline">लहरदार रेखांकन</string>
+    <string name="reader_dashed_underline">डैश वाला रेखांकन</string>
+    <string name="reader_annotation_color">एनोटेशन का रंग</string>
+    <string name="reader_edit_highlight">हाइलाइट बदलें</string>
+    <string name="reader_edit_underline">रेखांकन बदलें</string>
+    <string name="reader_copy">कॉपी करें</string>
+    <string name="reader_more_selection_actions">चयन की और कार्रवाइयां</string>
+    <string name="reader_search_in_book">किताब में खोजें</string>
+    <string name="reader_share">शेयर करें</string>
+    <string name="reader_remove_marks">मार्क हटाएं</string>
+    <string name="reader_dismiss_selection">चयन हटाएं</string>
+
+    <!-- Mark editor and colours -->
+    <string name="reader_mark_preview">किताब का एक अंश</string>
+    <string name="reader_color">रंग</string>
+    <string name="reader_color_yellow">पीला</string>
+    <string name="reader_color_orange">नारंगी</string>
+    <string name="reader_color_coral">कोरल</string>
+    <string name="reader_color_pink">गुलाबी</string>
+    <string name="reader_color_purple">बैंगनी</string>
+    <string name="reader_color_blue">नीला</string>
+    <string name="reader_color_cyan">आसमानी</string>
+    <string name="reader_color_green">हरा</string>
+    <string name="reader_color_lime">लाइम</string>
+    <string name="reader_color_sand">रेतीला</string>
+    <string name="reader_color_gray">स्लेटी</string>
+    <string name="reader_color_custom">कस्टम</string>
+    <string name="reader_swatch_description">%1$s हाइलाइट</string>
+    <string name="reader_swatch_select">%1$s हाइलाइट चुनें</string>
+    <string name="reader_custom_color">कस्टम रंग</string>
+    <string name="reader_pick_custom_color">कस्टम रंग चुनें</string>
+
+    <!-- Bottom controls -->
+    <string name="reader_tab_progress">प्रगति</string>
+    <string name="reader_tab_format">फ़ॉर्मैट</string>
+    <string name="reader_tab_contrast">कंट्रास्ट</string>
+    <string name="reader_tab_navigation">नेविगेशन</string>
+    <string name="reader_tab_split_view">स्प्लिट व्यू</string>
+    <string name="reader_search">खोजें</string>
+    <string name="reader_select">चुनें</string>
+    <string name="reader_handwriting">हैंडराइटिंग</string>
+    <string name="reader_export_notes">नोट एक्सपोर्ट करें</string>
+    <string name="reader_page_display">पेज डिस्प्ले</string>
+    <string name="reader_single_page">एक पेज</string>
+    <string name="reader_scrolling_view">स्क्रॉलिंग व्यू</string>
+    <string name="reader_ltr">LTR</string>
+    <string name="reader_rtl">RTL</string>
+    <string name="reader_zoom">ज़ूम</string>
+    <string name="reader_zoom_in">ज़ूम इन</string>
+    <string name="reader_zoom_out">ज़ूम आउट</string>
+    <string name="reader_marquee_zoom">मार्की ज़ूम</string>
+    <string name="reader_marquee_zoom_hint">किसी जगह पर ज़ूम करने के लिए उसके चारों ओर आयत खींचें।</string>
+    <string name="reader_reset_zoom">ज़ूम रीसेट करें</string>
+    <string name="reader_crop">क्रॉप</string>
+    <string name="reader_fit_screen">स्क्रीन में फ़िट</string>
+    <string name="reader_fit_width">चौड़ाई में फ़िट</string>
+    <string name="reader_marquee_crop">मार्की क्रॉप</string>
+    <string name="reader_crop_hint">कोई जगह चुनने के लिए खींचें। ठीक करने के लिए उसके कोने खींचें।</string>
+    <string name="reader_apply_crop">क्रॉप लागू करें</string>
+    <string name="reader_reset">रीसेट</string>
+    <string name="reader_margin">मार्जिन</string>
+    <string name="reader_text_enhancement">टेक्स्ट सुधार</string>
+    <string name="reader_text_size">टेक्स्ट का आकार</string>
+    <string name="reader_text_size_value">टेक्स्ट का आकार · %1$s</string>
+    <string name="reader_line_spacing">लाइन अंतराल</string>
+    <string name="reader_continuous_scrolling">लगातार स्क्रॉलिंग</string>
+    <string name="reader_decrease">%1$s घटाएं</string>
+    <string name="reader_increase">%1$s बढ़ाएं</string>
+    <string name="reader_theme_light">हल्की</string>
+    <string name="reader_theme_sepia">सीपिया</string>
+    <string name="reader_theme_dark">गहरी</string>
+    <string name="reader_reading_theme">पढ़ने की थीम</string>
+    <string name="reader_embolden">गाढ़ा करें</string>
+    <string name="reader_sharpen">इमेज शार्प करें</string>
+    <string name="reader_watermark_bleaching">वॉटरमार्क हल्का करें</string>
+    <string name="reader_dark_color_enhancement">गहरे रंग का सुधार</string>
+    <string name="reader_image_smoothing">इमेज स्मूदिंग</string>
+
+    <!-- Split view -->
+    <string name="reader_split_current_doc">मौजूदा दस्तावेज़</string>
+    <string name="reader_split_another_doc">दूसरा दस्तावेज़</string>
+    <string name="reader_split_handwritten_notes">हाथ से लिखे नोट</string>
+    <string name="reader_split_text_notes">टेक्स्ट नोट</string>
+    <string name="reader_split_style">स्प्लिट स्क्रीन की स्टाइल</string>
+    <string name="reader_horizontal">आड़ा</string>
+    <string name="reader_vertical">खड़ा</string>
+    <string name="reader_landscape_orientation">लैंडस्केप ओरिएंटेशन</string>
+    <string name="reader_landscape_auto">ऑटो</string>
+    <string name="reader_landscape_left">लैंडस्केप बाएं</string>
+    <string name="reader_landscape_right">लैंडस्केप दाएं</string>
+    <string name="reader_landscape_hint">लैंडस्केप इस्तेमाल करने के लिए अपना टैबलेट घुमाएं। रीडर स्क्रीन के ओरिएंटेशन के हिसाब से चलता है।</string>
+    <string name="reader_close_split_view">स्प्लिट व्यू बंद करें</string>
+    <string name="reader_split_document">स्प्लिट दस्तावेज़</string>
+    <string name="reader_split_import_first">पहले लाइब्रेरी से कोई दूसरी PDF या EPUB इंपोर्ट करें।</string>
+    <string name="reader_write_note">नोट लिखें</string>
+    <string name="reader_save_note_here">मौजूदा जगह पर नोट सेव करें</string>
+    <string name="reader_split_context_pdf">PDF पेज %1$d</string>
+    <string name="reader_split_context_epub">EPUB · %1$s</string>
+    <string name="reader_split_context_line">%1$s से · %2$s</string>
+    <string name="reader_split_notebook_title">नोट · %1$s</string>
+
+    <!-- Contents -->
+    <string name="reader_contents">विषय-सूची</string>
+    <string name="reader_close_contents">विषय-सूची बंद करें</string>
+    <string name="reader_collapse_chapter">%1$s छोटा करें</string>
+    <string name="reader_expand_chapter">%1$s बड़ा करें</string>
+    <string name="reader_no_outline">इस PDF में अध्यायों की सूची नहीं है। पेज के हिसाब से देखें।</string>
+    <string name="reader_no_toc">कोई विषय-सूची उपलब्ध नहीं है।</string>
+    <string name="reader_toc">सूची</string>
+    <string name="reader_bookmarks">बुकमार्क</string>
+    <string name="reader_annotations">एनोटेशन</string>
+    <string name="reader_empty_bookmarks">अभी कोई बुकमार्क नहीं है</string>
+    <string name="reader_empty_annotations">अभी कोई एनोटेशन नहीं है</string>
+    <string name="reader_empty_handwriting">अभी कोई हैंडराइटिंग नहीं है</string>
+    <string name="reader_saved_location">सेव की गई जगह</string>
+    <string name="reader_kind_highlight">हाइलाइट</string>
+    <string name="reader_kind_underline">रेखांकन</string>
+    <string name="reader_kind_ink">इंक</string>
+    <string name="reader_kind_note">नोट</string>
+    <string name="reader_kind_bookmark">बुकमार्क</string>
+    <string name="reader_annotations_empty">हाइलाइट करने के लिए टेक्स्ट चुनें, पेन से लिखें, या मेन्यू से नोट जोड़ें।</string>
+
+    <!-- Panels -->
+    <string name="reader_pen_settings">पेन सेटिंग</string>
+    <string name="reader_pen_settings_named">पेन सेटिंग (%1$s)</string>
+    <string name="reader_pen_settings_hint">लिखते समय ये सेटिंग खोलने के लिए टॉप बार में चुने गए पेन पर टैप करें, या किसी भी पेन को देर तक दबाएं।</string>
+    <string name="reader_document">दस्तावेज़</string>
+    <plurals name="reader_document_pages">
+        <item quantity="one">%1$s · %2$d पेज</item>
+        <item quantity="other">%1$s · %2$d पेज</item>
+    </plurals>
+    <string name="reader_document_epub">%1$s · EPUB किताब</string>
+    <string name="reader_saving">सेव हो रहा है…</string>
+    <string name="reader_saved_on_device">इस डिवाइस पर सेव है</string>
+    <string name="reader_appearance">दिखावट</string>
+    <string name="reader_hide_bar_writing">लिखते समय बार छिपाएं</string>
+    <string name="reader_gesture_click">टैप / देर तक दबाएं</string>
+    <string name="reader_gesture_slide">पेज स्लाइड करें / खींचें</string>
+    <string name="reader_gesture_pinch">पिंच करके ज़ूम करें</string>
+    <string name="reader_gesture_system_bars">सिस्टम बार जेस्चर</string>
+    <string name="reader_gesture_bottom">नीचे के जेस्चर</string>
+    <string name="reader_gesture_sides">किनारे के जेस्चर</string>
+    <string name="reader_gesture_back">बैक बटन</string>
+    <string name="reader_gestures_help">बीच में टैप करने से हमेशा कंट्रोल खुलते हैं। नीचे से ऊपर स्वाइप करने पर कंट्रोल खुलते हैं; किनारों पर टैप करने से पेज पलटते हैं। सिस्टम बार जेस्चर बंद करने पर सिस्टम बार दिखते रहते हैं। बैक बंद करने पर रीडर छोड़ने के बजाय ये सेटिंग खुलती हैं।</string>
+    <string name="reader_show_footer">पढ़ने का फ़ुटर दिखाएं</string>
+    <string name="reader_show_book_tabs">किताब के टैब दिखाएं</string>
+    <string name="reader_contents_and_bookmarks">विषय-सूची और बुकमार्क</string>
+    <string name="reader_search_this_book">इस किताब में खोजें</string>
+    <string name="reader_highlights_notes_bookmarks">हाइलाइट, नोट और बुकमार्क</string>
+    <string name="reader_recognizing">टेक्स्ट पहचाना जा रहा है…</string>
+    <string name="reader_recognize_scanned">स्कैन किया गया पेज पहचानें</string>
+    <plurals name="reader_ocr_recognized">
+        <item quantity="one">पेज %2$d पर %1$d शब्द पहचाना गया। हाइलाइट करने के लिए टेक्स्ट पर खींचें।</item>
+        <item quantity="other">पेज %2$d पर %1$d शब्द पहचाने गए। हाइलाइट करने के लिए टेक्स्ट पर खींचें।</item>
+    </plurals>
+    <string name="reader_ocr_none">इस पेज पर कोई टेक्स्ट नहीं पहचाना गया।</string>
+    <string name="reader_add_note_here">इस जगह पर नोट जोड़ें</string>
+    <string name="reader_export_reading_notes">रीडिंग नोट्स एक्सपोर्ट करें (.md)</string>
+    <string name="reader_export_annotated_pdf">एनोटेशन वाली PDF एक्सपोर्ट करें</string>
+    <string name="reader_original_unchanged">आपकी मूल फ़ाइल नहीं बदलती। हाइलाइट, नोट और बुकमार्क अपने-आप सेव होते हैं।</string>
+    <string name="reader_preparing_export">एक्सपोर्ट तैयार हो रहा है…</string>
+
+    <!-- Search -->
+    <string name="reader_search_min_chars">कम से कम दो अक्षर डालें</string>
+    <string name="reader_search_match">मिलान</string>
+    <string name="reader_search_document">इस दस्तावेज़ में खोजें</string>
+    <string name="reader_restart_search">खोज फिर से शुरू करें</string>
+    <string name="reader_find">ढूंढें</string>
+    <plurals name="reader_search_matches">
+        <item quantity="one">%1$d मिलान</item>
+        <item quantity="other">%1$d मिलान</item>
+    </plurals>
+    <string name="reader_search_matches_capped">%1$d मिलान (पहले %2$d)</string>
+
+    <!-- Notes -->
+    <string name="reader_add_reading_note">रीडिंग नोट जोड़ें</string>
+    <string name="reader_edit_note">नोट बदलें</string>
+    <string name="reader_your_note">आपका नोट</string>
+    <string name="reader_save_note">नोट सेव करें</string>
+
+    <!-- Live boards -->
+    <string name="board_back_to_boards">बोर्ड पर वापस जाएं</string>
+    <string name="board_live_session">लाइव सेशन</string>
+    <string name="board_live_board">लाइव बोर्ड</string>
+    <string name="board_fingers_on">उंगलियां चालू: खिसकाएं और ज़ूम करें</string>
+    <string name="board_fingers_off">उंगलियां बंद: सिर्फ़ पेन</string>
+    <string name="board_pen_on_board">बोर्ड पर पेन</string>
+    <string name="board_share">शेयर करें</string>
+    <string name="board_rename_title">बोर्ड का नाम बदलें</string>
+    <string name="board_rename">नाम बदलें</string>
+    <string name="board_untitled">बिना नाम का बोर्ड</string>
+    <string name="board_cancel">रद्द करें</string>
+    <string name="board_done">हो गया</string>
+    <string name="board_share_title">बोर्ड शेयर करें</string>
+    <string name="board_link_help">इस लिंक वाले लोग किसी भी ब्राउज़र से बोर्ड देख सकते हैं और उस पर लाइव बना सकते हैं। सेशन एंड-टू-एंड एन्क्रिप्टेड है।</string>
+    <string name="board_clip_label">Folio लाइव बोर्ड</string>
+    <string name="board_copied">कॉपी हो गया</string>
+    <string name="board_copy_link">लिंक कॉपी करें</string>
+    <string name="board_join_message">मेरे Folio बोर्ड से जुड़ें: %1$s</string>
+    <string name="board_send_live_link">लाइव लिंक भेजें</string>
+    <string name="board_send_link">लिंक भेजें…</string>
+    <string name="board_stop_session">सेशन बंद करें…</string>
+    <string name="board_start_help">सेशन शुरू करें और अपनी कॉल में लिंक भेजें। दूसरे लोग किसी भी ब्राउज़र से देख और बना सकते हैं; सेशन एंड-टू-एंड एन्क्रिप्टेड है।</string>
+    <string name="board_start_session">लाइव सेशन शुरू करें</string>
+    <string name="board_join_session">किसी सेशन से जुड़ें</string>
+    <string name="board_paste">पेस्ट करें</string>
+    <string name="board_join">जुड़ें</string>
+    <string name="board_export">एक्सपोर्ट करें</string>
+    <string name="board_export_image">इमेज (PNG)</string>
+    <string name="board_export_file">Excalidraw फ़ाइल</string>
+    <string name="board_pressure_help">सक्रिय होने की सीमा और दबाव कर्व आपकी पेन सेटिंग से आते हैं। ये विकल्प सिर्फ़ लाइव बोर्ड पर लागू होते हैं।</string>
+    <string name="board_sensitivity">संवेदनशीलता</string>
+    <string name="board_sensitivity_help">ज़्यादा होने पर हल्के स्पर्श से ही पूरी चौड़ाई मिलती है। %1$s रैखिक है।</string>
+    <string name="board_lightest_stroke">सबसे हल्का स्ट्रोक</string>
+    <string name="board_strongest_stroke">सबसे गाढ़ा स्ट्रोक</string>
+    <string name="board_smoothing">स्मूदिंग</string>
+    <string name="board_reset_defaults">डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="board_pen_settings">पेन सेटिंग…</string>
+</resources>

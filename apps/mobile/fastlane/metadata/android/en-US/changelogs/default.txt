@@ -1,6 +1,5 @@
-Folio 1.0.13
-- Notes: drag images from another app in split screen (for example Chrome) onto a page, then move, resize or rotate them.
-- Notes: pages keep their shape in split screen and scroll, instead of being squashed.
-- Reader: import PDF and EPUB books up to 1 GB.
-- Faster lasso and fill on busy pages.
-- About shows who maintains Folio. Updated libraries.
+Folio 1.0.14
+- Folio now speaks English, Spanish, Portuguese, French, German, Hindi and Chinese. It follows your device language, or pick one in Preferences → Language.
+- Redesigned Preferences and Backup settings.
+- In landscape, pages keep their shape, centred, and scroll.
+- Fixes for page turning in landscape.

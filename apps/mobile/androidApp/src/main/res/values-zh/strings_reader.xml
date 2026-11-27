@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- PDF/EPUB reader and Live boards, Simplified Chinese. Keep top-bar labels short (50 dp actions, 10.5 sp). -->
+<resources>
+    <!-- Opening a book -->
+    <string name="reader_error_not_in_library">此文档已不在你的资料库中</string>
+    <string name="reader_error_file_missing">原文件不在本设备上。请重新导入同一个 PDF 或 EPUB 以继续；已保存的笔记和阅读位置会自动重新关联。</string>
+    <string name="reader_error_open">无法打开文档</string>
+    <string name="reader_error_open_title">无法打开此文档</string>
+    <string name="reader_error_memory_open">内存不足，无法打开此文档。你的笔记安全地保存在本设备上；请关闭其他应用后重试。</string>
+    <string name="reader_error_memory">内存不足，无法打开。你的笔记安全地保存在本设备上；请关闭其他应用后重试。</string>
+    <string name="reader_error_save">无法保存阅读器中的更改</string>
+    <string name="reader_error_operation">阅读器操作失败</string>
+    <string name="reader_error_export">无法导出文档</string>
+    <string name="reader_error_ocr">无法识别文字</string>
+    <string name="reader_error_fit">无法适应页面内容</string>
+    <string name="reader_error_no_text">此处没有可选择的文字。这可能是扫描页面；需要先进行 OCR 才能高亮文字。</string>
+    <string name="reader_error_no_app_link">没有可打开此链接的应用</string>
+    <string name="reader_title">阅读器</string>
+    <string name="reader_ok">确定</string>
+    <string name="reader_cancel">取消</string>
+    <string name="reader_delete">删除</string>
+    <string name="reader_save">保存</string>
+    <string name="reader_dismiss">关闭</string>
+    <string name="reader_back_to_library">返回资料库</string>
+    <string name="reader_back_to_reading">返回阅读</string>
+
+    <!-- Pages and chapters -->
+    <string name="reader_chapter_number">第 %1$d 章</string>
+    <string name="reader_page_number">第 %1$d 页</string>
+    <string name="reader_page_of">第 %1$d 页，共 %2$d 页</string>
+    <string name="reader_page_range">1–%1$d</string>
+    <string name="reader_previous_page">上一页</string>
+    <string name="reader_next_page">下一页</string>
+    <string name="reader_previous">上一个</string>
+    <string name="reader_next">下一个</string>
+    <string name="reader_percent_read">已读 %1$s</string>
+    <string name="reader_go_to_page">转到页面</string>
+    <string name="reader_go_to_a_page">转到指定页面</string>
+    <string name="reader_go">前往</string>
+    <string name="reader_battery">电量 %1$s</string>
+
+    <!-- Top bar -->
+    <string name="reader_open_books">打开的书籍</string>
+    <string name="reader_read">阅读</string>
+    <string name="reader_read_mode_description">阅读模式，放下笔</string>
+    <string name="reader_brush_description">%1$s，%2$s。再次点按可打开笔设置</string>
+    <string name="reader_pen_edit_hint">再次点按所选的笔即可编辑。</string>
+    <string name="reader_eraser">橡皮擦</string>
+    <string name="reader_undo">撤销</string>
+    <string name="reader_redo">重做</string>
+    <string name="reader_doc">文档</string>
+    <string name="reader_gestures">手势</string>
+    <string name="reader_notes">笔记</string>
+    <string name="reader_bookmark">书签</string>
+    <string name="reader_more">更多</string>
+    <string name="reader_close_eraser_options">关闭橡皮擦选项</string>
+    <string name="reader_stroke_eraser">笔画橡皮擦</string>
+    <string name="reader_erase_page_ink">擦除此页面上的所有笔迹</string>
+    <string name="reader_clear_page_question">清除此页面？</string>
+    <string name="reader_erase_all">全部擦除</string>
+    <string name="reader_hint_bar_toggle">用手指点按页面中间即可显示或隐藏工具栏。</string>
+    <string name="reader_hint_select">在文字上拖动即可选择一段内容。长按某个词即可将其选中。</string>
+    <string name="reader_hint_pen">直接在页面上书写。切换到“阅读”即可平移或缩放。</string>
+
+    <!-- Selection -->
+    <string name="reader_highlight">高亮</string>
+    <string name="reader_underline">下划线</string>
+    <string name="reader_add_note">添加笔记</string>
+    <string name="reader_clip_passage">段落</string>
+    <string name="reader_share_passage">分享段落</string>
+    <string name="reader_move_toolbar">移动工具栏</string>
+    <string name="reader_solid_underline">实线下划线</string>
+    <string name="reader_wavy_underline">波浪下划线</string>
+    <string name="reader_dashed_underline">虚线下划线</string>
+    <string name="reader_annotation_color">批注颜色</string>
+    <string name="reader_edit_highlight">编辑高亮</string>
+    <string name="reader_edit_underline">编辑下划线</string>
+    <string name="reader_copy">复制</string>
+    <string name="reader_more_selection_actions">更多选择操作</string>
+    <string name="reader_search_in_book">在书中搜索</string>
+    <string name="reader_share">分享</string>
+    <string name="reader_remove_marks">移除标记</string>
+    <string name="reader_dismiss_selection">取消选择</string>
+
+    <!-- Mark editor and colours -->
+    <string name="reader_mark_preview">书中的一段文字</string>
+    <string name="reader_color">颜色</string>
+    <string name="reader_color_yellow">黄色</string>
+    <string name="reader_color_orange">橙色</string>
+    <string name="reader_color_coral">珊瑚色</string>
+    <string name="reader_color_pink">粉色</string>
+    <string name="reader_color_purple">紫色</string>
+    <string name="reader_color_blue">蓝色</string>
+    <string name="reader_color_cyan">青色</string>
+    <string name="reader_color_green">绿色</string>
+    <string name="reader_color_lime">青柠色</string>
+    <string name="reader_color_sand">沙色</string>
+    <string name="reader_color_gray">灰色</string>
+    <string name="reader_color_custom">自定义</string>
+    <string name="reader_swatch_description">%1$s高亮</string>
+    <string name="reader_swatch_select">选择%1$s高亮</string>
+    <string name="reader_custom_color">自定义颜色</string>
+    <string name="reader_pick_custom_color">选择自定义颜色</string>
+
+    <!-- Bottom controls -->
+    <string name="reader_tab_progress">进度</string>
+    <string name="reader_tab_format">格式</string>
+    <string name="reader_tab_contrast">对比度</string>
+    <string name="reader_tab_navigation">导航</string>
+    <string name="reader_tab_split_view">分屏</string>
+    <string name="reader_search">搜索</string>
+    <string name="reader_select">选择</string>
+    <string name="reader_handwriting">手写</string>
+    <string name="reader_export_notes">导出笔记</string>
+    <string name="reader_page_display">页面显示</string>
+    <string name="reader_single_page">单页</string>
+    <string name="reader_scrolling_view">滚动视图</string>
+    <string name="reader_ltr">从左到右</string>
+    <string name="reader_rtl">从右到左</string>
+    <string name="reader_zoom">缩放</string>
+    <string name="reader_zoom_in">放大</string>
+    <string name="reader_zoom_out">缩小</string>
+    <string name="reader_marquee_zoom">框选缩放</string>
+    <string name="reader_marquee_zoom_hint">拖出一个矩形即可放大该区域。</string>
+    <string name="reader_reset_zoom">重置缩放</string>
+    <string name="reader_crop">裁剪</string>
+    <string name="reader_fit_screen">适应屏幕</string>
+    <string name="reader_fit_width">适应宽度</string>
+    <string name="reader_marquee_crop">框选裁剪</string>
+    <string name="reader_crop_hint">拖动以选择区域。拖动角点进行调整。</string>
+    <string name="reader_apply_crop">应用裁剪</string>
+    <string name="reader_reset">重置</string>
+    <string name="reader_margin">边距</string>
+    <string name="reader_text_enhancement">文字增强</string>
+    <string name="reader_text_size">文字大小</string>
+    <string name="reader_text_size_value">文字大小 · %1$s</string>
+    <string name="reader_line_spacing">行距</string>
+    <string name="reader_continuous_scrolling">连续滚动</string>
+    <string name="reader_decrease">减小%1$s</string>
+    <string name="reader_increase">增大%1$s</string>
+    <string name="reader_theme_light">浅色</string>
+    <string name="reader_theme_sepia">复古</string>
+    <string name="reader_theme_dark">深色</string>
+    <string name="reader_reading_theme">阅读主题</string>
+    <string name="reader_embolden">加粗</string>
+    <string name="reader_sharpen">图像锐化</string>
+    <string name="reader_watermark_bleaching">去除水印</string>
+    <string name="reader_dark_color_enhancement">深色增强</string>
+    <string name="reader_image_smoothing">图像平滑</string>
+
+    <!-- Split view -->
+    <string name="reader_split_current_doc">当前文档</string>
+    <string name="reader_split_another_doc">其他文档</string>
+    <string name="reader_split_handwritten_notes">手写笔记</string>
+    <string name="reader_split_text_notes">文字笔记</string>
+    <string name="reader_split_style">分屏样式</string>
+    <string name="reader_horizontal">水平</string>
+    <string name="reader_vertical">垂直</string>
+    <string name="reader_landscape_orientation">横屏方向</string>
+    <string name="reader_landscape_auto">自动</string>
+    <string name="reader_landscape_left">向左横屏</string>
+    <string name="reader_landscape_right">向右横屏</string>
+    <string name="reader_landscape_hint">旋转平板即可使用横屏。阅读器会跟随屏幕方向。</string>
+    <string name="reader_close_split_view">关闭分屏</string>
+    <string name="reader_split_document">分屏文档</string>
+    <string name="reader_split_import_first">请先从资料库导入另一个 PDF 或 EPUB。</string>
+    <string name="reader_write_note">写笔记</string>
+    <string name="reader_save_note_here">在当前位置保存笔记</string>
+    <string name="reader_split_context_pdf">PDF 第 %1$d 页</string>
+    <string name="reader_split_context_epub">EPUB · %1$s</string>
+    <string name="reader_split_context_line">来自 %1$s · %2$s</string>
+    <string name="reader_split_notebook_title">笔记 · %1$s</string>
+
+    <!-- Contents -->
+    <string name="reader_contents">目录</string>
+    <string name="reader_close_contents">关闭目录</string>
+    <string name="reader_collapse_chapter">收起 %1$s</string>
+    <string name="reader_expand_chapter">展开 %1$s</string>
+    <string name="reader_no_outline">此 PDF 没有章节大纲。请按页面浏览。</string>
+    <string name="reader_no_toc">没有可用的目录。</string>
+    <string name="reader_toc">目录</string>
+    <string name="reader_bookmarks">书签</string>
+    <string name="reader_annotations">批注</string>
+    <string name="reader_empty_bookmarks">暂无书签</string>
+    <string name="reader_empty_annotations">暂无批注</string>
+    <string name="reader_empty_handwriting">暂无手写内容</string>
+    <string name="reader_saved_location">已保存的位置</string>
+    <string name="reader_kind_highlight">高亮</string>
+    <string name="reader_kind_underline">下划线</string>
+    <string name="reader_kind_ink">笔迹</string>
+    <string name="reader_kind_note">笔记</string>
+    <string name="reader_kind_bookmark">书签</string>
+    <string name="reader_annotations_empty">选择文字即可高亮，用笔书写，或从菜单中添加笔记。</string>
+
+    <!-- Panels -->
+    <string name="reader_pen_settings">笔设置</string>
+    <string name="reader_pen_settings_named">笔设置（%1$s）</string>
+    <string name="reader_pen_settings_hint">书写时，点按顶部栏中所选的笔，或长按任意一支笔，即可打开这些设置。</string>
+    <string name="reader_document">文档</string>
+    <plurals name="reader_document_pages">
+        <item quantity="other">%1$s · %2$d 页</item>
+    </plurals>
+    <string name="reader_document_epub">%1$s · EPUB 书籍</string>
+    <string name="reader_saving">正在保存…</string>
+    <string name="reader_saved_on_device">已保存在本设备上</string>
+    <string name="reader_appearance">外观</string>
+    <string name="reader_hide_bar_writing">书写时隐藏工具栏</string>
+    <string name="reader_gesture_click">点按 / 长按</string>
+    <string name="reader_gesture_slide">滑动 / 拖动页面</string>
+    <string name="reader_gesture_pinch">双指缩放</string>
+    <string name="reader_gesture_system_bars">系统栏手势</string>
+    <string name="reader_gesture_bottom">底部手势</string>
+    <string name="reader_gesture_sides">侧边手势</string>
+    <string name="reader_gesture_back">返回按钮</string>
+    <string name="reader_gestures_help">点按中间始终会打开控件。从底部向上滑动会打开控件；点按两侧可翻页。停用系统栏手势后，系统栏会保持可见。停用返回后，会打开这些设置，而不是退出阅读器。</string>
+    <string name="reader_show_footer">显示阅读页脚</string>
+    <string name="reader_show_book_tabs">显示书籍标签页</string>
+    <string name="reader_contents_and_bookmarks">目录和书签</string>
+    <string name="reader_search_this_book">搜索此书</string>
+    <string name="reader_highlights_notes_bookmarks">高亮、笔记和书签</string>
+    <string name="reader_recognizing">正在识别文字…</string>
+    <string name="reader_recognize_scanned">识别扫描页面</string>
+    <plurals name="reader_ocr_recognized">
+        <item quantity="other">已在第 %2$d 页识别出 %1$d 个词。在文字上拖动即可高亮。</item>
+    </plurals>
+    <string name="reader_ocr_none">此页面上未识别出文字。</string>
+    <string name="reader_add_note_here">在此位置添加笔记</string>
+    <string name="reader_export_reading_notes">导出阅读笔记（.md）</string>
+    <string name="reader_export_annotated_pdf">导出带批注的 PDF</string>
+    <string name="reader_original_unchanged">你的原文件保持不变。高亮、笔记和书签会自动保存。</string>
+    <string name="reader_preparing_export">正在准备导出…</string>
+
+    <!-- Search -->
+    <string name="reader_search_min_chars">请至少输入两个字符</string>
+    <string name="reader_search_match">匹配项</string>
+    <string name="reader_search_document">搜索此文档</string>
+    <string name="reader_restart_search">重新搜索</string>
+    <string name="reader_find">查找</string>
+    <plurals name="reader_search_matches">
+        <item quantity="other">%1$d 个匹配项</item>
+    </plurals>
+    <string name="reader_search_matches_capped">%1$d 个匹配项（前 %2$d 个）</string>
+
+    <!-- Notes -->
+    <string name="reader_add_reading_note">添加阅读笔记</string>
+    <string name="reader_edit_note">编辑笔记</string>
+    <string name="reader_your_note">你的笔记</string>
+    <string name="reader_save_note">保存笔记</string>
+
+    <!-- Live boards -->
+    <string name="board_back_to_boards">返回白板</string>
+    <string name="board_live_session">实时会话</string>
+    <string name="board_live_board">实时白板</string>
+    <string name="board_fingers_on">手指开启：平移和缩放</string>
+    <string name="board_fingers_off">手指关闭：仅限笔</string>
+    <string name="board_pen_on_board">在白板上使用笔</string>
+    <string name="board_share">分享</string>
+    <string name="board_rename_title">重命名白板</string>
+    <string name="board_rename">重命名</string>
+    <string name="board_untitled">未命名白板</string>
+    <string name="board_cancel">取消</string>
+    <string name="board_done">完成</string>
+    <string name="board_share_title">分享白板</string>
+    <string name="board_link_help">拥有此链接的人可以在任何浏览器中查看白板并实时在上面绘图。会话采用端到端加密。</string>
+    <string name="board_clip_label">Folio 实时白板</string>
+    <string name="board_copied">已复制</string>
+    <string name="board_copy_link">复制链接</string>
+    <string name="board_join_message">加入我的 Folio 白板：%1$s</string>
+    <string name="board_send_live_link">发送实时链接</string>
+    <string name="board_send_link">发送链接…</string>
+    <string name="board_stop_session">结束会话…</string>
+    <string name="board_start_help">开始会话并在通话中发送链接。其他人可以在任何浏览器中观看和绘图；会话采用端到端加密。</string>
+    <string name="board_start_session">开始实时会话</string>
+    <string name="board_join_session">加入会话</string>
+    <string name="board_paste">粘贴</string>
+    <string name="board_join">加入</string>
+    <string name="board_export">导出</string>
+    <string name="board_export_image">图片（PNG）</string>
+    <string name="board_export_file">Excalidraw 文件</string>
+    <string name="board_pressure_help">激活阈值和压力曲线来自你的笔设置。这些选项仅适用于实时白板。</string>
+    <string name="board_sensitivity">灵敏度</string>
+    <string name="board_sensitivity_help">数值越高，轻触即可达到最大粗细。%1$s 为线性。</string>
+    <string name="board_lightest_stroke">最轻笔画</string>
+    <string name="board_strongest_stroke">最重笔画</string>
+    <string name="board_smoothing">平滑</string>
+    <string name="board_reset_defaults">恢复默认设置</string>
+    <string name="board_pen_settings">笔设置…</string>
+</resources>

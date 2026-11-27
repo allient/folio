@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Preferences → Language. Language names themselves come from AppLanguages and are never translated. -->
+    <string name="pref_language_title">Language</string>
+    <string name="pref_language_detail">Folio follows your device language. If it isn't available, Folio uses English.</string>
+    <string name="pref_language_system">Device language</string>
+</resources>

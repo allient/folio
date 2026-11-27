@@ -1,6 +1,7 @@
 package com.allient.folio
 
-/** Built-in page layouts. IDs are persisted in NotebookPage.template; keep existing IDs stable. */
+/** Built-in page layouts. IDs are persisted in NotebookPage.template; keep existing IDs stable. [name] and the categories are
+ * English IDs and fallbacks: the UI shows [templateName] and [templateCategoryName]. */
 data class NotebookTemplate(val id: String, val name: String, val category: String)
 
 object NotebookTemplateCatalog {

@@ -1,6 +1,5 @@
-Folio 1.0.13
-- Notas: arrastra imágenes desde otra app en pantalla dividida (por ejemplo Chrome) a una página y muévelas, cambia su tamaño o gíralas.
-- Notas: en pantalla dividida las páginas mantienen su forma y se desplazan en vez de aplastarse.
-- Lector: importa libros PDF y EPUB de hasta 1 GB.
-- Lazo y relleno más rápidos en páginas con mucho contenido.
-- Acerca de muestra quién mantiene Folio. Bibliotecas actualizadas.
+Folio 1.0.14
+- Folio ahora está en inglés, español, portugués, francés, alemán, hindi y chino. Usa el idioma de tu dispositivo, o elige uno en Preferencias → Idioma.
+- Nuevo diseño de Preferencias y de la copia de seguridad.
+- En horizontal, las páginas mantienen su forma, centradas, y se desplazan.
+- Correcciones al pasar de página en horizontal.

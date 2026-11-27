@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Error messages shown to people. Exceptions keep English text for logs; see UserMessages.kt. -->
+<resources>
+    <!-- Backup folder labels -->
+    <string name="backup_label_internal_storage">Internal storage</string>
+    <string name="backup_label_sd_card">SD card / %1$s</string>
+    <string name="backup_label_selected_folder">Selected folder</string>
+    <!-- Smart backups -->
+    <string name="error_backup_failed">Could not create the backup. Check the folder and available storage.</string>
+    <string name="error_backup_low_space">Not enough free space for a backup: about %1$s is needed and %2$s is free. Free up some space; Folio tries again after your next change. Existing backups were kept.</string>
+    <string name="error_backup_folder_access">Folder access is no longer available. Choose the backup folder again.</string>
+    <string name="error_backup_verify">The backup copy does not match the archive. The previous backups were kept.</string>
+    <string name="error_backup_folder_unreadable">Could not read the backup folder.</string>
+    <string name="error_backup_create_file">Could not create a backup in the selected folder.</string>
+    <string name="error_backup_documents_folder">Could not finish the backup. Choose a folder in Documents on this device.</string>
+    <string name="error_backup_open">Could not open the backup.</string>
+    <string name="error_backup_folder_not_local">Choose a folder on this device.</string>
+    <string name="error_backup_folder_read_only">Folio cannot write to this folder. Choose another folder.</string>
+    <string name="error_backup_folder_open">Could not open this folder. Choose another folder.</string>
+    <string name="error_backup_folder_unusable">Could not use this folder. Please choose another.</string>
+    <!-- Backups and imports -->
+    <string name="error_attachment_missing">A notebook attachment is missing.</string>
+    <string name="error_backup_too_many_files">This backup has too many files to restore.</string>
+    <string name="error_backup_data_too_large">The notebook data is larger than the 32 MiB backup limit.</string>
+    <string name="error_backup_attachment_too_large">An attachment is larger than the 128 MiB backup limit.</string>
+    <string name="error_backup_attachment_too_large_named">An attachment is larger than the 128 MiB backup limit: %1$s</string>
+    <string name="error_backup_too_large">The backup is larger than the 2 GiB limit.</string>
+    <string name="error_backup_unsupported">This backup format is not supported by this version of Folio.</string>
+    <string name="error_backup_not_library">This is not a supported Folio library backup.</string>
+    <string name="error_backup_is_library">This is a whole-library backup, so it can\'t be imported as a single notebook.</string>
+    <string name="error_backup_damaged">This backup is damaged or is not a valid Folio backup.</string>
+    <string name="error_image_unsupported">This image format cannot be opened.</string>
+    <string name="error_pdf_page_count">Import a PDF with %1$d–%2$d pages.</string>
+    <string name="error_file_too_large">The selected file is too large.</string>
+    <string name="error_epub_not_epub">This file is not an EPUB book.</string>
+    <string name="error_epub_chapter_too_large">This EPUB has a chapter that is too large to import.</string>
+    <string name="error_epub_drm_import">This EPUB is protected (DRM) and can\'t be imported.</string>
+    <string name="error_epub_no_package">This EPUB has no package file.</string>
+    <string name="error_epub_no_text">This EPUB has no text to import.</string>
+    <string name="error_epub_too_long">This book is too long to import as a notebook (more than %1$d pages). Open it in the reader instead.</string>
+    <string name="error_import_document">The selected document could not be imported.</string>
+    <string name="error_import_file">This file could not be imported.</string>
+    <string name="error_insert_file">This file could not be inserted.</string>
+    <string name="error_library_restore">The Folio library backup could not be restored.</string>
+    <string name="error_import_load_blocked">Existing notebooks could not be loaded. The selected document was not imported.</string>
+    <string name="error_import_destination_missing">The destination notebook or page no longer exists.</string>
+    <string name="error_import_layer">Choose a visible, unlocked layer before inserting an image.</string>
+    <string name="error_canvas_no_pages">Infinite canvases have no pages. Insert an image or attach the PDF instead.</string>
+    <!-- Notebook storage -->
+    <string name="error_save_first_notebook">Could not save your first notebook.</string>
+    <string name="error_save_notebooks">Could not save notebooks to this device.</string>
+    <string name="error_notebooks_loading">Notebooks are still loading. Please try again.</string>
+    <string name="error_notebooks_not_loaded">Existing notebooks could not be loaded. Original data has been preserved.</string>
+    <!-- Recordings -->
+    <string name="error_recording_unavailable">Audio recording is not available.</string>
+    <string name="error_recording_save">The recording could not be saved.</string>
+    <string name="error_recording_pause">The recording could not be paused.</string>
+    <string name="error_recording_resume">The recording could not be resumed.</string>
+    <string name="error_recording_running">A recording is already running.</string>
+    <string name="error_recording_empty">The recording is empty.</string>
+    <!-- Reader -->
+    <string name="error_annotation_too_large">This annotation is too large.</string>
+    <string name="error_document_too_large">Documents must be smaller than 1 GiB.</string>
+    <string name="error_not_enough_storage">Not enough free storage to import this document.</string>
+    <string name="error_book_not_supported">This file is not a PDF or EPUB book.</string>
+    <string name="error_book_not_epub">This file is not an EPUB book. Import a PDF or DRM-free EPUB.</string>
+    <string name="error_epub_damaged">This EPUB is damaged and can\'t be opened.</string>
+    <string name="error_epub_too_large">This EPUB is too large to open.</string>
+    <string name="error_epub_open">Could not open this EPUB.</string>
+    <string name="error_epub_drm_open">This book is DRM protected. Import a DRM-free EPUB.</string>
+    <string name="error_pdf_password">This PDF is password protected. Remove the password in another app, then import it again.</string>
+    <string name="error_pdf_no_pages">This PDF has no pages.</string>
+    <string name="error_export_pdf_password">This PDF is password protected, so it can\'t be exported with annotations. Export your reading notes instead.</string>
+    <string name="error_export_pdf_encrypted">This PDF is encrypted, so it can\'t be exported with annotations. Export your reading notes instead.</string>
+    <string name="error_export_pdf_no_annotations">This PDF does not permit annotations.</string>
+    <string name="error_reader_select_text">Could not select text.</string>
+    <string name="error_reader_render_page">Could not show this page.</string>
+    <string name="error_reader_page_memory">Not enough memory to draw this page at this zoom. Zoom out or close other books and try again.</string>
+    <string name="error_reader_annotations">Could not display annotations.</string>
+    <string name="error_reader_save_ink">Could not save the ink.</string>
+    <string name="error_reader_chapter">Could not load this chapter.</string>
+    <string name="error_reader_search">Could not search this book.</string>
+    <!-- Handwriting -->
+    <string name="error_handwriting_language">Handwriting in this language isn\'t supported.</string>
+</resources>

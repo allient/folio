@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import knotes.shared.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 /** Library navigation. [current] is "home", "recent", "favorites", "trash", "preferences", "about" or "folder:<id>". */
 @Composable
@@ -34,38 +36,41 @@ internal fun HomeSidebar(folders: List<NoteFolder>, current: String, trashCount:
             Text("Folio", Modifier.padding(start = 10.dp), fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, letterSpacing = (-.3).sp)
         }
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            SidebarItem(Symbol.Notes, "Notes", current == "home", { onSelect("home") })
-            SidebarItem(Symbol.Folder, "Folders", false, { expanded = !expanded }) {
-                Box(Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onCreateFolder).semantics { contentDescription = "Create folder" }.testTag("sidebar-create-folder"),
+            SidebarItem(Symbol.Notes, stringResource(Res.string.sidebar_notes), current == "home", { onSelect("home") }, tag = "notes")
+            SidebarItem(Symbol.Folder, stringResource(Res.string.sidebar_folders), false, { expanded = !expanded }, tag = "folders") {
+                val createLabel = stringResource(Res.string.sidebar_create_folder)
+                val toggleLabel = stringResource(if (expanded) Res.string.sidebar_collapse_folders else Res.string.sidebar_expand_folders)
+                Box(Modifier.size(40.dp).clip(CircleShape).clickable(onClick = onCreateFolder).semantics { contentDescription = createLabel }.testTag("sidebar-create-folder"),
                     contentAlignment = Alignment.Center) { HomeSymbol(Symbol.Plus, Modifier.size(15.dp)) }
-                Box(Modifier.size(40.dp).clip(CircleShape).clickable { expanded = !expanded }.semantics { contentDescription = if (expanded) "Collapse folders" else "Expand folders" },
+                Box(Modifier.size(40.dp).clip(CircleShape).clickable { expanded = !expanded }.semantics { contentDescription = toggleLabel },
                     contentAlignment = Alignment.Center) { HomeSymbol(Symbol.ChevronDown, Modifier.size(15.dp).rotate(if (expanded) 0f else -90f)) }
             }
             if (expanded) {
                 folders.folderTree().forEach { (folder, depth) ->
-                    SidebarItem(null, folder.name, current == "folder:${folder.id}", { onSelect("folder:${folder.id}") }, indent = true, folder = folder, depth = depth)
+                    SidebarItem(null, folder.name, current == "folder:${folder.id}", { onSelect("folder:${folder.id}") }, tag = folder.name.lowercase().replace(' ', '-'), indent = true, folder = folder, depth = depth)
                 }
-                if (folders.isEmpty()) Text("No folders yet", Modifier.padding(start = 52.dp, top = 4.dp, bottom = 8.dp), fontSize = 12.sp, color = HomeMuted)
+                if (folders.isEmpty()) Text(stringResource(Res.string.sidebar_no_folders), Modifier.padding(start = 52.dp, top = 4.dp, bottom = 8.dp), fontSize = 12.sp, color = HomeMuted)
             }
-            SidebarItem(Symbol.Clock, "Recent", current == "recent", { onSelect("recent") })
-            SidebarItem(Symbol.Star, "Favorites", current == "favorites", { onSelect("favorites") })
-            SidebarItem(Symbol.Trash, "Trash bin", current == "trash", { onSelect("trash") }) {
+            SidebarItem(Symbol.Clock, stringResource(Res.string.sidebar_recent), current == "recent", { onSelect("recent") }, tag = "recent")
+            SidebarItem(Symbol.Star, stringResource(Res.string.sidebar_favorites), current == "favorites", { onSelect("favorites") }, tag = "favorites")
+            SidebarItem(Symbol.Trash, stringResource(Res.string.home_trash_title), current == "trash", { onSelect("trash") }, tag = "trash-bin") {
                 if (trashCount > 0) Text("$trashCount", Modifier.padding(end = 8.dp), fontSize = 12.sp, color = HomeMuted)
             }
         }
         Box(Modifier.fillMaxWidth().padding(vertical = 8.dp).height(1.dp).background(HomeHairline))
-        SidebarItem(Symbol.Gear, "Preferences", current == "preferences", { onSelect("preferences") })
-        SidebarItem(Symbol.Info, "About", current == "about", { onSelect("about") })
+        SidebarItem(Symbol.Gear, stringResource(Res.string.prefs_title), current == "preferences", { onSelect("preferences") }, tag = "preferences")
+        SidebarItem(Symbol.Info, stringResource(Res.string.about_title), current == "about", { onSelect("about") }, tag = "about")
         Spacer(Modifier.height(16.dp))
     }
 }
 
 @Composable
-private fun SidebarItem(symbol: Symbol?, label: String, selected: Boolean, onClick: () -> Unit, indent: Boolean = false, folder: NoteFolder? = null, depth: Int = 0, trailing: @Composable RowScope.() -> Unit = {}) {
+/** [tag] gives the test tag `sidebar-<tag>`, which stays English whatever the app language. */
+private fun SidebarItem(symbol: Symbol?, label: String, selected: Boolean, onClick: () -> Unit, tag: String, indent: Boolean = false, folder: NoteFolder? = null, depth: Int = 0, trailing: @Composable RowScope.() -> Unit = {}) {
     val style = LocalHomeStyle.current
     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(style.item)).background(if (selected) style.soft else Color.Transparent)
         .clickable(onClick = onClick).padding(start = if (indent) 40.dp + 16.dp * depth.coerceAtMost(4) else 12.dp, end = 4.dp)
-        .testTag("sidebar-${label.lowercase().replace(' ', '-')}").semantics { this.selected = selected },
+        .testTag("sidebar-$tag").semantics { this.selected = selected },
         verticalAlignment = Alignment.CenterVertically) {
         when {
             folder != null -> FolderArtwork(folder.color, folder.style, Modifier.size(26.dp, 20.dp))

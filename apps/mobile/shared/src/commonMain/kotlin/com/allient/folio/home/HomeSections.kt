@@ -22,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import knotes.shared.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 /** Centered segmented control; the selected segment is filled with the accent colour. */
 @Composable
@@ -50,7 +52,7 @@ internal fun SectionHeader(key: String, title: String, count: Int, foldable: Boo
         Spacer(Modifier.weight(1f))
         if (foldable) Row(Modifier.clip(RoundedCornerShape(style.item)).clickable(onClick = onToggle).padding(horizontal = 8.dp, vertical = 6.dp).testTag("fold-$key"),
             verticalAlignment = Alignment.CenterVertically) {
-            Text(if (open) "Fold" else "Unfold ($count)", color = style.accent, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+            Text(if (open) stringResource(Res.string.home_fold) else stringResource(Res.string.home_unfold, count), color = style.accent, fontSize = 13.sp, fontWeight = FontWeight.Medium)
             if (!open) HomeSymbol(Symbol.ChevronRight, Modifier.padding(start = 2.dp).size(14.dp), tint = style.accent)
         }
     }

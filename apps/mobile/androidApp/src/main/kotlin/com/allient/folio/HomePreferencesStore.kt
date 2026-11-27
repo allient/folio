@@ -7,7 +7,7 @@ import com.allient.folio.home.HomePreferences
 import com.allient.folio.home.HomeSort
 
 /** App-private preferences `home-preferences`. Unknown stored values fall back to the defaults. */
-internal class HomePreferencesStore(context: Context) {
+internal class HomePreferencesStore(private val context: Context) {
     private val preferences = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
 
     fun read(): HomePreferences {
@@ -19,6 +19,8 @@ internal class HomePreferencesStore(context: Context) {
             sort = preferences.getString(SORT, null)?.takeIf { id -> HomeSort.all.any { it.first == id } } ?: defaults.sort,
             startFullscreen = preferences.getBoolean(FULLSCREEN, defaults.startFullscreen),
             trashRetentionDays = preferences.getInt(RETENTION, defaults.trashRetentionDays).takeIf { it in setOf(0, 7, 30) } ?: defaults.trashRetentionDays,
+            // The language lives with the platform (AppLocales), so Android 13's per-app setting and this one stay the same.
+            language = AppLocales.choice(context),
         )
     }
 

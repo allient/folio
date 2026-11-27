@@ -95,7 +95,7 @@ internal class NotebookFiles(private val context: Context) {
         val assets = linkedMapOf<String, File>()
         visitPaths(json) { path ->
             val source = File(path)
-            require(source.isFile && source.canonicalPath.startsWith(mediaDir.canonicalPath + File.separator)) {
+            requireUser(source.isFile && source.canonicalPath.startsWith(mediaDir.canonicalPath + File.separator), R.string.error_attachment_missing) {
                 "A notebook attachment is missing."
             }
             val existing = assets.entries.firstOrNull { it.value.absolutePath == source.absolutePath }?.key
@@ -103,13 +103,13 @@ internal class NotebookFiles(private val context: Context) {
             entry
         }
         // Every successful export must fit the same limits used by our importer.
-        require(assets.size + 2 <= MAX_BACKUP_ENTRIES) { "Backup contains too many files to restore." }
+        requireUser(assets.size + 2 <= MAX_BACKUP_ENTRIES, R.string.error_backup_too_many_files) { "Backup contains too many files to restore." }
         val jsonBytes = json.toString().toByteArray(Charsets.UTF_8)
-        require(jsonBytes.size.toLong() <= MAX_JSON_BYTES) { "Notebook content exceeds the 32 MiB backup limit." }
+        requireUser(jsonBytes.size.toLong() <= MAX_JSON_BYTES, R.string.error_backup_data_too_large) { "Notebook content exceeds the 32 MiB backup limit." }
         assets.values.forEach { source ->
-            require(source.length() <= MAX_ASSET_BYTES) { "An attachment exceeds the 128 MiB backup limit: ${source.name}" }
+            requireUser(source.length() <= MAX_ASSET_BYTES, R.string.error_backup_attachment_too_large_named, source.name) { "An attachment exceeds the 128 MiB backup limit: ${source.name}" }
         }
-        require(jsonBytes.size.toLong() + assets.values.sumOf { it.length() } <= MAX_BACKUP_BYTES) { "Notebook backup exceeds the 2 GiB restore limit." }
+        requireUser(jsonBytes.size.toLong() + assets.values.sumOf { it.length() } <= MAX_BACKUP_BYTES, R.string.error_backup_too_large) { "Notebook backup exceeds the 2 GiB restore limit." }
         val manifest = archiveManifest("notebook", 1).put("notebookPath", "notebook.json.zst")
         return exportFile(note.title, FolioFormat.EXTENSION).also { output ->
             writeZip(output, linkedMapOf(
@@ -131,7 +131,7 @@ internal class NotebookFiles(private val context: Context) {
             val json = JSONObject(serializeNotebook(note))
             visitPaths(json) { path ->
                 val source = File(path)
-                require(source.isFile && source.canonicalPath.startsWith(mediaDir.canonicalPath + File.separator)) {
+                requireUser(source.isFile && source.canonicalPath.startsWith(mediaDir.canonicalPath + File.separator), R.string.error_attachment_missing) {
                     "A notebook attachment is missing."
                 }
                 val assetPath = assets.entries.firstOrNull { it.value.canonicalPath == source.canonicalPath }?.key
@@ -141,7 +141,7 @@ internal class NotebookFiles(private val context: Context) {
             val path = "notebooks/${safeName(note.id)}/notebook.json.zst"
             val bytes = json.toString().toByteArray(Charsets.UTF_8)
             totalJsonBytes += bytes.size
-            require(totalJsonBytes <= MAX_JSON_BYTES) { "Library notebook data exceeds the 32 MiB backup limit." }
+            requireUser(totalJsonBytes <= MAX_JSON_BYTES, R.string.error_backup_data_too_large) { "Library notebook data exceeds the 32 MiB backup limit." }
             files[path] = Zstd.compress(bytes, ZSTD_LEVEL)
             index.put(JSONObject().put("id", note.id).put("path", path))
         }
@@ -152,11 +152,11 @@ internal class NotebookFiles(private val context: Context) {
             .put("notebooks", index)
             .put("reader", readerSnapshot)
         val libraryBytes = library.toString().toByteArray(Charsets.UTF_8)
-        require(totalJsonBytes + libraryBytes.size <= MAX_JSON_BYTES) { "Library data exceeds the 32 MiB backup limit." }
+        requireUser(totalJsonBytes + libraryBytes.size <= MAX_JSON_BYTES, R.string.error_backup_data_too_large) { "Library data exceeds the 32 MiB backup limit." }
         files["library.json.zst"] = Zstd.compress(libraryBytes, ZSTD_LEVEL)
-        require(files.size + assets.size + 1 <= MAX_BACKUP_ENTRIES) { "Library backup contains too many files." }
-        require(assets.values.all { it.length() <= MAX_ASSET_BYTES }) { "An attachment exceeds the 128 MiB backup limit." }
-        require(totalJsonBytes + libraryBytes.size + assets.values.sumOf { it.length() } <= MAX_BACKUP_BYTES) {
+        requireUser(files.size + assets.size + 1 <= MAX_BACKUP_ENTRIES, R.string.error_backup_too_many_files) { "Library backup contains too many files." }
+        requireUser(assets.values.all { it.length() <= MAX_ASSET_BYTES }, R.string.error_backup_attachment_too_large) { "An attachment exceeds the 128 MiB backup limit." }
+        requireUser(totalJsonBytes + libraryBytes.size + assets.values.sumOf { it.length() } <= MAX_BACKUP_BYTES, R.string.error_backup_too_large) {
             "Library backup exceeds the 2 GiB limit."
         }
         val manifest = archiveManifest("library", notebooks.size)
@@ -204,41 +204,41 @@ internal class NotebookFiles(private val context: Context) {
             input(uri).use { source -> ZipInputStream(source.buffered()).use { zip ->
                 while (true) {
                     val entry = zip.nextEntry ?: break
-                    require(++entryCount <= MAX_BACKUP_ENTRIES) { "Library backup contains too many files." }
+                    requireUser(++entryCount <= MAX_BACKUP_ENTRIES, R.string.error_backup_too_many_files) { "Library backup contains too many files." }
                     if (entry.isDirectory) { zip.closeEntry(); continue }
-                    require(isSafeArchivePath(entry.name)) { "Invalid library backup entry." }
+                    requireUser(isSafeArchivePath(entry.name), R.string.error_backup_damaged) { "Invalid library backup entry." }
                     when {
                         entry.name == "manifest.json" -> {
-                            require(manifest == null) { "Library backup has duplicate manifests." }
+                            requireUser(manifest == null, R.string.error_backup_damaged) { "Library backup has duplicate manifests." }
                             val bytes = java.io.ByteArrayOutputStream()
                             expandedTotal += boundedCopy(zip, bytes, 64 * 1024)
                             manifest = JSONObject(bytes.toString("UTF-8"))
                         }
                         entry.name == "library.json.zst" || entry.name.startsWith("notebooks/") && entry.name.endsWith("/notebook.json.zst") -> {
-                            require(!jsonEntries.containsKey(entry.name)) { "Library backup has duplicate notebook data." }
+                            requireUser(!jsonEntries.containsKey(entry.name), R.string.error_backup_damaged) { "Library backup has duplicate notebook data." }
                             val bytes = java.io.ByteArrayOutputStream()
                             expandedTotal += boundedCopy(zip, bytes, MAX_JSON_CONTAINER_BYTES)
                             jsonEntries[entry.name] = bytes.toByteArray()
                         }
                         entry.name.startsWith("assets/") -> {
-                            require(!assetPaths.containsKey(entry.name)) { "Library backup has duplicate assets." }
+                            requireUser(!assetPaths.containsKey(entry.name), R.string.error_backup_damaged) { "Library backup has duplicate assets." }
                             val file = File(staging, "${UUID.randomUUID()}_${safeName(entry.name.substringAfterLast('/'))}")
                             file.outputStream().use { expandedTotal += boundedCopy(zip, it, MAX_ASSET_BYTES) }
                             assetPaths[entry.name] = file.absolutePath
                         }
-                        else -> throw IllegalArgumentException("Library backup contains an unexpected file.")
+                        else -> throw UserInputException(R.string.error_backup_damaged, "Library backup contains an unexpected file.")
                     }
-                    require(expandedTotal <= MAX_BACKUP_BYTES) { "Library backup exceeds the 2 GiB restore limit." }
+                    requireUser(expandedTotal <= MAX_BACKUP_BYTES, R.string.error_backup_too_large) { "Library backup exceeds the 2 GiB restore limit." }
                     zip.closeEntry()
                 }
             } }
             val archiveManifest = requireNotNull(manifest) { "Backup archive manifest is missing." }
-            require(archiveManifest.optString("format") in FolioFormat.archiveFormats && archiveManifest.optInt("formatVersion") == 1) { "Unsupported backup archive version." }
-            require(archiveManifest.optString("archiveType") == "library" && archiveManifest.optString("compression") == "zip+zstd-json") { "This is not a supported Folio library backup." }
+            requireUser(archiveManifest.optString("format") in FolioFormat.archiveFormats && archiveManifest.optInt("formatVersion") == 1, R.string.error_backup_unsupported) { "Unsupported backup archive version." }
+            requireUser(archiveManifest.optString("archiveType") == "library" && archiveManifest.optString("compression") == "zip+zstd-json", R.string.error_backup_not_library) { "This is not a supported Folio library backup." }
             val libraryBytes = decompressJson(requireNotNull(jsonEntries.remove("library.json.zst")) { "Library index is missing." })
             var decodedJsonBytes = libraryBytes.size.toLong()
             val libraryJson = JSONObject(libraryBytes.toString(Charsets.UTF_8))
-            require(libraryJson.optInt("schemaVersion") == 1) { "Unsupported library schema version." }
+            requireUser(libraryJson.optInt("schemaVersion") == 1, R.string.error_backup_unsupported) { "Unsupported library schema version." }
             val importedFolders = libraryJson.optJSONArray("folders") ?: JSONArray()
             val folderIdMap = mutableMapOf<String, String>()
             // Trashed items stay in Trash after a restore; their retention period restarts now.
@@ -246,30 +246,30 @@ internal class NotebookFiles(private val context: Context) {
             val folders = (0 until importedFolders.length()).map { index ->
                 val folder = importedFolders.getJSONObject(index)
                 val oldId = folder.getString("id")
-                require(!folderIdMap.containsKey(oldId)) { "Library backup has duplicate folder IDs." }
+                requireUser(!folderIdMap.containsKey(oldId), R.string.error_backup_damaged) { "Library backup has duplicate folder IDs." }
                 val newId = UUID.randomUUID().toString(); folderIdMap[oldId] = newId
                 com.allient.folio.home.NoteFolder(newId, folder.optString("name", "Folder"), folder.optString("color", "sage"), folder.optString("style", "classic"),
                     if (folder.optLong("deletedAt", 0) > 0) restoredAt else 0, parentId = folder.optString("parentId").takeIf { it.isNotBlank() })
             }.map { folder -> folder.copy(parentId = folder.parentId?.let { folderIdMap[it] }) }
             val records = libraryJson.optJSONArray("notebooks") ?: JSONArray()
-            require(records.length() == archiveManifest.optInt("notebookCount", -1)) { "Library backup notebook count does not match its manifest." }
+            requireUser(records.length() == archiveManifest.optInt("notebookCount", -1), R.string.error_backup_damaged) { "Library backup notebook count does not match its manifest." }
             val usedPaths = mutableSetOf<String>()
             val recordIds = mutableSetOf<String>()
             val notebooks = (0 until records.length()).map { index ->
                 val record = records.getJSONObject(index)
                 val path = record.getString("path")
-                require(path.startsWith("notebooks/") && path.endsWith("/notebook.json.zst") && usedPaths.add(path)) { "Invalid or duplicate notebook path in library index." }
-                require(recordIds.add(record.getString("id"))) { "Library backup has duplicate notebook IDs." }
+                requireUser(path.startsWith("notebooks/") && path.endsWith("/notebook.json.zst") && usedPaths.add(path), R.string.error_backup_damaged) { "Invalid or duplicate notebook path in library index." }
+                requireUser(recordIds.add(record.getString("id")), R.string.error_backup_damaged) { "Library backup has duplicate notebook IDs." }
                 val compressed = requireNotNull(jsonEntries.remove(path)) { "Library backup is missing a notebook." }
                 val notebookBytes = decompressJson(compressed)
                 decodedJsonBytes += notebookBytes.size
-                require(decodedJsonBytes <= MAX_JSON_BYTES) { "Library JSON exceeds the 32 MiB restore limit." }
+                requireUser(decodedJsonBytes <= MAX_JSON_BYTES, R.string.error_backup_data_too_large) { "Library JSON exceeds the 32 MiB restore limit." }
                 val json = JSONObject(notebookBytes.toString(Charsets.UTF_8))
                 visitPaths(json) { asset -> requireNotNull(assetPaths[asset]) { "Library backup is missing a referenced asset." } }
                 val note = deserializeNotebook(json.toString())
-                require(note.id == record.optString("id")) { "Library index and notebook IDs do not match." }
+                requireUser(note.id == record.optString("id"), R.string.error_backup_damaged) { "Library index and notebook IDs do not match." }
                 val pageIds = note.pages.associate { it.id to UUID.randomUUID().toString() }
-                require(pageIds.size == note.pages.size) { "Notebook has duplicate page IDs." }
+                requireUser(pageIds.size == note.pages.size, R.string.error_backup_damaged) { "Notebook has duplicate page IDs." }
                 val lastPage = pageIds[note.lastViewedPageId]
                 note.copy(
                     id = UUID.randomUUID().toString(), updatedAt = System.currentTimeMillis(),
@@ -284,7 +284,7 @@ internal class NotebookFiles(private val context: Context) {
                     attachments = note.attachments.map { it.copy(id = UUID.randomUUID().toString()) },
                 )
             }
-            require(jsonEntries.isEmpty()) { "Library backup contains unreferenced notebook data." }
+            requireUser(jsonEntries.isEmpty(), R.string.error_backup_damaged) { "Library backup contains unreferenced notebook data." }
             val downloaded = libraryJson.optJSONArray("downloadedTemplates")?.let { array ->
                 (0 until array.length()).map { array.getString(it) }.toSet()
             }.orEmpty()
@@ -295,7 +295,7 @@ internal class NotebookFiles(private val context: Context) {
                     val doc = readerDocs.getJSONObject(index)
                     val oldFolderId = doc.optString("folderId").takeIf { it.isNotBlank() }
                     if (oldFolderId != null) {
-                        require(folderIdMap.containsKey(oldFolderId)) { "A reader book references a missing folder." }
+                        requireUser(folderIdMap.containsKey(oldFolderId), R.string.error_backup_damaged) { "A reader book references a missing folder." }
                         doc.put("folderId", folderIdMap.getValue(oldFolderId))
                     }
                 }
@@ -327,7 +327,7 @@ internal class NotebookFiles(private val context: Context) {
                 var total = 0L
                 jsonFiles.forEach { (path, bytes) ->
                     total += bytes.size
-                    require(total <= MAX_BACKUP_BYTES) { "Backup exceeds the 2 GiB limit." }
+                    requireUser(total <= MAX_BACKUP_BYTES, R.string.error_backup_too_large) { "Backup exceeds the 2 GiB limit." }
                     val entry = ZipEntry(path)
                     if (path.endsWith(".zst")) {
                         entry.method = ZipEntry.STORED
@@ -348,7 +348,7 @@ internal class NotebookFiles(private val context: Context) {
                     }
                     zip.putNextEntry(entry)
                     file.inputStream().use { total += boundedCopy(it, zip, MAX_ASSET_BYTES) }
-                    require(total <= MAX_BACKUP_BYTES) { "Backup exceeds the 2 GiB limit." }
+                    requireUser(total <= MAX_BACKUP_BYTES, R.string.error_backup_too_large) { "Backup exceeds the 2 GiB limit." }
                     zip.closeEntry()
                 }
             }
@@ -381,35 +381,35 @@ internal class NotebookFiles(private val context: Context) {
                     ZipInputStream(buffered).use { zip ->
                         while (true) {
                             val entry = zip.nextEntry ?: break
-                            require(++entries <= MAX_BACKUP_ENTRIES) { "Backup contains too many files." }
+                            requireUser(++entries <= MAX_BACKUP_ENTRIES, R.string.error_backup_too_many_files) { "Backup contains too many files." }
                             if (entry.isDirectory) continue
-                            require(isSafeArchivePath(entry.name)) { "Invalid backup entry." }
+                            requireUser(isSafeArchivePath(entry.name), R.string.error_backup_damaged) { "Invalid backup entry." }
                             if (entry.name == "manifest.json" || entry.name == "library.json" || entry.name == "library.json.zst" ||
                                 entry.name.endsWith("/notebook.json") || entry.name.endsWith("/notebook.json.zst") ||
                                 entry.name == "notebook.json" || entry.name == "notebook.json.zst") {
-                                require(seenJsonEntries.add(entry.name)) { "Duplicate JSON entry in backup." }
+                                requireUser(seenJsonEntries.add(entry.name), R.string.error_backup_damaged) { "Duplicate JSON entry in backup." }
                                 val bytes = java.io.ByteArrayOutputStream()
                                 total += boundedCopy(zip, bytes, MAX_JSON_BYTES)
                                 if (entry.name == "notebook.json" || entry.name == "notebook.json.zst") {
-                                    require(jsonText == null) { "Backup contains duplicate notebook data." }
+                                    requireUser(jsonText == null, R.string.error_backup_damaged) { "Backup contains duplicate notebook data." }
                                     val content = if (entry.name.endsWith(".zst")) decompressJson(bytes.toByteArray()) else bytes.toByteArray()
                                     jsonText = content.toString(Charsets.UTF_8)
                                 }
                                 else if (entry.name == "manifest.json") {
                                     val manifest = JSONObject(bytes.toString("UTF-8"))
-                                    require(manifest.optString("format") in FolioFormat.archiveFormats && manifest.optInt("formatVersion") == 1) { "Unsupported backup archive version." }
-                                    require(manifest.optString("compression") in setOf("zip-deflate", "zip+zstd-json")) { "Unsupported backup compression format." }
-                                    require(manifest.optString("archiveType") == "notebook") { "This is a whole-library backup, which is not yet supported by the single-notebook import flow." }
+                                    requireUser(manifest.optString("format") in FolioFormat.archiveFormats && manifest.optInt("formatVersion") == 1, R.string.error_backup_unsupported) { "Unsupported backup archive version." }
+                                    requireUser(manifest.optString("compression") in setOf("zip-deflate", "zip+zstd-json"), R.string.error_backup_unsupported) { "Unsupported backup compression format." }
+                                    requireUser(manifest.optString("archiveType") == "notebook", R.string.error_backup_is_library) { "This is a whole-library backup, which is not yet supported by the single-notebook import flow." }
                                 } else if (entry.name == "library.json" || entry.name == "library.json.zst" || entry.name.endsWith("/notebook.json") || entry.name.endsWith("/notebook.json.zst")) {
-                                    throw IllegalArgumentException("This is a whole-library backup, which is not yet supported by the single-notebook import flow.")
+                                    throw UserInputException(R.string.error_backup_is_library, "This is a whole-library backup, which is not yet supported by the single-notebook import flow.")
                                 }
                             } else {
-                                require(!assets.containsKey(entry.name)) { "Duplicate backup asset." }
+                                requireUser(!assets.containsKey(entry.name), R.string.error_backup_damaged) { "Duplicate backup asset." }
                                 val output = File(staging, UUID.randomUUID().toString() + "_" + safeName(entry.name.substringAfterLast('/')))
                                 output.outputStream().use { total += boundedCopy(zip, it, MAX_ASSET_BYTES) }
                                 assets[entry.name] = output.absolutePath
                             }
-                            require(total <= MAX_BACKUP_BYTES) { "Backup exceeds the import size limit." }
+                            requireUser(total <= MAX_BACKUP_BYTES, R.string.error_backup_too_large) { "Backup exceeds the import size limit." }
                             zip.closeEntry()
                         }
                     }
@@ -445,7 +445,7 @@ internal class NotebookFiles(private val context: Context) {
         try {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(image.path, bounds)
-            require(bounds.outWidth > 0 && bounds.outHeight > 0) { "This image format cannot be opened." }
+            requireUser(bounds.outWidth > 0 && bounds.outHeight > 0, R.string.error_image_unsupported) { "This image format cannot be opened." }
             val rotation = runCatching { androidx.exifinterface.media.ExifInterface(image.path).rotationDegrees }.getOrDefault(0)
             val imageRatio = if (rotation == 90 || rotation == 270) bounds.outHeight.toFloat() / bounds.outWidth
                 else bounds.outWidth.toFloat() / bounds.outHeight
@@ -464,7 +464,7 @@ internal class NotebookFiles(private val context: Context) {
             input(uri).use { source -> localPdf.outputStream().use { boundedCopy(source, it, 128L * 1024 * 1024) } }
             val descriptor = ParcelFileDescriptor.open(localPdf, ParcelFileDescriptor.MODE_READ_ONLY)
             descriptor.use { PdfRenderer(it).use { renderer ->
-                require(renderer.pageCount in 1..200) { "Import a PDF with 1–200 pages." }
+                requireUser(renderer.pageCount in 1..MAX_PDF_PAGES, R.string.error_pdf_page_count, 1, MAX_PDF_PAGES) { "Import a PDF with 1–$MAX_PDF_PAGES pages." }
                 return (0 until renderer.pageCount).map { index ->
                     renderer.openPage(index).use { page ->
                         val scale = minOf(1200f / page.width, 1920f / page.height)
@@ -492,17 +492,17 @@ internal class NotebookFiles(private val context: Context) {
         val localEpub = File(context.cacheDir, "epub-import-${UUID.randomUUID()}.epub")
         try {
             input(uri).use { source -> localEpub.outputStream().use { boundedCopy(source, it, 128L * 1024 * 1024) } }
-            val zip = try { java.util.zip.ZipFile(localEpub) } catch (notZip: java.util.zip.ZipException) { throw IllegalArgumentException("This file is not an EPUB book.", notZip) }
+            val zip = try { java.util.zip.ZipFile(localEpub) } catch (notZip: java.util.zip.ZipException) { throw UserInputException(R.string.error_epub_not_epub, "This file is not an EPUB book.", cause = notZip) }
             zip.use {
                 fun read(path: String): String? = zip.getEntry(path)?.let { entry ->
-                    require(entry.size <= 16L * 1024 * 1024) { "This EPUB has a chapter that is too large to import." }
+                    requireUser(entry.size <= 16L * 1024 * 1024, R.string.error_epub_chapter_too_large) { "This EPUB has a chapter that is too large to import." }
                     zip.getInputStream(entry).use { stream -> stream.readBytes().toString(Charsets.UTF_8) }
                 }
-                require(zip.getEntry("META-INF/encryption.xml") == null) { "This EPUB is protected (DRM) and can't be imported." }
-                val container = read("META-INF/container.xml") ?: throw IllegalArgumentException("This file is not an EPUB book.")
+                requireUser(zip.getEntry("META-INF/encryption.xml") == null, R.string.error_epub_drm_import) { "This EPUB is protected (DRM) and can't be imported." }
+                val container = read("META-INF/container.xml") ?: throw UserInputException(R.string.error_epub_not_epub, "This file is not an EPUB book.")
                 val opfPath = Regex("full-path\\s*=\\s*\"([^\"]+)\"").find(container)?.groupValues?.get(1)
-                    ?: throw IllegalArgumentException("This EPUB has no package file.")
-                val opf = read(opfPath) ?: throw IllegalArgumentException("This EPUB has no package file.")
+                    ?: throw UserInputException(R.string.error_epub_no_package, "This EPUB has no package file.")
+                val opf = read(opfPath) ?: throw UserInputException(R.string.error_epub_no_package, "This EPUB has no package file.")
                 val base = opfPath.substringBeforeLast('/', "").let { if (it.isEmpty()) "" else "$it/" }
                 val manifest = Regex("<(?:\\w+:)?item\\b[^>]*>", RegexOption.IGNORE_CASE).findAll(opf).mapNotNull { tag ->
                     val attributes = Regex("([\\w:-]+)\\s*=\\s*\"([^\"]*)\"").findAll(tag.value).associate { it.groupValues[1].lowercase() to it.groupValues[2] }
@@ -517,8 +517,8 @@ internal class NotebookFiles(private val context: Context) {
                     epubParagraphs(read(path).orEmpty())
                 }
                 val pages = epubTextPages(chapters)
-                require(pages.isNotEmpty()) { "This EPUB has no text to import." }
-                require(pages.size <= MAX_EPUB_PAGES) { "This book is too long to import as a notebook (more than $MAX_EPUB_PAGES pages). Open it in the reader instead." }
+                requireUser(pages.isNotEmpty(), R.string.error_epub_no_text) { "This EPUB has no text to import." }
+                requireUser(pages.size <= MAX_EPUB_PAGES, R.string.error_epub_too_long, MAX_EPUB_PAGES) { "This book is too long to import as a notebook (more than $MAX_EPUB_PAGES pages). Open it in the reader instead." }
                 return title to pages
             }
         } finally { localEpub.delete() }
@@ -602,7 +602,7 @@ internal class NotebookFiles(private val context: Context) {
 
     private fun boundedCopy(input: InputStream, output: OutputStream, limit: Long): Long {
         val buffer = ByteArray(8192); var total = 0L
-        while (true) { val count = input.read(buffer); if (count < 0) break; total += count; require(total <= limit) { "Selected file is too large." }; output.write(buffer, 0, count) }
+        while (true) { val count = input.read(buffer); if (count < 0) break; total += count; requireUser(total <= limit, R.string.error_file_too_large) { "Selected file is too large." }; output.write(buffer, 0, count) }
         return total
     }
 
@@ -628,6 +628,7 @@ internal class NotebookFiles(private val context: Context) {
         const val MAX_BACKUP_BYTES = 2048L * 1024 * 1024
         const val ZSTD_LEVEL = 3
         const val MAX_EPUB_PAGES = 600
+        const val MAX_PDF_PAGES = 200
         const val EPUB_TEXT_SIZE = 19f
         const val EPUB_LINE_SPACING = 1.3f
         const val EPUB_BOX_WIDTH = .84f

@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -88,39 +90,40 @@ internal fun NotebookPageManager(
     val canDelete = selectedIds.isNotEmpty() && selectedIds.size < notebook.pages.size
     if (confirmDelete) AlertDialog(
         onDismissRequest = { confirmDelete = false },
-        title = { Text(if (selectedIds.size == 1) "Delete 1 page?" else "Delete ${selectedIds.size} pages?") },
-        text = { Text("The selected pages and their ink are removed from this notebook.") },
-        confirmButton = { TextButton(onClick = { confirmDelete = false; onDeletePages(selectedIds); stopSelecting() }, Modifier.testTag("pages-delete-confirm")) { Text("Delete", color = Color(0xFFB3261E)) } },
-        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+        title = { Text(pluralStringResource(R.plurals.panel_delete_pages, selectedIds.size, selectedIds.size)) },
+        text = { Text(stringResource(R.string.panel_delete_pages_message)) },
+        confirmButton = { TextButton(onClick = { confirmDelete = false; onDeletePages(selectedIds); stopSelecting() }, Modifier.testTag("pages-delete-confirm")) { Text(stringResource(R.string.tools_delete), color = Color(0xFFB3261E)) } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.tools_cancel)) } },
     )
     Column(Modifier.fillMaxSize().background(Color(0xFFF7F8F7))) {
         if (selecting && tab == 0) Row(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            InkToolButton(InkIcon.Close, "Cancel selection", ::stopSelecting)
-            Text(if (selectedIds.isEmpty()) "Select pages" else "${selectedIds.size} selected", Modifier.weight(1f).padding(start = 8.dp), fontSize = 18.sp, color = ChromeInk, fontWeight = FontWeight.Medium)
+            InkToolButton(InkIcon.Close, stringResource(R.string.panel_cancel_selection), ::stopSelecting, tag = "Cancel selection")
+            Text(if (selectedIds.isEmpty()) stringResource(R.string.panel_select_pages) else pluralStringResource(R.plurals.panel_selected_count, selectedIds.size, selectedIds.size),
+                Modifier.weight(1f).padding(start = 8.dp), fontSize = 18.sp, color = ChromeInk, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             TextButton(onClick = { selectedIdList = if (selectedIds.size == notebook.pages.size) emptyList() else notebook.pages.map { it.id } }) {
-                Text(if (selectedIds.size == notebook.pages.size) "Clear" else "Select all", color = Color(0xFF245B50))
+                Text(stringResource(if (selectedIds.size == notebook.pages.size) R.string.panel_clear else R.string.panel_select_all), color = Color(0xFF245B50))
             }
             Button(onClick = { confirmDelete = true }, enabled = canDelete, modifier = Modifier.testTag("pages-delete-selected"), shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E)), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)) {
-                InkSymbol(InkIcon.Trash, Modifier.size(17.dp), color = if (canDelete) Color.White else ChromeMuted); Text("Delete", Modifier.padding(start = 6.dp))
+                InkSymbol(InkIcon.Trash, Modifier.size(17.dp), color = if (canDelete) Color.White else ChromeMuted); Text(stringResource(R.string.tools_delete), Modifier.padding(start = 6.dp))
             }
         } else Row(Modifier.fillMaxWidth().height(58.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            InkToolButton(InkIcon.Back, "Back to notebook", onClose)
+            InkToolButton(InkIcon.Back, stringResource(R.string.panel_back_to_notebook), onClose, tag = "Back to notebook")
             Column(Modifier.weight(1f).padding(start = 8.dp)) {
-                Text(if (tab == 0) "Pages" else if (tab == 1) "Outline" else "Tags", fontSize = 18.sp, color = ChromeInk, fontWeight = FontWeight.Medium)
-                Text("${notebook.pages.size} ${if (notebook.pages.size == 1) "page" else "pages"} · ${notebook.title}", fontSize = 11.sp, color = ChromeMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(if (tab == 0) R.string.panel_pages else if (tab == 1) R.string.panel_outline else R.string.panel_tags), fontSize = 18.sp, color = ChromeInk, fontWeight = FontWeight.Medium)
+                Text(pluralStringResource(R.plurals.panel_pages_title, notebook.pages.size, notebook.pages.size, notebook.title), fontSize = 11.sp, color = ChromeMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (tab == 0) {
-                TextButton(onClick = { gridMode = true }) { Text("Grid", color = if (gridMode) Color(0xFF245B50) else ChromeMuted) }
-                TextButton(onClick = { gridMode = false }) { Text("List", color = if (!gridMode) Color(0xFF245B50) else ChromeMuted) }
-                if (notebook.pages.size > 1) TextButton(onClick = { startSelecting() }, Modifier.testTag("pages-select")) { Text("Select", color = ChromeMuted) }
+                TextButton(onClick = { gridMode = true }) { Text(stringResource(R.string.panel_grid), color = if (gridMode) Color(0xFF245B50) else ChromeMuted) }
+                TextButton(onClick = { gridMode = false }) { Text(stringResource(R.string.panel_list), color = if (!gridMode) Color(0xFF245B50) else ChromeMuted) }
+                if (notebook.pages.size > 1) TextButton(onClick = { startSelecting() }, Modifier.testTag("pages-select")) { Text(stringResource(R.string.panel_select), color = ChromeMuted) }
                 Button(onClick = onAdd, shape = RoundedCornerShape(14.dp), contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)) {
-                    InkSymbol(InkIcon.Add, Modifier.size(17.dp)); Text("Add page", Modifier.padding(start = 6.dp))
+                    InkSymbol(InkIcon.Add, Modifier.size(17.dp)); Text(stringResource(R.string.panel_add_page), Modifier.padding(start = 6.dp))
                 }
             }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp)) {
-            listOf("Pages", "Outline", "Tags").forEachIndexed { index, label ->
+            listOf(R.string.panel_pages, R.string.panel_outline, R.string.panel_tags).map { stringResource(it) }.forEachIndexed { index, label ->
                 Column(Modifier.weight(1f).clickable(role = Role.Tab) { tab = index }, horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(label, fontSize = 13.sp, color = if (tab == index) Color(0xFF245B50) else ChromeMuted, modifier = Modifier.padding(vertical = 10.dp))
                     Box(Modifier.fillMaxWidth().height(if (tab == index) 3.dp else 1.dp).background(if (tab == index) Color(0xFF367967) else ChromeLine))
@@ -146,9 +149,9 @@ internal fun NotebookPageManager(
                             if (selecting) PageCheck(checked, Modifier.padding(end = 10.dp))
                             NotebookPageThumbnail(page, Modifier.width(48.dp).aspectRatio(1200f / 1920f).clip(RoundedCornerShape(6.dp)))
                             Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
-                                Text("Page ${index + 1}${if (page.id == currentPageId) " · Current" else ""}", fontSize = 14.sp, color = ChromeInk, fontWeight = FontWeight.Medium)
+                                Text(stringResource(if (page.id == currentPageId) R.string.panel_page_current else R.string.panel_page_number, index + 1), fontSize = 14.sp, color = ChromeInk, fontWeight = FontWeight.Medium)
                                 if (page.outline.isNotBlank()) Text(page.outline, fontSize = 12.sp, color = ChromeMuted, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                Text("${page.strokes.size} strokes", fontSize = 11.sp, color = ChromeMuted)
+                                Text(pluralStringResource(R.plurals.panel_strokes, page.strokes.size, page.strokes.size), fontSize = 11.sp, color = ChromeMuted)
                             }
                             if (!selecting) PageActions(index, notebook.pages.lastIndex, notebook.pages.size) { action -> onPageAction(page.id, action) }
                         }
@@ -157,23 +160,23 @@ internal fun NotebookPageManager(
             }
             1 -> {
                 val outlined = notebook.pages.mapIndexedNotNull { index, page -> if (page.outline.isNotBlank()) index to page else null }
-                if (outlined.isEmpty()) Text("Add an outline from a page's menu.", fontSize = 14.sp, color = ChromeMuted, modifier = Modifier.padding(24.dp))
+                if (outlined.isEmpty()) Text(stringResource(R.string.panel_outline_empty), fontSize = 14.sp, color = ChromeMuted, modifier = Modifier.padding(24.dp))
                 else LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
                     itemsIndexed(outlined, key = { _, pair -> pair.second.id }) { _, pair ->
                         Column(Modifier.fillMaxWidth().clickable { onSelect(pair.second.id) }.padding(16.dp)) {
-                            Text(pair.second.outline, fontSize = 15.sp, color = ChromeInk); Text("Page ${pair.first + 1}", fontSize = 12.sp, color = ChromeMuted)
+                            Text(pair.second.outline, fontSize = 15.sp, color = ChromeInk); Text(stringResource(R.string.panel_page_number, pair.first + 1), fontSize = 12.sp, color = ChromeMuted)
                         }; HorizontalDivider(color = ChromeLine)
                     }
                 }
             }
             else -> {
                 val tags = notebook.pages.flatMap { it.strokes.flatMap { stroke -> stroke.tags } }.distinct().sorted()
-                if (tags.isEmpty()) Text("Select handwriting with the lasso to add a tag.", fontSize = 14.sp, color = ChromeMuted, modifier = Modifier.padding(24.dp))
+                if (tags.isEmpty()) Text(stringResource(R.string.panel_tags_empty), fontSize = 14.sp, color = ChromeMuted, modifier = Modifier.padding(24.dp))
                 else LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(20.dp)) {
                     itemsIndexed(tags, key = { _, tag -> tag }) { _, tag ->
                         val matches = notebook.pages.filter { page -> page.strokes.any { tag in it.tags } }
                         Column(Modifier.fillMaxWidth().clickable { matches.firstOrNull()?.let { onSelect(it.id) } }.padding(16.dp)) {
-                            Text("# $tag", fontSize = 15.sp, color = ChromeInk); Text("${matches.size} ${if (matches.size == 1) "page" else "pages"}", fontSize = 12.sp, color = ChromeMuted)
+                            Text("# $tag", fontSize = 15.sp, color = ChromeInk); Text(pluralStringResource(R.plurals.panel_tag_pages, matches.size, matches.size), fontSize = 12.sp, color = ChromeMuted)
                         }; HorizontalDivider(color = ChromeLine)
                     }
                 }
@@ -202,12 +205,12 @@ private fun PageManagerCard(page: NotebookPage, index: Int, selected: Boolean, o
                 if (checked != null) PageCheck(checked, Modifier.align(Alignment.TopEnd).padding(6.dp))
             }
             Row(Modifier.fillMaxWidth().height(30.dp).padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Page ${index + 1}${if (selected) " · Current" else ""}", Modifier.weight(1f), fontSize = 11.sp, color = ChromeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(if (selected) R.string.panel_page_current else R.string.panel_page_number, index + 1), Modifier.weight(1f), fontSize = 11.sp, color = ChromeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (checked == null) Box {
-                    InkToolButton(InkIcon.More, "Page ${index + 1} actions", { menu = true }, buttonSize = 26.dp)
+                    InkToolButton(InkIcon.More, stringResource(R.string.panel_page_actions, index + 1), { menu = true }, buttonSize = 26.dp, tag = "Page ${index + 1} actions")
                     DropdownMenu(menu, { menu = false }, modifier = Modifier.penPressureFilter()) {
-                        listOf("outline" to "Edit outline", "duplicate" to "Duplicate", "move-up" to "Move earlier", "move-down" to "Move later", "delete" to "Delete").forEach { (action, label) ->
-                            DropdownMenuItem(text = { Text(label) }, onClick = { menu = false; onPageAction(page.id, action) })
+                        pageActions.forEach { (action, label) ->
+                            DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = { menu = false; onPageAction(page.id, action) })
                         }
                     }
                 }
@@ -216,15 +219,24 @@ private fun PageManagerCard(page: NotebookPage, index: Int, selected: Boolean, o
     }
 }
 
+/** Page menu entries: the action ids go to the editor, the labels are resources. */
+private val pageActions = listOf("outline" to R.string.panel_edit_outline, "duplicate" to R.string.panel_duplicate,
+    "move-up" to R.string.panel_move_earlier, "move-down" to R.string.panel_move_later, "delete" to R.string.tools_delete)
+
+/** Layers are stored with English default names ("Layer 2"); those are shown translated, names the user typed as saved. */
+@Composable
+private fun layerLabel(name: String): String =
+    Regex("^Layer (\\d+)$").matchEntire(name)?.groupValues?.get(1)?.toIntOrNull()?.let { stringResource(R.string.panel_layer_default_name, it) } ?: name
+
 @Composable
 private fun PageActions(index: Int, lastIndex: Int, pageCount: Int, onAction: (String) -> Unit) {
     var menu by remember(index) { mutableStateOf(false) }
     Box {
-        InkToolButton(InkIcon.More, "Page ${index + 1} actions", { menu = true }, buttonSize = 32.dp)
+        InkToolButton(InkIcon.More, stringResource(R.string.panel_page_actions, index + 1), { menu = true }, buttonSize = 32.dp, tag = "Page ${index + 1} actions")
         DropdownMenu(menu, { menu = false }, modifier = Modifier.penPressureFilter()) {
-            listOf("outline" to "Edit outline", "duplicate" to "Duplicate", "move-up" to "Move earlier", "move-down" to "Move later", "delete" to "Delete").forEach { (action, label) ->
+            pageActions.forEach { (action, label) ->
                 val enabled = when(action) { "move-up" -> index > 0; "move-down" -> index < lastIndex; "delete" -> pageCount > 1; else -> true }
-                DropdownMenuItem(text = { Text(label) }, enabled = enabled, onClick = { menu = false; onAction(action) })
+                DropdownMenuItem(text = { Text(stringResource(label)) }, enabled = enabled, onClick = { menu = false; onAction(action) })
             }
         }
     }
@@ -258,14 +270,15 @@ internal fun LayerControls(
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(if (onChooseDestination == null) "Layers" else "Move selection to layer", color = ChromeInk, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                Text("${page.layers.size} of $MAX_NOTEBOOK_LAYERS · " + if (onChooseDestination == null) "Tap a layer to draw on it" else "Choose an unlocked, visible destination", color = ChromeMuted, fontSize = 11.sp)
+                Text(stringResource(if (onChooseDestination == null) R.string.panel_layers else R.string.panel_move_to_layer), color = ChromeInk, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(stringResource(if (onChooseDestination == null) R.string.panel_layers_count_draw else R.string.panel_layers_count_move, page.layers.size, MAX_NOTEBOOK_LAYERS), color = ChromeMuted, fontSize = 11.sp)
             }
             TextButton(enabled = page.layers.size < MAX_NOTEBOOK_LAYERS, onClick = {
+                // Stored in English like the first layer; layerLabel translates it on screen.
                 val layer = InkLayer(name = "Layer ${page.layers.size + 1}")
                 val updated = page.copy(layers = page.layers + layer)
                 onChange(updated); onActiveLayer(layer.id)
-            }) { Text("Add layer", color = if (page.layers.size < MAX_NOTEBOOK_LAYERS) ChromeInk else ChromeMuted) }
+            }) { Text(stringResource(R.string.panel_add_layer), color = if (page.layers.size < MAX_NOTEBOOK_LAYERS) ChromeInk else ChromeMuted) }
         }
         page.layers.asReversed().forEach { layer ->
             var menu by remember(layer.id) { mutableStateOf(false) }
@@ -283,44 +296,47 @@ internal fun LayerControls(
                 }.padding(8.dp), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 NotebookPageThumbnail(preview, Modifier.width(42.dp).height(58.dp).clip(RoundedCornerShape(7.dp)))
+                val name = layerLabel(layer.name)
                 Column(Modifier.weight(1f)) {
-                    Text(layer.name, color = ChromeInk, fontSize = 14.sp, fontWeight = if (layer.id == activeLayerId) FontWeight.SemiBold else FontWeight.Normal,
+                    Text(name, color = ChromeInk, fontSize = 14.sp, fontWeight = if (layer.id == activeLayerId) FontWeight.SemiBold else FontWeight.Normal,
                         maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(when {
-                        layer.id == activeLayerId -> "Active layer"
-                        layer.locked -> "Locked"
-                        !layer.visible -> "Hidden"
-                        else -> "Tap to select"
-                    }, color = ChromeMuted, fontSize = 11.sp)
+                    Text(stringResource(when {
+                        layer.id == activeLayerId -> R.string.panel_layer_active
+                        layer.locked -> R.string.panel_layer_locked
+                        !layer.visible -> R.string.panel_layer_hidden
+                        else -> R.string.panel_layer_tap
+                    }), color = ChromeMuted, fontSize = 11.sp)
                 }
                 InkToolButton(if (layer.visible) InkIcon.Visibility else InkIcon.VisibilityOff,
-                    if (layer.visible) "Hide ${layer.name}" else "Show ${layer.name}",
-                    { changeLayer(layer.copy(visible = !layer.visible)) }, selected = !layer.visible, buttonSize = 40.dp)
+                    stringResource(if (layer.visible) R.string.panel_hide_layer else R.string.panel_show_layer, name),
+                    { changeLayer(layer.copy(visible = !layer.visible)) }, selected = !layer.visible, buttonSize = 40.dp,
+                    tag = if (layer.visible) "Hide ${layer.name}" else "Show ${layer.name}")
                 InkToolButton(if (layer.locked) InkIcon.Lock else InkIcon.LockOpen,
-                    if (layer.locked) "Unlock ${layer.name}" else "Lock ${layer.name}",
-                    { changeLayer(layer.copy(locked = !layer.locked)) }, selected = layer.locked, buttonSize = 40.dp)
+                    stringResource(if (layer.locked) R.string.panel_unlock_layer else R.string.panel_lock_layer, name),
+                    { changeLayer(layer.copy(locked = !layer.locked)) }, selected = layer.locked, buttonSize = 40.dp,
+                    tag = if (layer.locked) "Unlock ${layer.name}" else "Lock ${layer.name}")
                 Box {
-                    InkToolButton(InkIcon.More, "${layer.name} actions", { menu = true }, buttonSize = 36.dp)
+                    InkToolButton(InkIcon.More, stringResource(R.string.panel_layer_actions, name), { menu = true }, buttonSize = 36.dp, tag = "${layer.name} actions")
                     DropdownMenu(menu, { menu = false }, modifier = Modifier.penPressureFilter()) {
-                        DropdownMenuItem(text = { Text("Rename") }, onClick = { menu = false; renaming = layer.id; layerName = layer.name })
-                        DropdownMenuItem(text = { Text("Move up") }, enabled = page.layers.indexOf(layer) < page.layers.lastIndex, onClick = { menu = false; moveLayer(layer, 1) })
-                        DropdownMenuItem(text = { Text("Move down") }, enabled = page.layers.indexOf(layer) > 0, onClick = { menu = false; moveLayer(layer, -1) })
-                        DropdownMenuItem(text = { Text("Delete layer") }, enabled = page.layers.size > 1, onClick = { menu = false; deleting = layer })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.tools_rename)) }, onClick = { menu = false; renaming = layer.id; layerName = name })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.panel_move_up)) }, enabled = page.layers.indexOf(layer) < page.layers.lastIndex, onClick = { menu = false; moveLayer(layer, 1) })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.panel_move_down)) }, enabled = page.layers.indexOf(layer) > 0, onClick = { menu = false; moveLayer(layer, -1) })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.panel_delete_layer)) }, enabled = page.layers.size > 1, onClick = { menu = false; deleting = layer })
                     }
                 }
             }
             if (renaming == layer.id) {
-                OutlinedTextField(layerName, { layerName = it }, label = { Text("Layer name") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                OutlinedTextField(layerName, { layerName = it }, label = { Text(stringResource(R.string.panel_layer_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { renaming = null }) { Text("Cancel") }
-                    TextButton(enabled = layerName.isNotBlank(), onClick = { changeLayer(layer.copy(name = layerName.trim())); renaming = null }) { Text("Rename") }
+                    TextButton(onClick = { renaming = null }) { Text(stringResource(R.string.tools_cancel)) }
+                    TextButton(enabled = layerName.isNotBlank(), onClick = { changeLayer(layer.copy(name = layerName.trim())); renaming = null }) { Text(stringResource(R.string.tools_rename)) }
                 }
             }
         }
     }
     deleting?.let { layer ->
-        AlertDialog(onDismissRequest = { deleting = null }, title = { Text("Delete ${layer.name}?") },
-            text = { Text("The handwriting, text and images on this layer will be deleted.") },
+        AlertDialog(onDismissRequest = { deleting = null }, title = { Text(stringResource(R.string.panel_delete_layer_title, layerLabel(layer.name))) },
+            text = { Text(stringResource(R.string.panel_delete_layer_message)) },
             confirmButton = { TextButton(onClick = {
                 if (page.layers.size > 1) {
                     val remaining = page.layers.filterNot { it.id == layer.id }
@@ -328,7 +344,7 @@ internal fun LayerControls(
                     if (activeLayerId == layer.id) onActiveLayer(remaining.last().id)
                 }
                 deleting = null
-            }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } })
+            }) { Text(stringResource(R.string.tools_delete)) } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text(stringResource(R.string.tools_cancel)) } })
     }
 }

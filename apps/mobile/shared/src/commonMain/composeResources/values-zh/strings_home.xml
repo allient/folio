@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Library (home) screens in shared/commonMain, Simplified Chinese. Stored IDs (template ids, accent ids, sort ids) never change; only these labels are translated. -->
+<resources>
+    <!-- Common actions -->
+    <string name="home_cancel">取消</string>
+    <string name="home_close">关闭</string>
+    <string name="home_create">创建</string>
+    <string name="home_save">保存</string>
+    <string name="home_open">打开</string>
+    <string name="home_delete">删除</string>
+    <string name="home_move">移动</string>
+    <string name="home_copy">复制</string>
+    <string name="home_rename">重命名</string>
+    <string name="home_restore">恢复</string>
+    <string name="home_back">返回</string>
+    <string name="home_back_to_library">返回资料库</string>
+    <string name="home_move_to_trash">移至回收站</string>
+    <string name="home_delete_permanently">永久删除</string>
+    <string name="home_selected_suffix">%1$s，已选中</string>
+    <string name="home_options_for">%1$s 的选项</string>
+    <string name="home_open_item">打开 %1$s</string>
+
+    <!-- Tabs and sections -->
+    <string name="home_segment_all">全部</string>
+    <string name="home_segment_notes">笔记</string>
+    <string name="home_segment_canvas">画布</string>
+    <string name="home_segment_books">书籍</string>
+    <string name="home_segment_live">白板</string>
+    <string name="home_section_folders">文件夹</string>
+    <string name="home_section_move_out">移出</string>
+    <string name="home_drop_to_move_out">拖放到此处移出</string>
+    <string name="home_all_folders">所有文件夹</string>
+    <string name="home_fold">收起</string>
+    <string name="home_unfold">展开（%1$d）</string>
+    <plurals name="home_count_notebooks">
+        <item quantity="other">%1$d 本笔记本</item>
+    </plurals>
+    <plurals name="home_count_canvases">
+        <item quantity="other">%1$d 个画布</item>
+    </plurals>
+    <plurals name="home_count_books">
+        <item quantity="other">%1$d 本书籍</item>
+    </plurals>
+    <plurals name="home_count_items">
+        <item quantity="other">%1$d 项</item>
+    </plurals>
+    <!-- %1$d subfolders, %2$s the item count, for example "3 items". -->
+    <plurals name="home_folder_detail">
+        <item quantity="other">%1$d 个文件夹 · %2$s</item>
+    </plurals>
+    <string name="home_default_notebook_name">笔记本-%1$d</string>
+    <string name="home_default_canvas_name">画布-%1$d</string>
+
+    <!-- Top bar and library menu -->
+    <string name="home_toggle_sidebar">显示或隐藏侧边栏</string>
+    <string name="home_search_notebooks">搜索笔记本</string>
+    <string name="home_library_menu">资料库菜单</string>
+    <string name="home_select">选择</string>
+    <string name="home_sort_by">排序方式</string>
+    <string name="home_sort_by_current">排序方式（%1$s）</string>
+    <string name="home_view_grid">网格</string>
+    <string name="home_view_list">列表</string>
+    <string name="home_search_tags">搜索标签</string>
+    <string name="home_import_document">导入笔记本或文档</string>
+    <string name="home_export_library">导出完整资料库备份</string>
+    <string name="home_search_label">搜索笔记本、书籍、标签和文字</string>
+    <string name="home_close_search">关闭搜索</string>
+    <string name="home_all_tags">所有标签</string>
+    <string name="home_tags_hint">在笔记本编辑器中添加标签</string>
+    <string name="home_close_tag_search">关闭标签搜索</string>
+    <string name="home_folder_options">文件夹选项</string>
+    <string name="home_cancel_move">取消移动</string>
+    <string name="home_clear_tag_filter">清除标签筛选</string>
+    <string name="home_dismiss_message">关闭消息</string>
+    <string name="home_close_sidebar">关闭侧边栏</string>
+    <string name="home_saving">正在保存到本设备…</string>
+
+    <!-- Selection -->
+    <string name="home_cancel_selection">取消选择</string>
+    <plurals name="home_selected_count">
+        <item quantity="other">已选择 %1$d 项</item>
+    </plurals>
+    <string name="home_clear_selection">清除选择</string>
+    <string name="home_select_all">全选</string>
+    <string name="home_clear">清除</string>
+    <string name="home_move_selected">移动所选项</string>
+    <string name="home_favorite_selected">收藏所选项</string>
+    <string name="home_delete_selected">删除所选项</string>
+    <string name="home_notice_select_to_move">选择要移动的文件夹、笔记本或书籍</string>
+    <string name="home_notice_added_favorites">已添加到收藏</string>
+    <string name="home_notice_removed_favorites">已从收藏中移除</string>
+    <string name="home_notice_folders_no_favorites">文件夹无法添加到收藏</string>
+
+    <!-- Library items -->
+    <string name="home_open_folder">打开文件夹 %1$s</string>
+    <string name="home_notebook_options">笔记本选项</string>
+    <string name="home_book_options">书籍选项</string>
+    <string name="home_infinite_badge">∞ 无限</string>
+    <string name="home_badge_canvas">画布</string>
+    <string name="home_badge_note">笔记</string>
+    <string name="home_book_missing">原文件丢失 · 请重新导入以阅读</string>
+    <!-- %1$s format (PDF, EPUB), %2$s progress such as 45%, %3$s date. -->
+    <string name="home_book_list_detail">%1$s · 已读 %2$s · %3$s</string>
+    <string name="home_percent_read">已读 %1$s</string>
+    <string name="home_notice_notebook_moved">笔记本已移动</string>
+    <string name="home_notice_no_folder">未选择文件夹</string>
+
+    <!-- Empty states -->
+    <string name="home_empty_search">没有匹配的项目</string>
+    <string name="home_empty_favorites">暂无收藏</string>
+    <string name="home_empty_recent">打开笔记本或书籍后，会在这里显示</string>
+    <string name="home_empty_folder">此文件夹为空</string>
+    <string name="home_empty_books">暂无书籍</string>
+    <string name="home_empty">这里还没有内容</string>
+    <string name="home_empty_books_hint">点按 + 导入 PDF 或无 DRM 的 EPUB。</string>
+    <string name="home_empty_hint">点按 + 创建笔记本或导入书籍。</string>
+
+    <!-- Create menu -->
+    <string name="home_new_notebook">新建笔记本</string>
+    <string name="home_import_pdf_notebook">将 PDF/EPUB 导入为笔记本</string>
+    <string name="home_new_canvas">新建无限画布</string>
+    <string name="home_new_folder">新建文件夹</string>
+    <string name="home_import_book">导入 PDF/EPUB 书籍</string>
+    <string name="home_import_backup">导入笔记本或备份</string>
+
+    <!-- Details dialog -->
+    <string name="home_details_title">常规</string>
+    <string name="home_close_details">关闭详细信息</string>
+    <string name="home_details_information">信息：%1$s</string>
+    <string name="home_details_type">类型：%1$s</string>
+    <string name="home_details_updated">更新时间：%1$s</string>
+    <string name="home_details_folder_updated">笔记本最近更新：%1$s</string>
+    <string name="home_details_infinite">无限画布</string>
+    <!-- %1$d page count, %2$d current page. -->
+    <plurals name="home_details_pages">
+        <item quantity="other">共 %1$d 页 · 第 %2$d 页</item>
+    </plurals>
+    <plurals name="home_page_count">
+        <item quantity="other">%1$d 页</item>
+    </plurals>
+    <string name="home_type_infinite_notebook">无限笔记本</string>
+    <string name="home_type_notebook">笔记本</string>
+    <string name="home_type_canvas">画布</string>
+    <string name="home_type_folder">文件夹</string>
+    <string name="home_type_book">%1$s 书籍</string>
+    <plurals name="home_type_notebook_pages">
+        <item quantity="other">笔记本 · %1$d 页</item>
+    </plurals>
+    <string name="home_folder_contents">%1$s · %2$s</string>
+    <string name="home_no_notebooks_yet">暂无笔记本</string>
+    <string name="home_share_export">分享和导出</string>
+    <string name="home_favorites_action">收藏</string>
+    <string name="home_unfavorite">取消收藏</string>
+    <string name="home_edit_folder">编辑文件夹</string>
+    <string name="home_export_pdf">PDF · 所有页面</string>
+    <string name="home_export_png">PNG · 当前页面</string>
+    <string name="home_export_folio">Folio 备份（.folio）· 可编辑</string>
+    <string name="home_rename_notebook">重命名笔记本</string>
+    <string name="home_notebook_name">笔记本名称</string>
+
+    <!-- Move and delete -->
+    <string name="home_trash_folder_title">将文件夹移至回收站？</string>
+    <string name="home_trash_folder_text">其中的笔记本、书籍和文件夹会留在资料库中，不再属于任何文件夹。从回收站恢复该文件夹后，它们会重新放回其中。</string>
+    <string name="home_trash_notebook_title">将笔记本移至回收站？</string>
+    <string name="home_trash_book_title">将书籍移至回收站？</string>
+    <!-- %1$s is home_restore_for_days or home_restore_until_empty. -->
+    <string name="home_trash_book_text">高亮、笔记和阅读位置都会保留。%1$s</string>
+    <plurals name="home_restore_for_days">
+        <item quantity="other">你可以在 %1$d 天内从回收站恢复它。</item>
+    </plurals>
+    <string name="home_restore_until_empty">在清空回收站之前，你都可以从回收站恢复它。</string>
+    <plurals name="home_bulk_trash_title">
+        <item quantity="other">将 %1$d 项移至回收站？</item>
+    </plurals>
+    <string name="home_bulk_trash_folders_note">已删除文件夹中的笔记本和书籍会留在资料库中。</string>
+    <plurals name="home_restore_them_for_days">
+        <item quantity="other">你可以在 %1$d 天内从回收站恢复它们。</item>
+    </plurals>
+    <string name="home_restore_them_until_empty">在清空回收站之前，你都可以从回收站恢复它们。</string>
+    <plurals name="home_notice_moved_to_trash">
+        <item quantity="other">已将 %1$d 项移至回收站</item>
+    </plurals>
+    <string name="home_main_library">主资料库（无文件夹）</string>
+    <string name="home_move_to_folder">移至文件夹</string>
+    <string name="home_move_book_title">将书籍移至文件夹</string>
+    <string name="home_move_folder_title">移动文件夹</string>
+    <string name="home_notice_moved_to">已移至 %1$s</string>
+    <string name="home_notice_moved_to_main">已移至主资料库</string>
+    <string name="home_drag_on_home">在主屏幕上拖动</string>
+    <string name="home_notice_drag_hint">将所选笔记本拖到文件夹上，或点按 × 取消</string>
+
+    <!-- Trash screen -->
+    <string name="home_trash_title">回收站</string>
+    <string name="home_trash_empty_action">清空回收站</string>
+    <plurals name="home_trash_retention">
+        <item quantity="other">项目在删除 %1$d 天后将被永久删除。</item>
+    </plurals>
+    <string name="home_trash_retention_off">自动删除已关闭。项目会保留在这里，直到你将其删除。</string>
+    <string name="home_trash_empty_title">回收站为空</string>
+    <string name="home_trash_empty_detail">已删除的笔记本、文件夹和书籍会显示在这里。</string>
+    <!-- %1$s item kind and size, %2$s deletion date. -->
+    <string name="home_trash_deleted_on">%1$s · 删除于 %2$s</string>
+    <string name="home_trash_kept">保留至你将其删除</string>
+    <string name="home_trash_next_start">下次启动时删除</string>
+    <plurals name="home_trash_days_left">
+        <item quantity="other">剩余 %1$d 天</item>
+    </plurals>
+    <string name="home_delete_permanently_title">永久删除？</string>
+    <string name="home_delete_folder_forever">文件夹“%1$s”将被移除。其中的笔记本和书籍会留在资料库中，不再属于任何文件夹。</string>
+    <string name="home_delete_book_forever">“%1$s”及其高亮、笔记和阅读位置将从 Folio 中移除。你导入的原文件不会被更改。</string>
+    <string name="home_delete_note_forever">“%1$s”及其所有页面将从本设备中移除。此操作无法撤销。</string>
+    <string name="home_empty_trash_title">清空回收站？</string>
+    <plurals name="home_empty_trash_text">
+        <item quantity="other">%1$d 项将被永久删除。此操作无法撤销。</item>
+    </plurals>
+
+    <!-- New notebook screen -->
+    <string name="home_clear_name">清除名称</string>
+    <string name="home_canvas_type">画布</string>
+    <string name="home_type_pages">分页</string>
+    <string name="home_type_pages_detail">独立页面</string>
+    <string name="home_type_infinite">无限</string>
+    <string name="home_type_infinite_detail">单一画布 · 可向任意方向延伸</string>
+    <string name="home_canvas_fixed">画布类型创建后无法更改。</string>
+    <string name="home_infinite_detail">向任意方向平移，纸张都会随之延伸。长按空白处可添加图钉，以便稍后跳转回来。</string>
+    <string name="home_pattern">图案</string>
+    <string name="home_spacing">间距 %1$d</string>
+
+    <!-- Templates -->
+    <string name="template_page_template">页面模板</string>
+    <string name="template_browse">浏览模板</string>
+    <string name="template_no_recent">暂无最近使用的模板</string>
+    <string name="template_browse_all">浏览所有模板</string>
+    <string name="template_hub_title">模板中心</string>
+    <string name="template_back_from_hub">从模板中心返回</string>
+    <string name="template_recent">最近使用的模板</string>
+    <string name="template_ready">可直接使用 · 本地</string>
+    <string name="template_use">使用模板</string>
+    <string name="template_add">添加到资料库</string>
+    <string name="template_no_recent_hub">暂无最近使用的模板。选择一个模板即可将其添加到本地资料库。</string>
+    <string name="template_category_all">全部</string>
+    <string name="template_category_recent">最近</string>
+    <string name="template_category_general">通用</string>
+    <string name="template_category_planning">计划</string>
+    <string name="template_category_work">工作</string>
+    <string name="template_category_study">学习</string>
+    <string name="template_category_creative">创意</string>
+    <string name="template_category_custom">自定义</string>
+    <string name="template_blank">空白</string>
+    <string name="template_lined">横线</string>
+    <string name="template_wide_ruled">宽横线</string>
+    <string name="template_grid">方格</string>
+    <string name="template_big_grid">大方格</string>
+    <string name="template_dots">点阵</string>
+    <string name="template_graph">坐标纸</string>
+    <string name="template_hex_grid">六边形网格</string>
+    <string name="template_todo">待办清单</string>
+    <string name="template_todo_daily">每日待办</string>
+    <string name="template_daily">日计划</string>
+    <string name="template_time_block">时间块</string>
+    <string name="template_weekly">周计划</string>
+    <string name="template_monthly">月计划</string>
+    <string name="template_habit">习惯追踪</string>
+    <string name="template_priority">优先级矩阵</string>
+    <string name="template_meeting">会议记录</string>
+    <string name="template_project">项目计划</string>
+    <string name="template_kanban">看板</string>
+    <string name="template_cornell">康奈尔笔记</string>
+    <string name="template_lecture">课堂笔记</string>
+    <string name="template_reading">阅读记录</string>
+    <string name="template_revision">复习笔记</string>
+    <string name="template_vocabulary">词汇表</string>
+    <string name="template_lab">实验报告</string>
+    <string name="template_math_grid">数学方格</string>
+    <string name="template_english">英语练习</string>
+    <string name="template_isometric">等距网格</string>
+    <string name="template_music">五线谱</string>
+    <string name="template_storyboard">故事板</string>
+    <string name="template_comic">漫画分格</string>
+    <string name="template_mind_map">思维导图</string>
+    <string name="template_sketch">素描页</string>
+    <string name="template_custom_grid">自定义方格</string>
+    <string name="template_custom_ruled">自定义横线</string>
+    <string name="template_custom_dots">自定义点阵</string>
+    <!-- Headings printed at the top of template previews. -->
+    <string name="template_heading_todo">待办清单</string>
+    <string name="template_heading_meeting">会议记录</string>
+    <string name="template_heading_daily">日计划</string>
+    <string name="template_heading_weekly">周计划</string>
+    <string name="template_heading_project">项目计划</string>
+    <string name="template_heading_cornell">康奈尔笔记</string>
+    <string name="template_heading_lecture">课堂笔记</string>
+    <string name="template_heading_reading">阅读笔记</string>
+    <string name="template_heading_time_block">时间块</string>
+    <string name="template_heading_monthly">月计划</string>
+    <string name="template_heading_habit">习惯追踪</string>
+    <string name="template_heading_priority">优先级矩阵</string>
+    <string name="template_heading_kanban">看板</string>
+    <string name="template_heading_revision">复习笔记</string>
+    <string name="template_heading_vocabulary">词汇</string>
+    <string name="template_heading_lab">实验报告</string>
+    <string name="template_heading_comic">漫画分格</string>
+    <string name="template_heading_mind_map">思维导图</string>
+    <string name="template_heading_sketch">素描页</string>
+    <!-- Infinite canvas paper -->
+    <string name="template_paper_blank">空白纸</string>
+    <string name="template_paper_graph">坐标纸</string>
+    <string name="template_paper_grid">宽方格纸</string>
+    <string name="template_paper_lines">横线纸</string>
+    <string name="template_paper_dots">点阵纸</string>
+    <string name="template_paper_sheet">纸张</string>
+    <string name="template_paper_white">白色</string>
+    <string name="template_paper_beige">米色</string>
+    <string name="template_paper_dark">深灰色</string>
+
+    <!-- Live boards -->
+    <string name="boards_empty_title">暂无白板</string>
+    <string name="boards_empty_detail">点按 + 开始使用实时白板。用笔绘图，并在通话中分享链接。</string>
+    <string name="boards_badge">实时</string>
+    <string name="boards_new_title">新建白板</string>
+    <string name="boards_rename_title">重命名白板</string>
+    <string name="boards_delete_title">删除“%1$s”？</string>
+    <string name="boards_delete_text">该白板及其绘图将从本设备中移除。</string>
+    <string name="boards_untitled">未命名白板</string>
+
+    <!-- Sidebar -->
+    <string name="sidebar_notes">笔记</string>
+    <string name="sidebar_folders">文件夹</string>
+    <string name="sidebar_create_folder">创建文件夹</string>
+    <string name="sidebar_collapse_folders">收起文件夹</string>
+    <string name="sidebar_expand_folders">展开文件夹</string>
+    <string name="sidebar_no_folders">暂无文件夹</string>
+    <string name="sidebar_recent">最近</string>
+    <string name="sidebar_favorites">收藏</string>
+
+    <!-- Preferences -->
+    <string name="prefs_title">偏好设置</string>
+    <string name="prefs_accent_title">强调色</string>
+    <string name="prefs_accent_detail">用于资料库：所选标签页、+ 按钮、侧边栏、勾选标记和链接。</string>
+    <string name="prefs_corners_title">圆角</string>
+    <string name="prefs_corners_detail">应用于资料库卡片、标签页控件和侧边栏。</string>
+    <string name="prefs_corners_sharp">直角</string>
+    <string name="prefs_corners_rounded">圆角</string>
+    <string name="prefs_corners_soft">柔和</string>
+    <string name="prefs_view_title">默认视图</string>
+    <string name="prefs_view_detail">资料库菜单中的“网格”和“列表”也会更改此设置。</string>
+    <string name="prefs_sort_title">默认排序</string>
+    <string name="prefs_sort_detail">资料库的“排序方式”菜单也会更改此设置。</string>
+    <string name="prefs_notebooks_title">笔记本</string>
+    <string name="prefs_fullscreen_title">以全屏模式打开笔记本（专注模式）</string>
+    <string name="prefs_fullscreen_detail">从资料库打开的笔记本会隐藏工具栏。使用退出按钮可重新显示工具栏。</string>
+    <string name="prefs_privacy_title">隐私</string>
+    <string name="prefs_usage_title">分享使用统计和崩溃报告</string>
+    <string name="prefs_usage_detail">通过 Google Analytics 和 Crashlytics 发送匿名使用统计和崩溃报告。绝不包含笔记和书籍的内容、标题或名称。</string>
+    <string name="prefs_trash_title">回收站</string>
+    <string name="prefs_trash_detail">已删除的项目会在回收站中保留这么长时间，之后在 Folio 启动时删除。</string>
+    <plurals name="prefs_retention_days">
+        <item quantity="other">%1$d 天</item>
+    </plurals>
+    <string name="prefs_retention_never">从不自动删除</string>
+    <string name="prefs_pen_title">笔</string>
+    <string name="prefs_pen_pressure_title">笔压</string>
+    <string name="prefs_pen_pressure_detail">在笔记、阅读器和资料库中忽略悬停和轻触；压感曲线</string>
+    <string name="prefs_backup_title">备份</string>
+    <string name="prefs_backup_detail">本地备份文件夹、立即备份、导出和恢复</string>
+    <string name="prefs_reset">恢复默认设置</string>
+    <string name="prefs_reset_title">重置偏好设置？</string>
+    <string name="prefs_reset_text">强调色、圆角、视图、排序、全屏和回收站保留期限将恢复为默认值。你的笔记本和书籍不会被更改。</string>
+    <string name="prefs_reset_confirm">重置</string>
+    <string name="accent_sage">鼠尾草绿</string>
+    <string name="accent_morning">晨曦</string>
+    <string name="accent_evening">暮色</string>
+    <string name="accent_sea">海洋</string>
+    <string name="accent_forest">森林</string>
+    <string name="accent_lavender">薰衣草</string>
+    <string name="accent_desert">沙漠</string>
+    <string name="accent_graphite">石墨</string>
+    <string name="sort_edited">最近编辑</string>
+    <string name="sort_created">创建日期</string>
+    <string name="sort_type">文件类型</string>
+    <string name="sort_name">名称</string>
+
+    <!-- About -->
+    <string name="about_title">关于</string>
+    <string name="about_tagline">手写笔记与电子阅读器</string>
+    <string name="about_version">版本 %1$s</string>
+    <string name="about_open_allient">打开 allient.io</string>
+    <string name="about_made_at">出品方</string>
+    <string name="about_made_at_allient">由 Allient 出品</string>
+    <string name="about_privacy_title">你的笔记只保存在本设备上</string>
+    <string name="about_privacy_body">没有账号，也没有云同步。笔记本、文件夹和阅读笔记保存在应用的私有存储空间中，因此在卸载应用或清除应用数据之前，请开启智能备份或导出 .folio 文件。</string>
+    <string name="about_privacy_internet">Folio 仅在使用实时白板、下载手写识别模型、Google Play 更新和发送匿名使用统计时才会联网，你可以在偏好设置中关闭使用统计。</string>
+    <string name="about_links">链接</string>
+    <string name="about_link_docs">文档和更多信息</string>
+    <string name="about_link_star">喜欢 Folio？在 GitHub 上为它加星</string>
+    <string name="about_link_issues">报告问题</string>
+    <string name="about_link_issues_detail">在 GitHub 上提交问题</string>
+    <string name="about_link_privacy">隐私政策</string>
+    <string name="about_link_license">许可协议</string>
+    <string name="about_libraries">开源库</string>
+    <string name="about_lib_ink">手写笔画和渲染</string>
+    <string name="about_lib_pdfium">PDF 渲染</string>
+    <string name="about_lib_pdfbox">带批注的 PDF 导出</string>
+    <string name="about_lib_readium">EPUB 阅读</string>
+    <string name="about_lib_mlkit">设备端 OCR</string>
+    <string name="about_lib_zstd">备份压缩</string>
+    <string name="about_lib_lucide">图标（ISC）</string>
+    <string name="about_lib_geist">界面字体（SIL OFL）</string>
+    <string name="about_footer">Folio 基于 Apache License 2.0 开源。由 Allient 出品。</string>
+
+    <!-- Backup settings -->
+    <string name="backup_settings_title">备份设置</string>
+    <string name="backup_restore_version_title">恢复此版本？</string>
+    <string name="backup_restore_version_text">%1$s 的笔记本、文件夹和阅读笔记将以副本形式添加到你的资料库中。当前资料库中的内容不会被移除。</string>
+    <string name="backup_smart_title">智能备份</string>
+    <string name="backup_explanation">在你关闭笔记或离开应用几分钟后备份，且仅在内容有变化时进行。自动保留最近的版本并移除旧版本。PDF 和 EPUB 文件不会被复制，但你的笔记和高亮会被备份。</string>
+    <string name="backup_on_status">已开启：更改后自动备份</string>
+    <string name="backup_choose_to_start">选择一个文件夹以开始</string>
+    <string name="backup_on_detail">选择文件夹后将开始首次备份。长时间使用时，Folio 还会大约每 15 分钟备份一次，并每隔几小时检查一次是否有遗漏。Android 可能会延迟后台任务。</string>
+    <string name="backup_off_detail">开启备份以选择文件夹。取消选择文件夹将保持备份关闭。</string>
+    <string name="backup_files_kept">关闭备份后，现有的备份文件仍会保留。</string>
+    <string name="backup_folder">备份文件夹</string>
+    <string name="backup_change_folder">更改文件夹</string>
+    <string name="backup_last">上次备份</string>
+    <string name="backup_state_setting_up">正在设置</string>
+    <string name="backup_state_running">正在备份…</string>
+    <string name="backup_state_attention">需要处理</string>
+    <string name="backup_state_on">已开启</string>
+    <string name="backup_state_off">已关闭</string>
+    <string name="backup_saving_notes">正在保存你最新的笔记…</string>
+    <string name="backup_now">立即备份</string>
+    <string name="backup_versions">保留的版本</string>
+    <string name="backup_documents_title">在 Documents 中选择文件夹</string>
+    <string name="backup_documents_detail">在 Android 文件夹选择器中打开 Documents。你可以创建一个名为 Folio Backups 的文件夹，打开它，然后点按“使用此文件夹”。</string>
+    <string name="backup_format_detail">.folio 备份包含笔记本及其附件，以及阅读器中的书名、文件引用、阅读位置、高亮和笔记。PDF 和 EPUB 文件保留在本设备的存储空间中，不会被复制；在其他设备上恢复后，请重新导入书籍以再次打开。匹配的书籍会重新关联已保存的批注。恢复操作只会添加副本，绝不会清除你的资料库。备份保存在本设备上，不会上传到网络。</string>
+    <string name="backup_restore_from">从备份恢复</string>
+
+    <!-- Folder editor -->
+    <string name="folder_eyebrow">井然有序的资料库</string>
+    <string name="folder_title_new">安放你的想法</string>
+    <string name="folder_title_edit">打造专属风格</string>
+    <string name="folder_close_editor">关闭文件夹编辑器</string>
+    <string name="folder_live_preview">实时预览</string>
+    <string name="folder_placeholder_name">你的新文件夹</string>
+    <!-- %1$s folder style, %2$s folder colour. -->
+    <string name="folder_preview_summary">%1$s · %2$s</string>
+    <string name="folder_name_label">文件夹名称</string>
+    <string name="folder_name_hint">例如：创意项目</string>
+    <string name="folder_duplicate">已存在同名文件夹。</string>
+    <string name="folder_name_required">请为文件夹命名。</string>
+    <string name="folder_name_help">将相关的笔记本和文档放在一起。</string>
+    <string name="folder_color_title">文件夹颜色</string>
+    <string name="folder_color_description">%1$s文件夹颜色</string>
+    <string name="folder_style_title">选择样式</string>
+    <string name="folder_style_subtitle">添一点个性</string>
+    <string name="folder_style_description">%1$s文件夹样式</string>
+    <string name="folder_create">创建文件夹</string>
+    <string name="folder_save_changes">保存更改</string>
+    <string name="folder_style_classic">经典</string>
+    <string name="folder_style_papers">带纸张</string>
+    <string name="folder_style_tabbed">带标签</string>
+    <string name="folder_style_open">打开式</string>
+    <string name="folder_style_mosaic">拼贴</string>
+    <string name="folder_color_sage">鼠尾草绿</string>
+    <string name="folder_color_blue">蓝色</string>
+    <string name="folder_color_lavender">薰衣草紫</string>
+    <string name="folder_color_rose">玫瑰粉</string>
+    <string name="folder_color_peach">蜜桃色</string>
+    <string name="folder_color_sand">沙色</string>
+    <!-- Preferences groups -->
+    <string name="prefs_group_general">常规</string>
+    <string name="prefs_group_library">资料库</string>
+    <string name="prefs_group_appearance">外观</string>
+    <string name="backup_group_file">备份文件</string>
+</resources>

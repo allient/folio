@@ -1,6 +1,6 @@
 ---
-title: "Planned preferences and languages (not implemented)"
-description: "Preferences and app languages planned for Folio but not built yet, and why they wait."
+title: "Planned preferences (languages done)"
+description: "Preferences planned for Folio but not built yet, and why they wait; app languages are now built."
 ---
 
 2026-10-18
@@ -21,7 +21,6 @@ The drawing editor uses hard-coded light colours (`ChromeInk`, `ChromeLine`, `Ch
 | Style | Soft, Vivid, Original, Playful, Fresh, Clean, Muted, Grayscale | Palette generation rules per style applied to the accent pair |
 | Surface colour | Custom colour | Second theme colour for panels and bars, separate from the accent |
 | Custom accent colour | Colour picker | Free colour choice next to the presets |
-| Language | System, English, Español, … | All UI text moved to string resources, then translations (see below) |
 
 ## Plan
 
@@ -31,18 +30,9 @@ The drawing editor uses hard-coded light colours (`ChromeInk`, `ChromeLine`, `Ch
 4. **Colour mode, style, contrast, surface colour.** Generate tokens from the accent pair, style and contrast. Keep presets as named token sets so they stay testable.
 5. **Tests.** Screenshot comparisons of the home, editor toolbar, brush panel, pressure curves and reader in Light, Dark and OLED.
 
-## Multi-language (pending)
+## Multi-language (done)
 
-The app is English only. `apps/mobile/androidApp/src/main/res/values/strings.xml` holds a single string; every other label, button, hint and dialog text is a hard-coded literal in Compose code (`apps/mobile/androidApp/.../*.kt` and `apps/mobile/shared/src/commonMain/...`).
-
-1. **Extract strings.** Move all user-facing text into resources: Android `res/values/strings.xml` for `androidApp`, and Compose Multiplatform resources (`apps/mobile/shared/src/commonMain/composeResources/values/strings.xml`) for the shared home UI so iOS gets them too. Use plurals for counts ("3 notes", "1 pins") and placeholders for values ("%1$s · %2$.1f px").
-2. **Add languages.** Start with Spanish (`values-es`), the user's language. Further languages are added as new `values-xx` folders without code changes.
-3. **Language setting.** Preferences → Language: System (default) or a fixed language, using Android per-app language support (`AppCompatDelegate.setApplicationLocales`, `locales_config.xml`, Android 13+ system settings integration).
-4. **Formats.** Dates, numbers and units follow the selected locale (`DateTimeFormatter`, `NumberFormat`) instead of fixed `Locale.US` formatting. Canvas sizes keep a dot decimal only in saved data, never in the UI.
-5. **Layout checks.** Spanish and German text is often 20–35% longer: check the brush panel, toolbox, pill switcher and sidebar for clipping; prefer wrapping or scrolling over fixed widths.
-6. **Tests.** Run UI tests under a pseudo-locale (`en-XA`) to catch untranslated or truncated text.
-
-User content (notebook names, typed text, OCR results) is never translated.
+Shipped: English (default), Spanish and Brazilian Portuguese, following the device language with English as the fallback, and Preferences → Language (also Android 13's per-app language setting). How it works and how to add a language: the "Languages" note in `AGENTS.md`. Still open: a pseudo-locale (`en-XA`) UI pass and a native-speaker review of the translations.
 
 ## Constraints
 

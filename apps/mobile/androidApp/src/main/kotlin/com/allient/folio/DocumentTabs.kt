@@ -16,6 +16,8 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -44,14 +46,16 @@ internal fun DocumentTabs(
             items(tabs.size, key = { tabs[it].id }) { index ->
                 val book = tabs[index]
                 val active = book.id == currentId
+                val switchDescription = stringResource(R.string.tools_tab_switch, book.title)
+                val closeDescription = stringResource(R.string.tools_close_named, book.title)
                 Row(Modifier.width(200.dp).fillMaxHeight().clip(tabShape).background(if (active) colors.surface else inactiveTab),
                     verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f).fillMaxHeight().clickable(role = Role.Tab) { onSelect(book.id) }
-                        .testTag("$tagPrefix-tab-${book.id}").semantics { selected = active; contentDescription = "Switch to ${book.title}" }.padding(start = 14.dp), contentAlignment = Alignment.CenterStart) {
+                        .testTag("$tagPrefix-tab-${book.id}").semantics { selected = active; contentDescription = switchDescription }.padding(start = 14.dp), contentAlignment = Alignment.CenterStart) {
                         Text(book.title, fontSize = 12.sp, color = if (active) colors.onSurface else colors.onSurfaceVariant,
                             fontWeight = if (active) FontWeight.Medium else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                    IconButton(onClick = { onClose(book.id) }, modifier = Modifier.size(24.dp).testTag("$closeTagPrefix-${book.id}").semantics { contentDescription = "Close ${book.title}" }) {
+                    IconButton(onClick = { onClose(book.id) }, modifier = Modifier.size(24.dp).testTag("$closeTagPrefix-${book.id}").semantics { contentDescription = closeDescription }) {
                         InkSymbol(InkIcon.Close, Modifier.size(10.dp), if (active) colors.onSurface else colors.onSurfaceVariant)
                     }
                 }
@@ -59,8 +63,9 @@ internal fun DocumentTabs(
         }
         Spacer(Modifier.width(3.dp))
         Box(Modifier.fillMaxHeight()) {
+        val listDescription = pluralStringResource(R.plurals.tools_tab_list, tabs.size, listTitle, tabs.size)
         Row(Modifier.fillMaxHeight().clip(tabShape).background(inactiveTab).clickable { showList = true }
-            .testTag(listButtonTag).semantics { contentDescription = "$listTitle list, ${tabs.size} tabs" }.padding(horizontal = 12.dp),
+            .testTag(listButtonTag).semantics { contentDescription = listDescription }.padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("${tabs.size}", fontSize = 12.sp, color = colors.onSurfaceVariant)
             Text("\u25BE", fontSize = 12.sp, color = colors.onSurfaceVariant)
@@ -85,16 +90,18 @@ private fun TabListMenu(
         Column(Modifier.padding(horizontal = 10.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(card).background(colors.surface).clickable(onClick = onHideTabs)
                 .testTag("document-tab-hide").padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Hide tab bar", Modifier.weight(1f), fontSize = 14.sp, color = colors.onSurface)
+                Text(stringResource(R.string.tools_tab_hide_bar), Modifier.weight(1f), fontSize = 14.sp, color = colors.onSurface)
                 Text("\u25B4", fontSize = 14.sp, color = colors.onSurface)
             }
-            if (tabs.size > 1) Text("Close other tabs", Modifier.align(Alignment.End).clip(RoundedCornerShape(6.dp)).clickable(onClick = onCloseOthers)
+            val listDescription = stringResource(R.string.tools_tab_list_count, listTitle, tabs.size)
+            if (tabs.size > 1) Text(stringResource(R.string.tools_tab_close_others), Modifier.align(Alignment.End).clip(RoundedCornerShape(6.dp)).clickable(onClick = onCloseOthers)
                 .testTag("document-tab-close-others").padding(horizontal = 6.dp, vertical = 10.dp), fontSize = 13.sp, color = colors.error)
-            Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()).semantics { contentDescription = "$listTitle (${tabs.size})" },
+            Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState()).semantics { contentDescription = listDescription },
                 verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 tabs.forEach { tab ->
                     val active = tab.id == currentId
                     var actions by remember { mutableStateOf(false) }
+                    val optionsDescription = stringResource(R.string.tools_tab_options, tab.title)
                     Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(card).background(colors.surface)
                         .then(if (active) Modifier.border(2.dp, colors.primary, card) else Modifier)
                         .clickable(role = Role.Tab) { onSelect(tab.id) }.semantics { selected = active }.padding(start = 16.dp),
@@ -102,11 +109,11 @@ private fun TabListMenu(
                         Text(tab.title, Modifier.weight(1f), fontSize = 14.sp, color = colors.onSurface,
                             fontWeight = if (active) FontWeight.Medium else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Box {
-                            IconButton(onClick = { actions = true }, modifier = Modifier.semantics { contentDescription = "Options for ${tab.title}" }) {
+                            IconButton(onClick = { actions = true }, modifier = Modifier.semantics { contentDescription = optionsDescription }) {
                                 InkSymbol(InkIcon.More, Modifier.size(18.dp), colors.onSurface)
                             }
                             DropdownMenu(actions, { actions = false }) {
-                                DropdownMenuItem(text = { Text("Close tab") }, onClick = { actions = false; onClose(tab.id) })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.tools_tab_close)) }, onClick = { actions = false; onClose(tab.id) })
                             }
                         }
                     }
