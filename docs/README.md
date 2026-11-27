@@ -27,6 +27,7 @@ Folio is on [Google Play](https://play.google.com/store/apps/details?id=com.alli
 - [Pages, page turning and PDF/EPUB import](features/pages-and-import.md): swipe to turn or add a page, the page manager, importing a book as a notebook
 - [Reader pens, selection and marks](features/reader-writing-and-marks.md): notebook pens in the reader, word and stylus selection, the highlight editor
 - [Live boards](features/live-boards.md): Excalidraw boards with Folio's pen filter and live sessions for calls
+- [Languages](features/languages.md): the seven languages, the language picker and how to add a language
 
 ## Investigations
 

@@ -43,6 +43,10 @@ export const FAQ = [
 		a: 'Yes. Select your handwriting with the lasso and choose Convert to text. Recognition runs on the device and supports more than 300 languages. You can also write with the pen straight into text fields on Android 14 and later.',
 	},
 	{
+		q: 'Which languages is Folio available in?',
+		a: 'English, Spanish, Brazilian Portuguese, French, German, Hindi and Simplified Chinese. Folio follows your device language and uses English otherwise; you can also pick a language in Preferences → Language.',
+	},
+	{
 		q: 'Is Folio free? Does it need an account?',
 		a: 'Folio is free and open source under the Apache 2.0 license. There is no account, no subscription and no ads.',
 	},

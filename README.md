@@ -83,7 +83,7 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 - Export pages as PDF or PNG, or a notebook as an editable `.folio` file.
 
 **In your language**
-- English, Spanish, Brazilian Portuguese, French, German, Hindi and Simplified Chinese. Folio follows your device language (English if it isn't one of these), or pick one in **Preferences → Language**.
+- English, Spanish, Brazilian Portuguese, French, German, Hindi and Simplified Chinese. Folio follows your device language (English if it isn't one of these), or pick one in **Preferences → Language**. See [Languages](docs/features/languages.md).
 
 ## Privacy
 
@@ -125,9 +125,7 @@ Bug reports and ideas are welcome in [Issues](https://github.com/allient/folio/i
 ## Roadmap
 
 - Dark theme and more appearance options
-- Spanish and other languages
 - Handwriting recognition and search inside handwritten notes
-- Nested folders
 - Encrypted backups and optional sync
 - An iPad version
 
