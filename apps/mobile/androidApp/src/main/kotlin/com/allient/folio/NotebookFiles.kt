@@ -647,7 +647,7 @@ internal class NotebookFiles(private val context: Context) {
         const val MAX_BACKUP_BYTES = 2048L * 1024 * 1024
         const val ZSTD_LEVEL = 3
         const val MAX_EPUB_PAGES = 600
-        const val MAX_PDF_PAGES = 200
+        const val MAX_PDF_PAGES = 500
         const val EPUB_TEXT_SIZE = 19f
         const val EPUB_LINE_SPACING = 1.3f
         const val EPUB_BOX_WIDTH = .84f

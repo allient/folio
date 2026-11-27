@@ -83,7 +83,7 @@ Single-notebook imports receive new notebook, page, stroke, text, image, and att
 
 PDF export includes all pages; PNG export includes the current page. Both use the same renderer as the editor, including visible layers, paper template, ink, images, and typed text. Hidden layers are excluded from these visual exports but remain in editable backups. Exports use a fixed 1200 × 1920 page.
 
-Image import copies the selected image and places it proportionally within a page. PDF import accepts 1–200 pages, renders each page into a PNG background, and allows new Knotes content above it. The source PDF's editable text, links, annotations, and vector objects are not preserved as editable document structures.
+Image import copies the selected image and places it proportionally within a page. PDF import accepts 1–500 pages, renders each page into a PNG background, and allows new Knotes content above it. The source PDF's editable text, links, annotations, and vector objects are not preserved as editable document structures.
 
 ## File access and safeguards
 

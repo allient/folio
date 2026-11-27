@@ -42,6 +42,6 @@ Code: `InkCanvasView.handleImageDrag` (drop target), `NotebookViewModel.mergeEdi
 | Result | One notebook page per PDF page, shown as a picture you write over | Pages of typed text; each chapter starts a new page |
 | Kept | The page exactly as rendered (up to 1200×1920 px) | Text only, in a reading font |
 | Left out | Selectable text and search | Images, fonts and layout |
-| Limits | 1–200 pages (a longer PDF gets a message suggesting it be imported as a book), up to 1 GB with a free-storage check | DRM books are rejected; at most 600 pages; up to 1 GB |
+| Limits | 1–500 pages (a longer PDF gets a message suggesting it be imported as a book), up to 1 GB with a free-storage check | DRM books are rejected; at most 600 pages; up to 1 GB |
 
 The EPUB conversion reads the spine, turns each document into paragraphs (`epubParagraphs`), wraps them with Android's `StaticLayout` and fills pages (`paginateChapterLines`). The two pure helpers live in `shared/commonMain` with tests. EPUBs stay readable in the reader, where you can highlight and annotate them.
