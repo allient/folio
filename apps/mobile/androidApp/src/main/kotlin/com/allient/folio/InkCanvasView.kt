@@ -78,18 +78,13 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 val clip = event.clipData ?: return false
                 val uri = (0 until clip.itemCount).firstNotNullOfOrNull { clip.getItemAt(it).uri } ?: return false
                 // Read access to another app's content URI lasts while the activity lives; the import copies the file.
-                hostActivity()?.requestDragAndDropPermissions(event)
+                context.findActivity()?.requestDragAndDropPermissions(event)
                 receiver(uri, position(event.x, event.y), width.toFloat() / documentHeight.coerceAtLeast(1))
             }
             else -> true
         }
     }
 
-    private fun hostActivity(): android.app.Activity? {
-        var current = context
-        while (current is android.content.ContextWrapper) { if (current is android.app.Activity) return current; current = current.baseContext }
-        return null
-    }
     private var frontInk: FrontBufferedInkController? = null
     /**
      * A 1-pixel child that draws nothing. Invalidating it makes the window draw a frame without re-recording the page.
@@ -441,6 +436,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     var onAddPin: (Offset) -> Unit = {}
     /** When positive, a page is `width * documentAspect` tall instead of filling the view, so a second, differently sized view maps ink uniformly. */
     var documentAspect: Float = 0f
+        set(value) { if (field == value) return; field = value; cachedPage = null; constrainPan(); onZoomChanged(zoomValue); postInvalidateOnAnimation() }
     private val documentHeight: Int get() = if (infiniteCanvas) (width * 1.6f).toInt().coerceAtLeast(1) else if (documentAspect > 0f) (width * documentAspect).toInt().coerceAtLeast(1) else height
 
     // --- Zoom window: a draggable box on the page whose contents are written in a magnified panel (see docs/ruler-and-zoom-window.md). ---
@@ -604,7 +600,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
         panY = height / 2f - (height / 2f - panY) * factor
         constrainPan(); onZoomChanged(zoomValue); postInvalidateOnAnimation()
     }
-    fun resetViewport() { finishGesture(); resetFrontInk(); zoomValue = 1f; panX = 0f; panY = 0f; onZoomChanged(1f); postInvalidateOnAnimation() }
+    fun resetViewport() { finishGesture(); resetFrontInk(); zoomValue = 1f; panX = 0f; panY = 0f; constrainPan(); onZoomChanged(1f); postInvalidateOnAnimation() }
     fun fitToScreen() = resetViewport()
     fun fitToWidth() = resetViewport()
     fun fitToHeight() = resetViewport()
@@ -612,19 +608,21 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     fun panToFraction(x: Float, y: Float) {
         if (infiniteCanvas) { jumpTo(x, y); return }
         panX = (width * (1f - zoomValue) / 2f) - (x.coerceIn(0f, 1f) - .5f) * width * zoomValue
-        panY = (height * (1f - zoomValue) / 2f) - (y.coerceIn(0f, 1f) - .5f) * height * zoomValue
+        panY = height / 2f - y.coerceIn(0f, 1f) * documentHeight * zoomValue
         constrainPan(); onZoomChanged(zoomValue); postInvalidateOnAnimation()
     }
     private fun constrainPan() {
         if (infiniteCanvas) return
-        if (zoomValue <= 1f) {
-            panX = width * (1f - zoomValue) / 2f
-            panY = height * (1f - zoomValue) / 2f
-        } else {
-            panX = panX.coerceIn(width * (1f - zoomValue), 0f)
-            panY = panY.coerceIn(height * (1f - zoomValue), 0f)
-        }
+        // Each axis: centred while the page fits, otherwise kept inside the page. In a split-screen window the page keeps
+        // its full-screen shape (documentAspect), so it can be taller than the view and scrolls at 100%.
+        val pageW = width * zoomValue; val pageH = documentHeight * zoomValue
+        panX = if (pageW <= width) (width - pageW) / 2f else panX.coerceIn(width - pageW, 0f)
+        panY = if (pageH <= height) (height - pageH) / 2f else panY.coerceIn(height - pageH, 0f)
     }
+    /** The page is taller than the view (split screen) and can be scrolled at its current zoom. */
+    private val pageScrolls: Boolean get() = !infiniteCanvas && documentHeight * zoomValue > height + 1f
+    /** Page height / width, for views (zoom window) that must map ink the same way. */
+    val pageAspect: Float get() = documentHeight.toFloat() / width.coerceAtLeast(1)
     private fun editable(id: String) = layers.any { it.id == id && it.visible && !it.locked }
     private fun position(x: Float, y: Float) = Offset((x - panX) / zoomValue / width.coerceAtLeast(1), (y - panY) / zoomValue / documentHeight.coerceAtLeast(1))
     private fun gesturePosition(x: Float, y: Float): Offset {
@@ -725,6 +723,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         if (oldw != 0 && oldh != 0 && (w != oldw || h != oldh)) { finishGesture(); resetFrontInk() }
         super.onSizeChanged(w, h, oldw, oldh)
+        constrainPan()
     }
     // All input belongs to our pressure filter; the authoring child only renders accepted samples.
     override fun onInterceptTouchEvent(event: MotionEvent): Boolean {
@@ -1076,7 +1075,7 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                 val selectionDrag = !objectGrab && selectedStrokeIds.isNotEmpty() && selectionTool &&
                     (resizingSelection || rotatingSelection || stretchAxis != 0 || mode == CanvasMode.MoveSelection || bounds?.contains(point.x * width, point.y * documentHeight) == true)
                 val pageSwipeGesture = singlePageFingerSwipeEnabled && !fingerDrawing && mode == CanvasMode.Write && !brush.eraser
-                val panByFinger = !stylus && !mouse && !fingerDrawing && !selectionDrag && !objectGrab && (infiniteCanvas || zoomValue > 1.01f)
+                val panByFinger = !stylus && !mouse && !fingerDrawing && !selectionDrag && !objectGrab && (infiniteCanvas || zoomValue > 1.01f || pageScrolls)
                 if (!stylus && !mouse && !fingerDrawing && !selectionDrag && !objectGrab && !pageSwipeGesture && mode != CanvasMode.Pan && !panByFinger) return true
                 if (stylus || fingerDrawing) requestUnbufferedDispatch(event)
                 activePointerId = event.getPointerId(index); activeBrush = brush
@@ -1127,6 +1126,11 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                             kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.35f))) {
                         pageDragging = true
                         pageDragX = rawX(event, pointer) - pageDragStartRawX; onPageDrag?.invoke(pageDragX, false); return true
+                    }
+                    if (pageScrolls && !pageDragging && kotlin.math.abs(dy) > ViewConfiguration.get(context).scaledTouchSlop && kotlin.math.abs(dy) > kotlin.math.abs(dx) * 1.35f) {
+                        // A vertical finger drag scrolls a page that is taller than the window instead of waiting for a page swipe.
+                        horizontalSwipeTracking = false; gestureMode = CanvasMode.Pan
+                        lastPosition = Offset(event.getX(pointer), event.getY(pointer)); return true
                     }
                     if (kotlin.math.abs(dx) >= threshold && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.35f) {
                         horizontalSwipeConsumed = true; horizontalSwipeTracking = false
@@ -1304,12 +1308,12 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
             CanvasMode.Objects -> moveObject(point)
             CanvasMode.Fill -> if (editable(activeLayerId)) {
                 val target = strokes.lastOrNull { stroke ->
+                    // Cheap bounds check before building a silhouette: this runs on every move.
+                    if (stroke.layerId != activeLayerId || !InkGeometry.nearBounds(stroke, point, stroke.width / 600f)) return@lastOrNull false
                     val outline = if (SolidPen.isCoded(stroke)) SolidPen.silhouette(stroke.points) else stroke.points.takeIf { it.isNotEmpty() &&
                         hypot((it.first().x - it.last().x) * width, (it.first().y - it.last().y) * documentHeight) < 24f }
                     stroke.layerId == activeLayerId && outline != null && outline.size >= 3 &&
                         InkGeometry.contains(point, outline.map { Offset(it.x, it.y) })
-                    // Cheap bounds check before building a silhouette: this runs on every move.
-                    if (stroke.layerId != activeLayerId || !InkGeometry.nearBounds(stroke, point, stroke.width / 600f)) return@lastOrNull false
                 }
                 if (target != null && (!target.filled || (target.fillColor ?: target.color) != fillColor)) {
                     if (editBaseline == null) editBaseline = strokes

@@ -289,6 +289,18 @@ internal fun NotebookEditor(
     }
     var drawingViewportWidthPx by remember { mutableIntStateOf(0) }
     var drawingViewportHeightPx by remember { mutableIntStateOf(0) }
+    // Pages keep the shape they have full screen. In split screen or a freeform window the drawing area is smaller, and
+    // squashing the page to fit it distorted images and ink; instead the page keeps its aspect and scrolls (0 = fill the view).
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val reducedWindow = remember(configuration) { context.isReducedWindow() }
+    val landscapeDisplay = remember(configuration) { context.displayIsLandscape() }
+    val fullPageAspectKey = if (landscapeDisplay) "page-aspect-landscape" else "page-aspect-portrait"
+    LaunchedEffect(reducedWindow, drawingViewportWidthPx, drawingViewportHeightPx, fullPageAspectKey) {
+        if (!reducedWindow && drawingViewportWidthPx > 0 && drawingViewportHeightPx > 0)
+            preferences.edit().putFloat(fullPageAspectKey, drawingViewportHeightPx.toFloat() / drawingViewportWidthPx).apply()
+    }
+    val pageAspect = if (!reducedWindow || notebook.infiniteCanvas) 0f
+        else preferences.getFloat(fullPageAspectKey, 0f).takeIf { it > 0f } ?: context.estimatedFullPageAspect(drawingViewportWidthPx, drawingViewportHeightPx)
     val panelXdpi = context.resources.displayMetrics.xdpi
     var zoom by remember(savedPage.id) { mutableFloatStateOf(1f) }
     var viewportCenterX by remember(savedPage.id) { mutableFloatStateOf(.5f) }
@@ -622,8 +634,8 @@ internal fun NotebookEditor(
     }
     /** A page-normalised rectangle of [width] centred on the current view; [aspect] is on-screen height / width. */
     fun placeBlock(width: Float, aspect: Float): android.graphics.RectF {
-        val cw = (canvas?.width ?: 1).coerceAtLeast(1).toFloat(); val ch = (canvas?.height ?: 1).coerceAtLeast(1).toFloat()
-        val documentHeight = if (notebook.infiniteCanvas) cw * 1.6f else ch
+        val cw = (canvas?.width ?: 1).coerceAtLeast(1).toFloat()
+        val documentHeight = if (notebook.infiniteCanvas) cw * 1.6f else cw * (canvas?.pageAspect ?: 1f)
         val height = (width * cw * aspect / documentHeight).coerceIn(.04f, 1f)
         var x = viewportCenterX - width / 2f; var y = viewportCenterY - height / 2f
         if (!notebook.infiniteCanvas) { x = x.coerceIn(0f, (1f - width).coerceAtLeast(0f)); y = y.coerceIn(0f, (1f - height).coerceAtLeast(0f)) }
@@ -1480,7 +1492,7 @@ internal fun NotebookEditor(
                 Box(Modifier.weight(1f).fillMaxHeight().clipToBounds().onSizeChanged { drawingViewportWidthPx = it.width; drawingViewportHeightPx = it.height }) {
                     if (effectivePageLayout == "Scroll") {
                         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
-                            val pageHeight = maxHeight
+                            val pageHeight = if (pageAspect > 0f) maxWidth * pageAspect else maxHeight
                             LazyColumn(state = pageListState, modifier = Modifier.fillMaxSize(), userScrollEnabled = !fingerDrawing && (notebook.infiniteCanvas || singleFingerSwipe)) {
                                 items(notebook.pages, key = { it.id }) { model ->
                                     val index = notebook.pages.indexOfFirst { it.id == model.id }
@@ -1575,6 +1587,7 @@ internal fun NotebookEditor(
                                     view.tiltCurveEnabled = tiltCurveEnabled; view.tiltCurve = tiltCurve
                                     view.mode = mode; view.shapeKind = shape; view.shapeFilled = shapeFilled; view.shapeFillColor = shapeFillColor; view.shapeBorderNone = shapeBorderNone; view.shapeColor = shapeColor; view.shapeWidth = shapeWidth; view.shapeLineStyle = shapeLineStyle; view.fillColor = fillColor; view.onColorPicked = { picked -> val receiver = pageColorReceiver; pageColorReceiver = null; mode = colorReturnMode; sheet = colorReturnSheet; receiver?.invoke(picked) }; view.eraserMode = eraserMode
                                     view.rulerVisible = rulerOn
+                                    view.documentAspect = pageAspect
                                     view.selectedBlockId = selectedBlockId
                                     view.selectedCells = cellSelection
                                     view.onBlockTap = { id, tapX, tapY ->
@@ -1646,7 +1659,7 @@ internal fun NotebookEditor(
                                 modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds().onSizeChanged { zoomPanelSize = it }, update = { view ->
                                     view.onStrokesChanged = { updated -> applyPage(page.copy(strokes = updated.filter { stroke -> page.layers.any { it.id == stroke.layerId } })) }
                                     view.infiniteCanvas = notebook.infiniteCanvas
-                                    view.documentAspect = (canvas?.let { if (it.width > 0) it.height.toFloat() / it.width else 0f }) ?: 0f
+                                    view.documentAspect = canvas?.pageAspect ?: 0f
                                     view.mode = CanvasMode.Write; view.fingerDrawing = true; view.pinchToZoomEnabled = false
                                     view.brush = selectedBrush; view.threshold = threshold
                                     view.pressureCurve = pressureCurve; view.pressureCurveEnabled = pressureCurveEnabled
