@@ -22,8 +22,8 @@ Branch: `feature/multilanguage` (from `development`). Delivery: ask-on-risk, wor
 | T3 | S1, S4 | delegated (parallel, worktree) | done | ff05dcf |
 | T7 | S1, S4 | delegated (parallel, worktree) | done | 87bd1a9 |
 | T4 | S1, S4 | delegated (parallel, worktree) | done | 15aa884 |
-| T5 | S4, S7 | delegated (context backstop) | in progress | |
-| T6 | S1–S7 | inline | pending | |
+| T5 | S4, S7 | delegated (context backstop) | done | a4d19f3, ad98f96 |
+| T6 | S1–S7 | inline | done (pseudo-locale pass pending) | a6890b1, ad98f96 |
 
 - T1: Infrastructure. `values/strings.xml` in composeResources and androidApp res (plus `-es`, `-pt`), AGP `generateLocaleConfig` + `resources.properties`, a `AppLanguage` model (shared, ordered list of supported tags), locale bridge so Compose resources follow the app locale (`Locale.setDefault` from `AppCompatDelegate.getApplicationLocales()`), Preferences → Language picker, Android 13 system setting sync. Proves the pipeline with the Preferences/About screens.
 - T2: Shared home UI (`shared/commonMain`: NotebookHome, HomeScreens, BackupSettingsScreen, FolderEditorDialog, HomeBoards, HomeSidebar, HomeModels labels, template catalog names, plurals).
@@ -44,3 +44,5 @@ Branch: `feature/multilanguage` (from `development`). Delivery: ask-on-risk, wor
 - L7: Merged T2 (f8165d2, 389 keys), T3 (ff05dcf, 330), T4 (15aa884, 256), T7 (87bd1a9, 442); key parity en/es/pt verified by each writer. Follow-ups fixed in 90ca125: editor InkToolButton/DrawingChoice/ToolDialog pass English `tag` (rememberEnglishResources), template picker uses translated names, `bundle.language.enableSplit = false` (lint AppBundleLocaleChanges: Play language splits would drop in-app-chosen languages).
 - L8: Verified: assembleDebug + lintDebug (0 errors), shared host tests, iOS compile, full device suite on MNP1095: 113 tests, only the 5 known InkCanvasViewTest failures.
 - L9: Open for T5: backup screen hides its folder card by comparing `state.folder` with "No folder selected" (BackupSettingsScreen); host labels in LocalBackup.kt/MainActivity backup state still English. Open for T6: Portuguese rail labels may clip (InkRailButton 9 sp, 48 dp); two " · " joins remain (book details line, bulk delete message).
+- L10: T5 (a4d19f3): typed user errors (`UserMessages.kt`, `Throwable.userMessage`), 74 error strings, backup "no folder" is state not text, backup failures stored as codes. Independent verifier (risk item 1, stored backup prefs): PASS, no blockers; its concern (low-space byte counts not cleared) fixed in ad98f96 with default names for new content. Device: LocalBackupTest, UserMessageTest, NotebookStorageTest pass.
+- L11: T6 visual check on MNP1095 (landscape): library and editor rail in Spanish and Portuguese, no clipping ("Preencher" is the longest rail label and fits). Docs in a6890b1. Not done: `en-XA` pseudo-locale pass, phone-width check, native-speaker review, Android 12 and older (no device). Pre-existing, unrelated: in landscape full screen a page fills the view, so images look squashed compared with portrait.
