@@ -81,6 +81,7 @@ internal fun folderMosaicItems(notebooks: List<HomeNotebook>, books: List<HomeBo
         .groupBy { it.folderId }.mapValues { (_, contents) -> contents.take(4) }
 }
 
+/** Sort IDs are stored; the English names are fallbacks, the UI shows [sortName]. */
 object HomeSort { const val Edited = "edited"; const val Created = "created"; const val Type = "type"; const val Name = "name"
     val all = listOf(Edited to "Last edit", Created to "Date created", Type to "File type", Name to "Name") }
 
@@ -94,6 +95,7 @@ data class HomePreferences(
     val shareUsageStats: Boolean = true,
 )
 
+/** [id] is stored; [name] is the English fallback, the UI shows [accentName]. */
 @Immutable data class AccentPreset(val id: String, val name: String, val primary: Color, val soft: Color)
 val AccentPresets = listOf(
     AccentPreset("sage", "Sage", Color(0xFF2F7A68), Color(0xFFE3EFEA)),
@@ -105,6 +107,7 @@ val AccentPresets = listOf(
     AccentPreset("desert", "Desert", Color(0xFFAE6140), Color(0xFFF6E7DF)),
     AccentPreset("graphite", "Graphite", Color(0xFF3E4347), Color(0xFFE8E9EA)),
 )
+/** Corner style IDs with English fallback names; the UI shows [cornerStyleName]. */
 val CornerStyles = listOf("sharp" to "Sharp", "rounded" to "Rounded", "soft" to "Soft")
 
 @Immutable data class HomeStyle(val accent: Color, val soft: Color, val card: Dp, val item: Dp, val pill: Dp)
@@ -123,6 +126,7 @@ data class TrashItem(val kind: String, val id: String, val title: String, val de
 
 object TrashRules {
     const val DAY = 86_400_000L
+    /** Retention days with English fallback names; the UI shows [retentionName]. */
     val retentionOptions = listOf(7 to "7 days", 30 to "30 days", 0 to "Never auto-delete")
     /** retentionDays <= 0 means "never auto-delete". */
     fun expired(deletedAt: Long, now: Long, retentionDays: Int) = deletedAt > 0 && retentionDays > 0 && now - deletedAt >= retentionDays * DAY

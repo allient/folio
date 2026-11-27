@@ -1,0 +1,487 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Library (home) screens in shared/commonMain. Stored IDs (template ids, accent ids, sort ids) never change; only these labels are translated. -->
+<resources>
+    <!-- Common actions -->
+    <string name="home_cancel">Cancel</string>
+    <string name="home_close">Close</string>
+    <string name="home_create">Create</string>
+    <string name="home_save">Save</string>
+    <string name="home_open">Open</string>
+    <string name="home_delete">Delete</string>
+    <string name="home_move">Move</string>
+    <string name="home_copy">Copy</string>
+    <string name="home_rename">Rename</string>
+    <string name="home_restore">Restore</string>
+    <string name="home_back">Back</string>
+    <string name="home_back_to_library">Back to library</string>
+    <string name="home_move_to_trash">Move to Trash</string>
+    <string name="home_delete_permanently">Delete permanently</string>
+    <string name="home_selected_suffix">%1$s, selected</string>
+    <string name="home_options_for">Options for %1$s</string>
+    <string name="home_open_item">Open %1$s</string>
+
+    <!-- Tabs and sections -->
+    <string name="home_segment_all">All</string>
+    <string name="home_segment_notes">Notes</string>
+    <string name="home_segment_canvas">Canvas</string>
+    <string name="home_segment_books">Books</string>
+    <string name="home_segment_live">Live</string>
+    <string name="home_section_folders">Folders</string>
+    <string name="home_section_move_out">Move out</string>
+    <string name="home_drop_to_move_out">Drop to move out</string>
+    <string name="home_all_folders">All folders</string>
+    <string name="home_fold">Fold</string>
+    <string name="home_unfold">Unfold (%1$d)</string>
+    <plurals name="home_count_notebooks">
+        <item quantity="one">%1$d notebook</item>
+        <item quantity="other">%1$d notebooks</item>
+    </plurals>
+    <plurals name="home_count_canvases">
+        <item quantity="one">%1$d canvas</item>
+        <item quantity="other">%1$d canvases</item>
+    </plurals>
+    <plurals name="home_count_books">
+        <item quantity="one">%1$d book</item>
+        <item quantity="other">%1$d books</item>
+    </plurals>
+    <plurals name="home_count_items">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <!-- %1$d subfolders, %2$s the item count, for example "3 items". -->
+    <plurals name="home_folder_detail">
+        <item quantity="one">%1$d folder · %2$s</item>
+        <item quantity="other">%1$d folders · %2$s</item>
+    </plurals>
+    <string name="home_default_notebook_name">Notebook-%1$d</string>
+    <string name="home_default_canvas_name">Canvas-%1$d</string>
+
+    <!-- Top bar and library menu -->
+    <string name="home_toggle_sidebar">Toggle sidebar</string>
+    <string name="home_search_notebooks">Search notebooks</string>
+    <string name="home_library_menu">Library menu</string>
+    <string name="home_select">Select</string>
+    <string name="home_sort_by">Sort by</string>
+    <string name="home_sort_by_current">Sort by (%1$s)</string>
+    <string name="home_view_grid">Grid</string>
+    <string name="home_view_list">List</string>
+    <string name="home_search_tags">Search tags</string>
+    <string name="home_import_document">Import notebook or document</string>
+    <string name="home_export_library">Export full library backup</string>
+    <string name="home_search_label">Search notebooks, books, tags and text</string>
+    <string name="home_close_search">Close search</string>
+    <string name="home_all_tags">All tags</string>
+    <string name="home_tags_hint">Add tags from a notebook's editor</string>
+    <string name="home_close_tag_search">Close tag search</string>
+    <string name="home_folder_options">Folder options</string>
+    <string name="home_cancel_move">Cancel move</string>
+    <string name="home_clear_tag_filter">Clear tag filter</string>
+    <string name="home_dismiss_message">Dismiss message</string>
+    <string name="home_close_sidebar">Close sidebar</string>
+    <string name="home_saving">Saving to this device…</string>
+
+    <!-- Selection -->
+    <string name="home_cancel_selection">Cancel selection</string>
+    <plurals name="home_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="home_clear_selection">Clear selection</string>
+    <string name="home_select_all">Select all</string>
+    <string name="home_clear">Clear</string>
+    <string name="home_move_selected">Move selected</string>
+    <string name="home_favorite_selected">Favorite selected</string>
+    <string name="home_delete_selected">Delete selected</string>
+    <string name="home_notice_select_to_move">Select folders, notebooks or books to move</string>
+    <string name="home_notice_added_favorites">Added to Favorites</string>
+    <string name="home_notice_removed_favorites">Removed from Favorites</string>
+    <string name="home_notice_folders_no_favorites">Folders can't be added to Favorites</string>
+
+    <!-- Library items -->
+    <string name="home_open_folder">Open folder %1$s</string>
+    <string name="home_notebook_options">Notebook options</string>
+    <string name="home_book_options">Book options</string>
+    <string name="home_infinite_badge">∞ Infinite</string>
+    <string name="home_badge_canvas">CANVAS</string>
+    <string name="home_badge_note">NOTE</string>
+    <string name="home_book_missing">Original missing · re-import to read</string>
+    <!-- %1$s format (PDF, EPUB), %2$s progress such as 45%, %3$s date. -->
+    <string name="home_book_list_detail">%1$s · %2$s read · %3$s</string>
+    <string name="home_percent_read">%1$s read</string>
+    <string name="home_notice_notebook_moved">Notebook moved</string>
+    <string name="home_notice_no_folder">No folder selected</string>
+
+    <!-- Empty states -->
+    <string name="home_empty_search">No matching items</string>
+    <string name="home_empty_favorites">No favorites yet</string>
+    <string name="home_empty_recent">Open a notebook or book to find it here</string>
+    <string name="home_empty_folder">This folder is empty</string>
+    <string name="home_empty_books">No books yet</string>
+    <string name="home_empty">Nothing here yet</string>
+    <string name="home_empty_books_hint">Tap + to import a PDF or DRM-free EPUB.</string>
+    <string name="home_empty_hint">Tap + to create a notebook or import a book.</string>
+
+    <!-- Create menu -->
+    <string name="home_new_notebook">New notebook</string>
+    <string name="home_import_pdf_notebook">Import PDF/EPUB as notebook</string>
+    <string name="home_new_canvas">New infinite canvas</string>
+    <string name="home_new_folder">New folder</string>
+    <string name="home_import_book">Import PDF/EPUB book</string>
+    <string name="home_import_backup">Import notebook or backup</string>
+
+    <!-- Details dialog -->
+    <string name="home_details_title">General</string>
+    <string name="home_close_details">Close details</string>
+    <string name="home_details_information">Information: %1$s</string>
+    <string name="home_details_type">Type: %1$s</string>
+    <string name="home_details_updated">Updated: %1$s</string>
+    <string name="home_details_folder_updated">Latest notebook update: %1$s</string>
+    <string name="home_details_infinite">Infinite canvas</string>
+    <!-- %1$d page count, %2$d current page. -->
+    <plurals name="home_details_pages">
+        <item quantity="one">%1$d page · Page %2$d</item>
+        <item quantity="other">%1$d pages · Page %2$d</item>
+    </plurals>
+    <plurals name="home_page_count">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <string name="home_type_infinite_notebook">Infinite notebook</string>
+    <string name="home_type_notebook">Notebook</string>
+    <string name="home_type_canvas">Canvas</string>
+    <string name="home_type_folder">Folder</string>
+    <string name="home_type_book">%1$s book</string>
+    <plurals name="home_type_notebook_pages">
+        <item quantity="one">Notebook · %1$d page</item>
+        <item quantity="other">Notebook · %1$d pages</item>
+    </plurals>
+    <string name="home_folder_contents">%1$s · %2$s</string>
+    <string name="home_no_notebooks_yet">No notebooks yet</string>
+    <string name="home_share_export">Share and export</string>
+    <string name="home_favorites_action">Favorites</string>
+    <string name="home_unfavorite">Unfavorite</string>
+    <string name="home_edit_folder">Edit folder</string>
+    <string name="home_export_pdf">PDF · all pages</string>
+    <string name="home_export_png">PNG · current page</string>
+    <string name="home_export_folio">Folio backup (.folio) · editable</string>
+    <string name="home_rename_notebook">Rename notebook</string>
+    <string name="home_notebook_name">Notebook name</string>
+
+    <!-- Move and delete -->
+    <string name="home_trash_folder_title">Move folder to Trash?</string>
+    <string name="home_trash_folder_text">Its notebooks, books and folders stay in your library without a folder. Restoring the folder from Trash puts them back inside.</string>
+    <string name="home_trash_notebook_title">Move notebook to Trash?</string>
+    <string name="home_trash_book_title">Move book to Trash?</string>
+    <!-- %1$s is home_restore_for_days or home_restore_until_empty. -->
+    <string name="home_trash_book_text">Highlights, notes and reading position are kept. %1$s</string>
+    <plurals name="home_restore_for_days">
+        <item quantity="one">You can restore it from Trash for %1$d day.</item>
+        <item quantity="other">You can restore it from Trash for %1$d days.</item>
+    </plurals>
+    <string name="home_restore_until_empty">You can restore it from Trash until you empty it.</string>
+    <plurals name="home_bulk_trash_title">
+        <item quantity="one">Move %1$d item to Trash?</item>
+        <item quantity="other">Move %1$d items to Trash?</item>
+    </plurals>
+    <string name="home_bulk_trash_folders_note">Notebooks and books inside deleted folders stay in your library.</string>
+    <plurals name="home_restore_them_for_days">
+        <item quantity="one">You can restore them from Trash for %1$d day.</item>
+        <item quantity="other">You can restore them from Trash for %1$d days.</item>
+    </plurals>
+    <string name="home_restore_them_until_empty">You can restore them from Trash until you empty it.</string>
+    <plurals name="home_notice_moved_to_trash">
+        <item quantity="one">Moved %1$d item to Trash</item>
+        <item quantity="other">Moved %1$d items to Trash</item>
+    </plurals>
+    <string name="home_main_library">Main library (no folder)</string>
+    <string name="home_move_to_folder">Move to folder</string>
+    <string name="home_move_book_title">Move book to folder</string>
+    <string name="home_move_folder_title">Move folder</string>
+    <string name="home_notice_moved_to">Moved to %1$s</string>
+    <string name="home_notice_moved_to_main">Moved to the main library</string>
+    <string name="home_drag_on_home">Drag on home screen</string>
+    <string name="home_notice_drag_hint">Drag the selected notebook onto a folder, or tap × to cancel</string>
+
+    <!-- Trash screen -->
+    <string name="home_trash_title">Trash bin</string>
+    <string name="home_trash_empty_action">Empty trash</string>
+    <plurals name="home_trash_retention">
+        <item quantity="one">Items are deleted permanently %1$d day after you delete them.</item>
+        <item quantity="other">Items are deleted permanently %1$d days after you delete them.</item>
+    </plurals>
+    <string name="home_trash_retention_off">Auto-delete is off. Items stay here until you delete them.</string>
+    <string name="home_trash_empty_title">Trash is empty</string>
+    <string name="home_trash_empty_detail">Deleted notebooks, folders and books appear here.</string>
+    <!-- %1$s item kind and size, %2$s deletion date. -->
+    <string name="home_trash_deleted_on">%1$s · Deleted %2$s</string>
+    <string name="home_trash_kept">Kept until you delete it</string>
+    <string name="home_trash_next_start">Deleted at next start</string>
+    <plurals name="home_trash_days_left">
+        <item quantity="one">%1$d day left</item>
+        <item quantity="other">%1$d days left</item>
+    </plurals>
+    <string name="home_delete_permanently_title">Delete permanently?</string>
+    <string name="home_delete_folder_forever">The folder "%1$s" is removed. Its notebooks and books stay in your library, without a folder.</string>
+    <string name="home_delete_book_forever">"%1$s" and its highlights, notes and reading position are removed from Folio. The original file you imported is not changed.</string>
+    <string name="home_delete_note_forever">"%1$s" and all its pages are removed from this device. This cannot be undone.</string>
+    <string name="home_empty_trash_title">Empty trash?</string>
+    <plurals name="home_empty_trash_text">
+        <item quantity="one">%1$d item is deleted permanently. This cannot be undone.</item>
+        <item quantity="other">%1$d items are deleted permanently. This cannot be undone.</item>
+    </plurals>
+
+    <!-- New notebook screen -->
+    <string name="home_clear_name">Clear name</string>
+    <string name="home_canvas_type">Canvas</string>
+    <string name="home_type_pages">Pages</string>
+    <string name="home_type_pages_detail">Individual pages</string>
+    <string name="home_type_infinite">Infinite</string>
+    <string name="home_type_infinite_detail">One canvas · all directions</string>
+    <string name="home_canvas_fixed">Canvas type is fixed after creation.</string>
+    <string name="home_infinite_detail">Pan in any direction and the paper follows. Long-press blank space to add a pin and jump back later.</string>
+    <string name="home_pattern">Pattern</string>
+    <string name="home_spacing">Spacing %1$d</string>
+
+    <!-- Templates -->
+    <string name="template_page_template">Page template</string>
+    <string name="template_browse">Browse templates</string>
+    <string name="template_no_recent">No recent templates yet</string>
+    <string name="template_browse_all">Browse all templates</string>
+    <string name="template_hub_title">Template Hub</string>
+    <string name="template_back_from_hub">Back from Template Hub</string>
+    <string name="template_recent">Recent templates</string>
+    <string name="template_ready">Ready to use · Local</string>
+    <string name="template_use">Use template</string>
+    <string name="template_add">Add to library</string>
+    <string name="template_no_recent_hub">No recent templates yet. Select a template to add it to your local library.</string>
+    <string name="template_category_all">All</string>
+    <string name="template_category_recent">Recent</string>
+    <string name="template_category_general">General</string>
+    <string name="template_category_planning">Planning</string>
+    <string name="template_category_work">Work</string>
+    <string name="template_category_study">Study</string>
+    <string name="template_category_creative">Creative</string>
+    <string name="template_category_custom">Custom</string>
+    <string name="template_blank">Blank</string>
+    <string name="template_lined">Ruled</string>
+    <string name="template_wide_ruled">Wide ruled</string>
+    <string name="template_grid">Square grid</string>
+    <string name="template_big_grid">Large grid</string>
+    <string name="template_dots">Dot grid</string>
+    <string name="template_graph">Graph paper</string>
+    <string name="template_hex_grid">Hexagonal grid</string>
+    <string name="template_todo">To-do list</string>
+    <string name="template_todo_daily">Daily to-do</string>
+    <string name="template_daily">Daily planner</string>
+    <string name="template_time_block">Time blocking</string>
+    <string name="template_weekly">Weekly planner</string>
+    <string name="template_monthly">Monthly planner</string>
+    <string name="template_habit">Habit tracker</string>
+    <string name="template_priority">Priority matrix</string>
+    <string name="template_meeting">Meeting notes</string>
+    <string name="template_project">Project planner</string>
+    <string name="template_kanban">Kanban board</string>
+    <string name="template_cornell">Cornell notes</string>
+    <string name="template_lecture">Lecture notes</string>
+    <string name="template_reading">Reading log</string>
+    <string name="template_revision">Revision notes</string>
+    <string name="template_vocabulary">Vocabulary list</string>
+    <string name="template_lab">Lab report</string>
+    <string name="template_math_grid">Math grid</string>
+    <string name="template_english">English practice</string>
+    <string name="template_isometric">Isometric grid</string>
+    <string name="template_music">Music staff</string>
+    <string name="template_storyboard">Storyboard</string>
+    <string name="template_comic">Comic panels</string>
+    <string name="template_mind_map">Mind map</string>
+    <string name="template_sketch">Sketch page</string>
+    <string name="template_custom_grid">Custom grid</string>
+    <string name="template_custom_ruled">Custom ruled</string>
+    <string name="template_custom_dots">Custom dots</string>
+    <!-- Headings printed at the top of template previews. -->
+    <string name="template_heading_todo">TO-DO LIST</string>
+    <string name="template_heading_meeting">MEETING NOTES</string>
+    <string name="template_heading_daily">DAILY PLANNER</string>
+    <string name="template_heading_weekly">WEEKLY PLANNER</string>
+    <string name="template_heading_project">PROJECT PLANNER</string>
+    <string name="template_heading_cornell">CORNELL NOTES</string>
+    <string name="template_heading_lecture">LECTURE NOTES</string>
+    <string name="template_heading_reading">READING NOTES</string>
+    <string name="template_heading_time_block">TIME BLOCKS</string>
+    <string name="template_heading_monthly">MONTHLY PLANNER</string>
+    <string name="template_heading_habit">HABIT TRACKER</string>
+    <string name="template_heading_priority">PRIORITY MATRIX</string>
+    <string name="template_heading_kanban">KANBAN BOARD</string>
+    <string name="template_heading_revision">REVISION NOTES</string>
+    <string name="template_heading_vocabulary">VOCABULARY</string>
+    <string name="template_heading_lab">LAB REPORT</string>
+    <string name="template_heading_comic">COMIC PANELS</string>
+    <string name="template_heading_mind_map">MIND MAP</string>
+    <string name="template_heading_sketch">SKETCH PAGE</string>
+    <!-- Infinite canvas paper -->
+    <string name="template_paper_blank">Blank paper</string>
+    <string name="template_paper_graph">Graph paper</string>
+    <string name="template_paper_grid">Wide grid paper</string>
+    <string name="template_paper_lines">Line paper</string>
+    <string name="template_paper_dots">Dot paper</string>
+    <string name="template_paper_sheet">Sheet</string>
+    <string name="template_paper_white">White</string>
+    <string name="template_paper_beige">Beige</string>
+    <string name="template_paper_dark">Dark gray</string>
+
+    <!-- Live boards -->
+    <string name="boards_empty_title">No boards yet</string>
+    <string name="boards_empty_detail">Tap + to start a live board. Draw with your pen and share a link in your call.</string>
+    <string name="boards_badge">LIVE</string>
+    <string name="boards_new_title">New board</string>
+    <string name="boards_rename_title">Rename board</string>
+    <string name="boards_delete_title">Delete “%1$s”?</string>
+    <string name="boards_delete_text">The board and its drawing are removed from this device.</string>
+    <string name="boards_untitled">Untitled board</string>
+
+    <!-- Sidebar -->
+    <string name="sidebar_notes">Notes</string>
+    <string name="sidebar_folders">Folders</string>
+    <string name="sidebar_create_folder">Create folder</string>
+    <string name="sidebar_collapse_folders">Collapse folders</string>
+    <string name="sidebar_expand_folders">Expand folders</string>
+    <string name="sidebar_no_folders">No folders yet</string>
+    <string name="sidebar_recent">Recent</string>
+    <string name="sidebar_favorites">Favorites</string>
+
+    <!-- Preferences -->
+    <string name="prefs_title">Preferences</string>
+    <string name="prefs_accent_title">Accent colour</string>
+    <string name="prefs_accent_detail">Used for the library: the selected tab, the + button, the sidebar, check marks and links.</string>
+    <string name="prefs_corners_title">Corners</string>
+    <string name="prefs_corners_detail">Applies to library cards, the tab control and the sidebar.</string>
+    <string name="prefs_corners_sharp">Sharp</string>
+    <string name="prefs_corners_rounded">Rounded</string>
+    <string name="prefs_corners_soft">Soft</string>
+    <string name="prefs_view_title">Default view</string>
+    <string name="prefs_view_detail">The library's Grid and List menu items change this too.</string>
+    <string name="prefs_sort_title">Default sort</string>
+    <string name="prefs_sort_detail">The library's Sort by menu changes this too.</string>
+    <string name="prefs_notebooks_title">Notebooks</string>
+    <string name="prefs_fullscreen_title">Start notebooks in fullscreen (focus mode)</string>
+    <string name="prefs_fullscreen_detail">Notebooks opened from the library start with the toolbars hidden. Use the exit button to show them again.</string>
+    <string name="prefs_privacy_title">Privacy</string>
+    <string name="prefs_usage_title">Share usage statistics and crash reports</string>
+    <string name="prefs_usage_detail">Anonymous usage and crash reports through Google Analytics and Crashlytics. Never the content, titles or names of your notes and books.</string>
+    <string name="prefs_trash_title">Trash</string>
+    <string name="prefs_trash_detail">Deleted items are kept in Trash for this long, then deleted when Folio starts.</string>
+    <plurals name="prefs_retention_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="prefs_retention_never">Never auto-delete</string>
+    <string name="prefs_pen_title">Pen</string>
+    <string name="prefs_pen_pressure_title">Pen pressure</string>
+    <string name="prefs_pen_pressure_detail">Ignore hovering and light contact in notes, the reader and the library; pressure curves</string>
+    <string name="prefs_backup_title">Backup</string>
+    <string name="prefs_backup_detail">Local backup folder, back up now, export and restore</string>
+    <string name="prefs_reset">Reset to defaults</string>
+    <string name="prefs_reset_title">Reset preferences?</string>
+    <string name="prefs_reset_text">Accent colour, corners, view, sort, fullscreen and Trash retention return to their defaults. Your notebooks and books are not changed.</string>
+    <string name="prefs_reset_confirm">Reset</string>
+    <string name="accent_sage">Sage</string>
+    <string name="accent_morning">Morning</string>
+    <string name="accent_evening">Evening</string>
+    <string name="accent_sea">Sea</string>
+    <string name="accent_forest">Forest</string>
+    <string name="accent_lavender">Lavender</string>
+    <string name="accent_desert">Desert</string>
+    <string name="accent_graphite">Graphite</string>
+    <string name="sort_edited">Last edit</string>
+    <string name="sort_created">Date created</string>
+    <string name="sort_type">File type</string>
+    <string name="sort_name">Name</string>
+
+    <!-- About -->
+    <string name="about_title">About</string>
+    <string name="about_tagline">Handwritten Notes &amp; eReader</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_open_allient">Open allient.io</string>
+    <string name="about_made_at">Made at</string>
+    <string name="about_made_at_allient">Made at Allient</string>
+    <string name="about_privacy_title">Your notes stay on this device</string>
+    <string name="about_privacy_body">There are no accounts and no cloud sync. Notebooks, folders and reading notes live in the app's private storage, so turn on Smart backups or export a .folio file before you uninstall or clear the app's data.</string>
+    <string name="about_privacy_internet">Folio uses the internet only for Live boards, the handwriting model download, Google Play updates and anonymous usage statistics, which you can switch off in Preferences.</string>
+    <string name="about_links">Links</string>
+    <string name="about_link_docs">Documentation and more info</string>
+    <string name="about_link_star">Like Folio? Star it on GitHub</string>
+    <string name="about_link_issues">Report a problem</string>
+    <string name="about_link_issues_detail">Open an issue on GitHub</string>
+    <string name="about_link_privacy">Privacy policy</string>
+    <string name="about_link_license">License</string>
+    <string name="about_libraries">Open-source libraries</string>
+    <string name="about_lib_ink">Handwriting strokes and rendering</string>
+    <string name="about_lib_pdfium">PDF rendering</string>
+    <string name="about_lib_pdfbox">Annotated PDF export</string>
+    <string name="about_lib_readium">EPUB reading</string>
+    <string name="about_lib_mlkit">On-device OCR</string>
+    <string name="about_lib_zstd">Backup compression</string>
+    <string name="about_lib_lucide">Icons (ISC)</string>
+    <string name="about_lib_geist">Interface typeface (SIL OFL)</string>
+    <string name="about_footer">Folio is open source under the Apache License 2.0. Made by Allient.</string>
+
+    <!-- Backup settings -->
+    <string name="backup_settings_title">Backup settings</string>
+    <string name="backup_restore_version_title">Restore this version?</string>
+    <string name="backup_restore_version_text">Notebooks, folders and reader notes from %1$s are added to your library as copies. Nothing in your current library is removed.</string>
+    <string name="backup_smart_title">Smart backups</string>
+    <string name="backup_explanation">Backs up a few minutes after you close a note or leave the app, only when something changed. Keeps recent versions and removes old ones automatically. PDF and EPUB files aren't copied; your notes and highlights are.</string>
+    <string name="backup_on_status">On: backs up after changes</string>
+    <string name="backup_choose_to_start">Choose a folder to get started</string>
+    <string name="backup_on_detail">Your first backup starts after folder selection. During long sessions Folio also backs up about every 15 minutes, and checks every few hours in case anything was missed. Android may delay background work.</string>
+    <string name="backup_off_detail">Turn on backups to select a folder. Cancelling folder selection leaves backups off.</string>
+    <string name="backup_files_kept">Existing backup files are kept when backup is off.</string>
+    <string name="backup_folder">Backup folder</string>
+    <string name="backup_change_folder">Change folder</string>
+    <string name="backup_last">Last backup</string>
+    <string name="backup_state_setting_up">Setting up</string>
+    <string name="backup_state_running">Backing up…</string>
+    <string name="backup_state_attention">Needs attention</string>
+    <string name="backup_state_on">On</string>
+    <string name="backup_state_off">Off</string>
+    <string name="backup_saving_notes">Saving your latest notes…</string>
+    <string name="backup_now">Back up now</string>
+    <string name="backup_versions">Kept versions</string>
+    <string name="backup_documents_title">Choose a folder in Documents</string>
+    <string name="backup_documents_detail">In the Android folder picker, open Documents. You can create a folder called Folio Backups, open it, then tap Use this folder.</string>
+    <string name="backup_format_detail">A .folio backup includes notebooks and their attachments, plus reader titles, file references, reading positions, highlights and notes. PDF and EPUB files stay in this device's storage and are not copied; after restoring on another device, reimport a book to reopen it. Matching books reconnect to their saved annotations. Restoring adds copies and never erases your library. Backups stay on this device; nothing is sent online.</string>
+    <string name="backup_restore_from">Restore from backup</string>
+
+    <!-- Folder editor -->
+    <string name="folder_eyebrow">YOUR LIBRARY, ORGANIZED</string>
+    <string name="folder_title_new">A place for your ideas</string>
+    <string name="folder_title_edit">Make it your own</string>
+    <string name="folder_close_editor">Close folder editor</string>
+    <string name="folder_live_preview">LIVE PREVIEW</string>
+    <string name="folder_placeholder_name">Your new folder</string>
+    <!-- %1$s folder style, %2$s folder colour. -->
+    <string name="folder_preview_summary">%1$s · %2$s</string>
+    <string name="folder_name_label">Folder name</string>
+    <string name="folder_name_hint">e.g. Creative projects</string>
+    <string name="folder_duplicate">A folder with this name already exists.</string>
+    <string name="folder_name_required">Give your folder a name.</string>
+    <string name="folder_name_help">Keep related notebooks and documents together.</string>
+    <string name="folder_color_title">Folder color</string>
+    <string name="folder_color_description">%1$s folder color</string>
+    <string name="folder_style_title">Choose a style</string>
+    <string name="folder_style_subtitle">A little personality</string>
+    <string name="folder_style_description">%1$s folder style</string>
+    <string name="folder_create">Create folder</string>
+    <string name="folder_save_changes">Save changes</string>
+    <string name="folder_style_classic">Classic</string>
+    <string name="folder_style_papers">With papers</string>
+    <string name="folder_style_tabbed">Tabbed</string>
+    <string name="folder_style_open">Open</string>
+    <string name="folder_style_mosaic">Mosaic</string>
+    <string name="folder_color_sage">Sage</string>
+    <string name="folder_color_blue">Blue</string>
+    <string name="folder_color_lavender">Lavender</string>
+    <string name="folder_color_rose">Rose</string>
+    <string name="folder_color_peach">Peach</string>
+    <string name="folder_color_sand">Sand</string>
+</resources>
