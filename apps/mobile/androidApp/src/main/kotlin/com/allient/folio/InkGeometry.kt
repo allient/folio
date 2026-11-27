@@ -33,15 +33,35 @@ internal object InkGeometry {
         return result
     }
 
+    /** Whether [point] lies within the stroke's cached bounds grown by [padding] (normalized units). */
+    fun nearBounds(stroke: InkStroke, point: Offset, padding: Float = 0f): Boolean {
+        if (stroke.points.isEmpty()) return false
+        val box = boundsFor(stroke)
+        return point.x >= box.left - padding && point.x <= box.right + padding &&
+            point.y >= box.top - padding && point.y <= box.bottom + padding
+    }
+
+    // Runs for every stroke on the page when a lasso closes, on the main thread: reject by bounds
+    // first and walk the points in place, or dense pages time out input dispatching (ANR).
     fun intersects(stroke: InkStroke, polygon: List<Offset>): Boolean {
-        if (polygon.size < 3) return false
+        if (polygon.size < 3 || stroke.points.isEmpty()) return false
+        var left = Float.MAX_VALUE; var top = Float.MAX_VALUE
+        var right = -Float.MAX_VALUE; var bottom = -Float.MAX_VALUE
+        for (p in polygon) { left = min(left, p.x); top = min(top, p.y); right = max(right, p.x); bottom = max(bottom, p.y) }
+        val box = boundsFor(stroke)
+        if (box.right + EPSILON < left || box.left - EPSILON > right ||
+            box.bottom + EPSILON < top || box.top - EPSILON > bottom) return false
         if (stroke.filled) return FilledInkEraser.intersectsPolygon(stroke, polygon)
-        val points = stroke.points.map { Offset(it.x, it.y) }
-        if (points.any { contains(it, polygon) }) return true
-        if (stroke.filled && contains(polygon.first(), points)) return true
-        return points.zipWithNext().any { (a, b) -> polygon.indices.any { i ->
-            segmentsIntersect(a, b, polygon[i], polygon[(i + 1) % polygon.size])
-        } }
+        val points = stroke.points
+        for (p in points) if (contains(Offset(p.x, p.y), polygon)) return true
+        for (index in 0 until points.lastIndex) {
+            val a = Offset(points[index].x, points[index].y)
+            val b = Offset(points[index + 1].x, points[index + 1].y)
+            if (max(a.x, b.x) + EPSILON < left || min(a.x, b.x) - EPSILON > right ||
+                max(a.y, b.y) + EPSILON < top || min(a.y, b.y) - EPSILON > bottom) continue
+            for (i in polygon.indices) if (segmentsIntersect(a, b, polygon[i], polygon[(i + 1) % polygon.size])) return true
+        }
+        return false
     }
 
     private fun segmentsIntersect(a: Offset, b: Offset, c: Offset, d: Offset): Boolean {

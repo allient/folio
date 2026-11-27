@@ -1308,6 +1308,8 @@ internal class InkCanvasView(context: Context, onChanged: (List<InkStroke>) -> U
                         hypot((it.first().x - it.last().x) * width, (it.first().y - it.last().y) * documentHeight) < 24f }
                     stroke.layerId == activeLayerId && outline != null && outline.size >= 3 &&
                         InkGeometry.contains(point, outline.map { Offset(it.x, it.y) })
+                    // Cheap bounds check before building a silhouette: this runs on every move.
+                    if (stroke.layerId != activeLayerId || !InkGeometry.nearBounds(stroke, point, stroke.width / 600f)) return@lastOrNull false
                 }
                 if (target != null && (!target.filled || (target.fillColor ?: target.color) != fillColor)) {
                     if (editBaseline == null) editBaseline = strokes
