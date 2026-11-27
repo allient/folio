@@ -1,5 +1,4 @@
-Folio 1.0.14
-- Folio now speaks English, Spanish, Portuguese, French, German, Hindi and Chinese. It follows your device language, or pick one in Preferences → Language.
-- Redesigned Preferences and Backup settings.
-- In landscape, pages keep their shape, centred, and scroll.
-- Fixes for page turning in landscape.
+Folio 1.0.15
+- Import a PDF or EPUB as a notebook: files up to 1 GB now work (before: 128 MB).
+- A PDF with more than 200 pages now explains the limit and suggests importing it as a book.
+- Folio checks free storage before copying a large file.
