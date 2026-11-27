@@ -49,7 +49,8 @@ Key Android files (`apps/mobile/androidApp/src/main/kotlin/com/allient/folio/`):
 | `AppUpdates.kt` | Google Play in-app updates |
 | `HandwritingRecognizer.kt` | ML Kit Digital Ink: lasso → Convert to text, language choice, model download on first use |
 | `LiveBoardActivity.kt`, `PressureFilteringWebView.kt`, `PenPressureMapper.kt`, `LiveBoardStore.kt` | Live boards: Excalidraw in a WebView with Folio's pen filter, boards on disk (see `docs/features/live-boards.md`) |
-| `ViewUtils.kt` | Android view helpers (`dp()`, `ReaderChromeBands`) |
+| `ViewUtils.kt` | Android view helpers (`dp()`, `ReaderChromeBands`, window and page-shape helpers, `rememberEnglishResources`) |
+| `AppLocales.kt`, `UserMessages.kt` | App language (per-app locale, `Locale.setDefault`), translated user-facing errors |
 
 ## Commands
 
@@ -118,6 +119,7 @@ With several devices connected, pass the serial (`adb -s <serial> …`).
 - Icons: generic actions use Lucide (`com.composables:icons-lucide-cmp`), drawn through `LucideGlyph` (shared) at a 1.5 stroke so they match Folio's custom ones. Library icons go through `HomeSymbol`/`Symbol`, editor and reader icons through `InkSymbol`/`InkIcon.lucide`. Folio-specific tools (pens, erasers, lasso, reader underline styles, split view, page fitting, brush glyphs) keep their custom paths.
 - The About screen (`AboutScreen` in `shared/.../home/HomeScreens.kt`) shows the version, a short privacy summary, links (documentation site, GitHub star, issues, privacy policy, license; addresses in `FolioLinks.kt`) and the open-source libraries. Keep its privacy text in step with the privacy policy.
 - Every icon-only control has a `contentDescription`. Keep existing test tags stable; flows and tests depend on them.
+- **Preferences and Backup settings** use grouped rows (`PreferenceGroup`, `PreferenceRow`, `PreferenceSelect`, `PreferenceSwitch` in `shared/.../home/HomeScreens.kt`): a select (dropdown) for choices, a switch for on/off, a chevron for screens of their own; no radio lists or checkboxes. Backup settings open with a status panel (state, last backup, Back up now, errors).
 - **Languages:** English (default), Spanish, Brazilian Portuguese, French, German, Hindi and Simplified Chinese (`values-zh`, used for every Chinese locale). The language picker shows each language in its own name with a flag (`AppLanguage.flag`), and a phone icon for the device language. No UI text is hard-coded: shared UI uses Compose Multiplatform resources (`shared/src/commonMain/composeResources/values*/strings*.xml`, `stringResource(Res.string.…)`), `androidApp` uses Android resources (`res/values*/strings_<area>.xml`: `strings_editor`, `strings_tools`, `strings_reader`, `strings_errors`), with `<plurals>` for counts (es/pt also need `many`) and placeholders instead of concatenation. The app follows the device language, else English (`AppLanguages.resolve`, shared); Preferences → Language and Android 13's per-app setting are the same value (`AppLocales`: `LocaleManager` on 33+, the `app-language` preference plus `attachBaseContext` wrapping before). `AppLocales.wrap` also sets `Locale.setDefault`, because Compose resources and number/date formatting read the JVM default locale. Stored values (preference values, brush names, toolbox tool ids, layer names, template and accent ids) stay English and are mapped to a label when shown. Components that build test tags from their label (`InkToolButton`, `DrawingChoice`, `ToolDialog`, reader actions, home icon buttons, sidebar items) take a separate English `tag`; in the editor use `rememberEnglishResources()`. In composables read strings with `stringResource` or `LocalResources.current` (lint fails on `LocalContext.current.getString`). Play language splits are off (`bundle.language.enableSplit = false`) so an in-app choice always has its strings. **Adding a language:** add `values-<tag>` copies of every strings file in both places, then add it to `AppLanguages.supported`; the build generates the Android locale list. User content (titles, typed text, OCR) is never translated.
 
 ## Data invariants
@@ -188,6 +190,7 @@ Sources: [`docs/`](docs). Each file needs a `title` in its frontmatter; the webs
 | `features/pages-and-import.md` | Swipe to turn or add pages, page manager, PDF/EPUB as a notebook |
 | `features/reader-writing-and-marks.md` | Reader pens, selection toolbar, word and stylus selection, mark editor |
 | `features/live-boards.md` | Live boards: Excalidraw with Folio's pen filter, storage, pitfalls, limits |
+| `features/languages.md` | The seven languages, how the app picks one, where the text lives, adding a language |
 | `features/*.md` | Feature reviews (BOOX coverage, canvas tools, ruler and zoom window, tables and stickers) |
 | `roadmap/*.md` | Planned preferences (themes, languages), responsive improvements |
 | `testing/validation.md`, `testing/mirroring.md` | Test results, UI flow replays, device mirroring |

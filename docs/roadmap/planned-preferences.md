@@ -32,7 +32,7 @@ The drawing editor uses hard-coded light colours (`ChromeInk`, `ChromeLine`, `Ch
 
 ## Multi-language (done)
 
-Shipped: English (default), Spanish and Brazilian Portuguese, following the device language with English as the fallback, and Preferences → Language (also Android 13's per-app language setting). How it works and how to add a language: the "Languages" note in `AGENTS.md`. Still open: a pseudo-locale (`en-XA`) UI pass and a native-speaker review of the translations.
+Shipped: English (default), Spanish, Brazilian Portuguese, French, German, Hindi and Simplified Chinese, following the device language with English as the fallback, and Preferences → Language (also Android 13's per-app language setting). How it works and how to add a language: [Languages](../features/languages.md). Still open: a pseudo-locale (`en-XA`) UI pass and a native-speaker review of the translations.
 
 ## Constraints
 
