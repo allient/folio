@@ -1,0 +1,35 @@
+Folio ist ein ruhiges, fokussiertes Notizbuch für deinen Stift. Schreib von Hand, zeichne auf einer unendlichen Leinwand und lies PDFs und EPUBs mit dem Stift in der Hand. Deine Notizen und Bücher bleiben auf deinem Gerät: kein Konto, keine Werbung, und alles funktioniert offline.
+
+<b>Tinte, die sich wie Tinte anfühlt</b>
+• Zwölf Pinsel: Kuli, Fineliner, Gelstift, Marker, Füller, Pinselstift, Kalligrafie, Textmarker, Bleistifte 2H–6B, Kreide, Spray und ein Borstenpinsel
+• Schreiben mit geringer Latenz, Druck und Neigung
+• Druckkurven, die du selbst formst, und ein Schwellenwert, der eine abgenutzte Spitze ignoriert
+• Bleistiftkörnung, die beim Zoomen auf dem Papier bleibt
+
+<b>Seiten, oder ganz ohne Ränder</b>
+• 35 Seitenvorlagen: liniert, kariert, gepunktet, Cornell, Planer, Kanban, Notenlinien, Gewohnheitstracker und mehr
+• Unendliche Leinwand mit Markierungen, Minikarte und „Zurück zum Inhalt"
+• Ebenen, Lasso, Formen, Füllen, Textfelder, Tabellen, Sticker, Haftnotizen und Bilder
+• Ein Lineal und ein Zoomfenster für Details
+• Sprachnotizen direkt auf der Seite
+
+<b>Lesen mit dem Stift in der Hand</b>
+• PDF- und EPUB-Reader mit Markierungen, Unterstreichungen, Randnotizen und Lesezeichen
+• Suche, Sprung zur Seite und Texterkennung auf dem Gerät (OCR)
+• Lernansicht: ein Buch und ein Notizbuch nebeneinander
+• Exportiere das kommentierte PDF oder deine Lesenotizen als Markdown
+• Öffne Bücher direkt aus deinem Dateimanager oder anderen Apps
+
+<b>Eine Bibliothek, die ordentlich bleibt</b>
+• Ordner mit Farben und Stilen, Favoriten, Zuletzt verwendet und Suche in Namen, getipptem Text, Tags und Buchtiteln
+• Papierkorb mit automatischer Bereinigung nach 7 oder 30 Tagen
+• Intelligente Sicherungen in einen Ordner deiner Wahl, mit täglichen, wöchentlichen und monatlichen Versionen
+• Exportiere Seiten als PDF oder PNG oder ein Notizbuch als bearbeitbare .folio-Datei
+
+<b>In deiner Sprache</b>
+• Englisch, Spanisch, Portugiesisch, Französisch, Deutsch, Hindi und Chinesisch
+
+<b>Privat von Grund auf</b>
+Folio funktioniert komplett offline. Deine Notizen und Bücher verlassen dein Gerät nie, außer du exportierst oder teilst sie selbst. Folio sendet anonyme Nutzungsstatistiken (welche Bildschirme und Funktionen genutzt werden), um die App zu verbessern; du kannst das in den Einstellungen ausschalten. Das Mikrofon wird nur verwendet, wenn du eine Sprachnotiz aufnimmst.
+
+Gemacht für Android-Tablets und Stiftdisplays, funktioniert auch auf Smartphones.

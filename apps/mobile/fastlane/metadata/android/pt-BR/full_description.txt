@@ -1,0 +1,35 @@
+O Folio é um caderno calmo e focado para a sua caneta stylus. Escreva à mão, desenhe em uma tela infinita e leia PDFs e EPUBs com a caneta na mão. Suas notas e livros ficam no seu dispositivo: sem conta, sem anúncios, e tudo funciona offline.
+
+<b>Tinta que se comporta como tinta</b>
+• Doze pincéis: esferográfica, fineliner, caneta gel, marcador, caneta-tinteiro, caneta-pincel, caligrafia, marca-texto, lápis 2H–6B, giz, spray e um pincel de cerdas
+• Traço com baixa latência, pressão e inclinação
+• Curvas de pressão que você ajusta à mão, e um limite que ignora uma ponta gasta
+• Textura de lápis que fica no papel quando você dá zoom
+
+<b>Páginas, ou nenhuma borda</b>
+• 35 modelos de página: pautado, quadriculado, pontilhado, Cornell, agenda, Kanban, pauta musical, controle de hábitos e mais
+• Tela infinita com marcadores, minimapa e "voltar ao conteúdo"
+• Camadas, laço, formas, preenchimento, caixas de texto, tabelas, figurinhas, notas adesivas e imagens
+• Uma régua e uma janela de zoom para detalhes
+• Notas de voz dentro da página
+
+<b>Leia com a caneta na mão</b>
+• Leitor de PDF e EPUB com destaques, sublinhados, notas na margem e marcadores
+• Pesquisa, ir para a página e reconhecimento de texto no dispositivo (OCR)
+• Modo de estudo: um livro e um caderno lado a lado
+• Exporte o PDF anotado ou suas notas de leitura em Markdown
+• Abra livros direto do seu gerenciador de arquivos ou de outros apps
+
+<b>Uma biblioteca sempre organizada</b>
+• Pastas com cores e estilos, favoritos, recentes e pesquisa em nomes, texto digitado, tags e títulos de livros
+• Lixeira com limpeza automática após 7 ou 30 dias
+• Backups inteligentes em uma pasta que você escolhe, com versões diárias, semanais e mensais
+• Exporte páginas como PDF ou PNG, ou um caderno como arquivo .folio editável
+
+<b>No seu idioma</b>
+• Inglês, espanhol, português, francês, alemão, hindi e chinês
+
+<b>Privado por design</b>
+O Folio funciona totalmente offline. Suas notas e livros nunca saem do seu dispositivo, a menos que você mesmo os exporte ou compartilhe. O Folio envia estatísticas de uso anônimas (quais telas e recursos são usados) para melhorar o app; você pode desativar isso em Preferências. O microfone é usado só quando você grava uma nota de voz.
+
+Feito para tablets Android e mesas digitalizadoras com tela, e funciona também em celulares.
