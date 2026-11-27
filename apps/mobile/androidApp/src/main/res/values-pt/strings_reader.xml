@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Opening a book -->
+    <string name="reader_error_not_in_library">Este documento não está mais na sua biblioteca</string>
+    <string name="reader_error_file_missing">O arquivo original não está neste dispositivo. Importe o mesmo PDF ou EPUB de novo para continuar; suas notas e sua posição de leitura serão reconectadas automaticamente.</string>
+    <string name="reader_error_open">Não foi possível abrir o documento</string>
+    <string name="reader_error_open_title">Não foi possível abrir este documento</string>
+    <string name="reader_error_memory_open">Não há memória suficiente para abrir este documento. Suas notas estão seguras neste dispositivo; feche outros apps e tente de novo.</string>
+    <string name="reader_error_memory">Não há memória suficiente para abrir isto. Suas notas estão seguras neste dispositivo; feche outros apps e tente de novo.</string>
+    <string name="reader_error_save">Não foi possível salvar as alterações do leitor</string>
+    <string name="reader_error_operation">A operação do leitor falhou</string>
+    <string name="reader_error_export">Não foi possível exportar o documento</string>
+    <string name="reader_error_ocr">Não foi possível reconhecer o texto</string>
+    <string name="reader_error_fit">Não foi possível ajustar o conteúdo da página</string>
+    <string name="reader_error_no_text">Não há texto selecionável aqui. Pode ser uma página digitalizada; é preciso OCR para destacar texto.</string>
+    <string name="reader_error_no_app_link">Nenhum app consegue abrir este link</string>
+    <string name="reader_error_chapter">Não foi possível carregar este capítulo: %1$s</string>
+    <string name="reader_title">Leitor</string>
+    <string name="reader_ok">OK</string>
+    <string name="reader_cancel">Cancelar</string>
+    <string name="reader_delete">Excluir</string>
+    <string name="reader_save">Salvar</string>
+    <string name="reader_dismiss">Fechar</string>
+    <string name="reader_back_to_library">Voltar à biblioteca</string>
+    <string name="reader_back_to_reading">Voltar à leitura</string>
+
+    <!-- Pages and chapters -->
+    <string name="reader_chapter_number">Capítulo %1$d</string>
+    <string name="reader_page_number">Página %1$d</string>
+    <string name="reader_page_of">Página %1$d de %2$d</string>
+    <string name="reader_page_range">1–%1$d</string>
+    <string name="reader_previous_page">Página anterior</string>
+    <string name="reader_next_page">Próxima página</string>
+    <string name="reader_previous">Anterior</string>
+    <string name="reader_next">Próxima</string>
+    <string name="reader_percent_read">%1$s lido</string>
+    <string name="reader_go_to_page">Ir para a página</string>
+    <string name="reader_go_to_a_page">Ir para uma página</string>
+    <string name="reader_go">Ir</string>
+    <string name="reader_battery">Bateria %1$s</string>
+
+    <!-- Top bar -->
+    <string name="reader_open_books">Livros abertos</string>
+    <string name="reader_read">Ler</string>
+    <string name="reader_read_mode_description">Modo de leitura, guardar a caneta</string>
+    <string name="reader_brush_description">%1$s, %2$s. Toque de novo para ver as configurações da caneta</string>
+    <string name="reader_pen_edit_hint">Toque de novo na caneta selecionada para editá-la.</string>
+    <string name="reader_eraser">Borracha</string>
+    <string name="reader_undo">Desfazer</string>
+    <string name="reader_redo">Refazer</string>
+    <string name="reader_doc">Doc</string>
+    <string name="reader_gestures">Gestos</string>
+    <string name="reader_notes">Notas</string>
+    <string name="reader_bookmark">Marcador</string>
+    <string name="reader_more">Mais</string>
+    <string name="reader_close_eraser_options">Fechar opções da borracha</string>
+    <string name="reader_stroke_eraser">Borracha de traços</string>
+    <string name="reader_erase_page_ink">Apagar toda a tinta desta página</string>
+    <string name="reader_clear_page_question">Limpar esta página?</string>
+    <string name="reader_erase_all">Apagar tudo</string>
+    <string name="reader_hint_bar_toggle">Toque no meio da página com um dedo para mostrar ou ocultar a barra.</string>
+    <string name="reader_hint_select">Arraste sobre o texto para selecionar um trecho. Toque e segure uma palavra para selecioná-la.</string>
+    <string name="reader_hint_pen">Escreva direto na página. Mude para Ler para mover ou dar zoom.</string>
+
+    <!-- Selection -->
+    <string name="reader_highlight">Destacar</string>
+    <string name="reader_underline">Sublinhar</string>
+    <string name="reader_add_note">Adicionar nota</string>
+    <string name="reader_clip_passage">Trecho</string>
+    <string name="reader_share_passage">Compartilhar trecho</string>
+    <string name="reader_move_toolbar">Mover barra de ferramentas</string>
+    <string name="reader_solid_underline">Sublinhado contínuo</string>
+    <string name="reader_wavy_underline">Sublinhado ondulado</string>
+    <string name="reader_dashed_underline">Sublinhado tracejado</string>
+    <string name="reader_annotation_color">Cor da anotação</string>
+    <string name="reader_edit_highlight">Editar destaque</string>
+    <string name="reader_edit_underline">Editar sublinhado</string>
+    <string name="reader_copy">Copiar</string>
+    <string name="reader_more_selection_actions">Mais ações de seleção</string>
+    <string name="reader_search_in_book">Pesquisar no livro</string>
+    <string name="reader_share">Compartilhar</string>
+    <string name="reader_remove_marks">Remover marcações</string>
+    <string name="reader_dismiss_selection">Descartar seleção</string>
+
+    <!-- Mark editor and colours -->
+    <string name="reader_mark_preview">Um trecho do livro</string>
+    <string name="reader_color">Cor</string>
+    <string name="reader_color_yellow">Amarelo</string>
+    <string name="reader_color_orange">Laranja</string>
+    <string name="reader_color_coral">Coral</string>
+    <string name="reader_color_pink">Rosa</string>
+    <string name="reader_color_purple">Roxo</string>
+    <string name="reader_color_blue">Azul</string>
+    <string name="reader_color_cyan">Ciano</string>
+    <string name="reader_color_green">Verde</string>
+    <string name="reader_color_lime">Lima</string>
+    <string name="reader_color_sand">Areia</string>
+    <string name="reader_color_gray">Cinza</string>
+    <string name="reader_color_custom">Personalizado</string>
+    <string name="reader_swatch_description">Destaque: %1$s</string>
+    <string name="reader_swatch_select">Selecionar destaque: %1$s</string>
+    <string name="reader_custom_color">Cor personalizada</string>
+    <string name="reader_pick_custom_color">Escolher uma cor personalizada</string>
+
+    <!-- Bottom controls -->
+    <string name="reader_tab_progress">Progresso</string>
+    <string name="reader_tab_format">Formato</string>
+    <string name="reader_tab_contrast">Contraste</string>
+    <string name="reader_tab_navigation">Navegação</string>
+    <string name="reader_tab_split_view">Tela dividida</string>
+    <string name="reader_search">Pesquisar</string>
+    <string name="reader_select">Selecionar</string>
+    <string name="reader_handwriting">À mão</string>
+    <string name="reader_export_notes">Exportar notas</string>
+    <string name="reader_page_display">Exibição da página</string>
+    <string name="reader_single_page">Uma página</string>
+    <string name="reader_scrolling_view">Rolagem</string>
+    <string name="reader_ltr">LTR</string>
+    <string name="reader_rtl">RTL</string>
+    <string name="reader_zoom">Zoom</string>
+    <string name="reader_zoom_in">Ampliar</string>
+    <string name="reader_zoom_out">Reduzir</string>
+    <string name="reader_marquee_zoom">Zoom em área</string>
+    <string name="reader_marquee_zoom_hint">Arraste um retângulo para dar zoom nessa área.</string>
+    <string name="reader_reset_zoom">Redefinir zoom</string>
+    <string name="reader_crop">Recortar</string>
+    <string name="reader_fit_screen">Ajustar à tela</string>
+    <string name="reader_fit_width">Ajustar à largura</string>
+    <string name="reader_marquee_crop">Recortar área</string>
+    <string name="reader_crop_hint">Arraste para selecionar uma área. Arraste os cantos para ajustá-la.</string>
+    <string name="reader_apply_crop">Aplicar recorte</string>
+    <string name="reader_reset">Redefinir</string>
+    <string name="reader_margin">Margem</string>
+    <string name="reader_text_enhancement">Realce do texto</string>
+    <string name="reader_text_size">Tamanho do texto</string>
+    <string name="reader_text_size_value">Tamanho do texto · %1$s</string>
+    <string name="reader_line_spacing">Espaçamento entre linhas</string>
+    <string name="reader_continuous_scrolling">Rolagem contínua</string>
+    <string name="reader_decrease">Diminuir %1$s</string>
+    <string name="reader_increase">Aumentar %1$s</string>
+    <string name="reader_theme_light">Claro</string>
+    <string name="reader_theme_sepia">Sépia</string>
+    <string name="reader_theme_dark">Escuro</string>
+    <string name="reader_reading_theme">Tema de leitura</string>
+    <string name="reader_embolden">Engrossar</string>
+    <string name="reader_sharpen">Nitidez</string>
+    <string name="reader_watermark_bleaching">Clarear marcas d\'água</string>
+    <string name="reader_dark_color_enhancement">Realce de cores escuras</string>
+    <string name="reader_image_smoothing">Suavização da imagem</string>
+
+    <!-- Split view -->
+    <string name="reader_split_current_doc">Doc. atual</string>
+    <string name="reader_split_another_doc">Outro doc.</string>
+    <string name="reader_split_handwritten_notes">Notas à mão</string>
+    <string name="reader_split_text_notes">Notas de texto</string>
+    <string name="reader_split_style">Estilo da tela dividida</string>
+    <string name="reader_horizontal">Horizontal</string>
+    <string name="reader_vertical">Vertical</string>
+    <string name="reader_landscape_orientation">Orientação paisagem</string>
+    <string name="reader_landscape_auto">Automática</string>
+    <string name="reader_landscape_left">Paisagem esq.</string>
+    <string name="reader_landscape_right">Paisagem dir.</string>
+    <string name="reader_landscape_hint">Gire o tablet para usar no modo paisagem. O leitor segue a orientação da tela.</string>
+    <string name="reader_close_split_view">Fechar tela dividida</string>
+    <string name="reader_split_document">Documento na tela dividida</string>
+    <string name="reader_split_import_first">Primeiro importe outro PDF ou EPUB pela biblioteca.</string>
+    <string name="reader_write_note">Escreva uma nota</string>
+    <string name="reader_save_note_here">Salvar nota no local atual</string>
+    <string name="reader_split_context_pdf">Página %1$d do PDF</string>
+    <string name="reader_split_context_epub">EPUB · %1$s</string>
+    <string name="reader_split_context_line">De %1$s · %2$s</string>
+    <string name="reader_split_notebook_title">Notas · %1$s</string>
+
+    <!-- Contents -->
+    <string name="reader_contents">Sumário</string>
+    <string name="reader_close_contents">Fechar sumário</string>
+    <string name="reader_collapse_chapter">Recolher %1$s</string>
+    <string name="reader_expand_chapter">Expandir %1$s</string>
+    <string name="reader_no_outline">Este PDF não tem sumário de capítulos. Navegue por página.</string>
+    <string name="reader_no_toc">Nenhum sumário disponível.</string>
+    <string name="reader_toc">Índice</string>
+    <string name="reader_bookmarks">Marcadores</string>
+    <string name="reader_annotations">Anotações</string>
+    <string name="reader_empty_bookmarks">Ainda não há marcadores</string>
+    <string name="reader_empty_annotations">Ainda não há anotações</string>
+    <string name="reader_empty_handwriting">Ainda não há escrita à mão</string>
+    <string name="reader_saved_location">Local salvo</string>
+    <string name="reader_kind_highlight">Destaque</string>
+    <string name="reader_kind_underline">Sublinhado</string>
+    <string name="reader_kind_ink">Tinta</string>
+    <string name="reader_kind_note">Nota</string>
+    <string name="reader_kind_bookmark">Marcador</string>
+    <string name="reader_annotations_empty">Selecione um texto para destacá-lo, escreva com a caneta ou adicione uma nota pelo menu.</string>
+
+    <!-- Panels -->
+    <string name="reader_pen_settings">Configurações da caneta</string>
+    <string name="reader_pen_settings_named">Configurações da caneta (%1$s)</string>
+    <string name="reader_pen_settings_hint">Toque na caneta selecionada na barra superior, ou toque e segure qualquer caneta, para abrir estas configurações enquanto escreve.</string>
+    <string name="reader_document">Documento</string>
+    <plurals name="reader_document_pages">
+        <item quantity="one">%1$s · %2$d página</item>
+        <item quantity="many">%1$s · %2$d páginas</item>
+        <item quantity="other">%1$s · %2$d páginas</item>
+    </plurals>
+    <string name="reader_document_epub">%1$s · Livro EPUB</string>
+    <string name="reader_saving">Salvando…</string>
+    <string name="reader_saved_on_device">Salvo neste dispositivo</string>
+    <string name="reader_appearance">Aparência</string>
+    <string name="reader_hide_bar_writing">Ocultar a barra ao escrever</string>
+    <string name="reader_gesture_click">Toque / Tocar e segurar</string>
+    <string name="reader_gesture_slide">Deslizar / Arrastar a página</string>
+    <string name="reader_gesture_pinch">Pinçar para dar zoom</string>
+    <string name="reader_gesture_system_bars">Gestos das barras do sistema</string>
+    <string name="reader_gesture_bottom">Gestos inferiores</string>
+    <string name="reader_gesture_sides">Gestos laterais</string>
+    <string name="reader_gesture_back">Botão Voltar</string>
+    <string name="reader_gestures_help">Um toque no centro sempre abre os controles. Deslizar de baixo para cima abre os controles; toques nas laterais viram a página. Desativar os gestos das barras do sistema as mantém visíveis. Desativar Voltar abre estas configurações em vez de sair do leitor.</string>
+    <string name="reader_show_footer">Mostrar rodapé de leitura</string>
+    <string name="reader_show_book_tabs">Mostrar abas de livros</string>
+    <string name="reader_contents_and_bookmarks">Sumário e marcadores</string>
+    <string name="reader_search_this_book">Pesquisar neste livro</string>
+    <string name="reader_highlights_notes_bookmarks">Destaques, notas e marcadores</string>
+    <string name="reader_recognizing">Reconhecendo texto…</string>
+    <string name="reader_recognize_scanned">Reconhecer página digitalizada</string>
+    <plurals name="reader_ocr_recognized">
+        <item quantity="one">%1$d palavra reconhecida na página %2$d. Arraste sobre o texto para destacá-lo.</item>
+        <item quantity="many">%1$d palavras reconhecidas na página %2$d. Arraste sobre o texto para destacá-lo.</item>
+        <item quantity="other">%1$d palavras reconhecidas na página %2$d. Arraste sobre o texto para destacá-lo.</item>
+    </plurals>
+    <string name="reader_ocr_none">Nenhum texto foi reconhecido nesta página.</string>
+    <string name="reader_add_note_here">Adicionar uma nota neste local</string>
+    <string name="reader_export_reading_notes">Exportar notas de leitura (.md)</string>
+    <string name="reader_export_annotated_pdf">Exportar PDF anotado</string>
+    <string name="reader_original_unchanged">Seu arquivo original não é alterado. Destaques, notas e marcadores são salvos automaticamente.</string>
+    <string name="reader_preparing_export">Preparando a exportação…</string>
+
+    <!-- Search -->
+    <string name="reader_search_min_chars">Digite pelo menos dois caracteres</string>
+    <string name="reader_search_match">Resultado</string>
+    <string name="reader_search_document">Pesquisar neste documento</string>
+    <string name="reader_restart_search">Reiniciar pesquisa</string>
+    <string name="reader_find">Pesquisar</string>
+    <plurals name="reader_search_matches">
+        <item quantity="one">%1$d resultado</item>
+        <item quantity="many">%1$d resultados</item>
+        <item quantity="other">%1$d resultados</item>
+    </plurals>
+    <string name="reader_search_matches_capped">%1$d resultados (os primeiros %2$d)</string>
+
+    <!-- Notes -->
+    <string name="reader_add_reading_note">Adicionar nota de leitura</string>
+    <string name="reader_edit_note">Editar nota</string>
+    <string name="reader_your_note">Sua nota</string>
+    <string name="reader_save_note">Salvar nota</string>
+
+    <!-- Live boards -->
+    <string name="board_back_to_boards">Voltar aos quadros</string>
+    <string name="board_live_session">Sessão ao vivo</string>
+    <string name="board_live_board">Quadro ao vivo</string>
+    <string name="board_fingers_on">Dedos ativados: mover e dar zoom</string>
+    <string name="board_fingers_off">Dedos desativados: só a caneta</string>
+    <string name="board_pen_on_board">Caneta no quadro</string>
+    <string name="board_share">Compartilhar</string>
+    <string name="board_rename_title">Renomear quadro</string>
+    <string name="board_rename">Renomear</string>
+    <string name="board_untitled">Quadro sem título</string>
+    <string name="board_cancel">Cancelar</string>
+    <string name="board_done">Concluído</string>
+    <string name="board_share_title">Compartilhar quadro</string>
+    <string name="board_link_help">Quem tiver este link vê o quadro e desenha nele ao vivo, em qualquer navegador. A sessão tem criptografia de ponta a ponta.</string>
+    <string name="board_clip_label">Quadro ao vivo do Folio</string>
+    <string name="board_copied">Copiado</string>
+    <string name="board_copy_link">Copiar link</string>
+    <string name="board_join_message">Entre no meu quadro do Folio: %1$s</string>
+    <string name="board_send_live_link">Enviar link ao vivo</string>
+    <string name="board_send_link">Enviar link…</string>
+    <string name="board_stop_session">Encerrar sessão…</string>
+    <string name="board_start_help">Inicie uma sessão e envie o link na sua chamada. Os outros assistem e desenham em qualquer navegador; a sessão tem criptografia de ponta a ponta.</string>
+    <string name="board_start_session">Iniciar sessão ao vivo</string>
+    <string name="board_join_session">Entrar em uma sessão</string>
+    <string name="board_paste">Colar</string>
+    <string name="board_join">Entrar</string>
+    <string name="board_export">Exportar</string>
+    <string name="board_export_image">Imagem (PNG)</string>
+    <string name="board_export_file">Arquivo do Excalidraw</string>
+    <string name="board_pressure_help">O limite de ativação e a curva de pressão vêm das configurações da sua caneta. Estas opções valem só para os quadros ao vivo.</string>
+    <string name="board_sensitivity">Sensibilidade</string>
+    <string name="board_sensitivity_help">Valores mais altos chegam à largura máxima com um toque mais leve. %1$s é linear.</string>
+    <string name="board_lightest_stroke">Traço mais leve</string>
+    <string name="board_strongest_stroke">Traço mais forte</string>
+    <string name="board_smoothing">Suavização</string>
+    <string name="board_reset_defaults">Restaurar padrões</string>
+    <string name="board_pen_settings">Configurações da caneta…</string>
+</resources>

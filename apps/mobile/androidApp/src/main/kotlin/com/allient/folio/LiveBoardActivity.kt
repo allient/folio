@@ -41,7 +41,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -67,7 +69,6 @@ import org.json.JSONTokener
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
-import java.util.Locale
 
 /**
  * A live board: Excalidraw (excalidraw.com) in a WebView, with Folio's pen filters applied by
@@ -325,23 +326,23 @@ private fun BoardScreen(
 
     Column(Modifier.fillMaxSize().background(FolioBrand.Paper).windowInsetsPadding(WindowInsets.displayCutout)) {
         Row(Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            InkToolButton(InkIcon.Back, "Back to boards", onBack, buttonSize = 48.dp)
+            InkToolButton(InkIcon.Back, stringResource(R.string.board_back_to_boards), onBack, Modifier.actionTag("Back to boards"), buttonSize = 48.dp)
             Column(Modifier.weight(1f).clip(RoundedCornerShape(8.dp)).clickable { renaming = true }.padding(horizontal = 6.dp, vertical = 2.dp)) {
                 Text(board.title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = FolioBrand.Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (roomUrl != null) Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(7.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                    Text("  Live session", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
-                } else Text("Live board", fontSize = 12.sp, color = FolioBrand.Muted)
+                    Text("  " + stringResource(R.string.board_live_session), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+                } else Text(stringResource(R.string.board_live_board), fontSize = 12.sp, color = FolioBrand.Muted)
             }
-            InkToolButton(InkIcon.Hand, if (fingers) "Fingers on: pan and zoom" else "Fingers off: pen only", { fingers = !fingers },
-                selected = fingers, buttonSize = 48.dp, tint = if (fingers) MaterialTheme.colorScheme.primary else FolioBrand.Ink)
-            InkToolButton(InkIcon.Pressure, "Pen on the board", { pressure = true }, buttonSize = 48.dp)
+            InkToolButton(InkIcon.Hand, stringResource(if (fingers) R.string.board_fingers_on else R.string.board_fingers_off), { fingers = !fingers },
+                Modifier.actionTag(if (fingers) "Fingers on: pan and zoom" else "Fingers off: pen only"), selected = fingers, buttonSize = 48.dp, tint = if (fingers) MaterialTheme.colorScheme.primary else FolioBrand.Ink)
+            InkToolButton(InkIcon.Pressure, stringResource(R.string.board_pen_on_board), { pressure = true }, Modifier.actionTag("Pen on the board"), buttonSize = 48.dp)
             Spacer(Modifier.width(6.dp))
             Button(onClick = { share = true }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 contentPadding = PaddingValues(horizontal = 16.dp), modifier = Modifier.heightIn(min = 44.dp)) {
                 InkSymbol(InkIcon.Share, color = Color.White)
                 Spacer(Modifier.width(6.dp))
-                Text("Share")
+                Text(stringResource(R.string.board_share))
             }
         }
         HorizontalDivider(color = FolioBrand.Hairline)
@@ -356,7 +357,7 @@ private fun BoardScreen(
         }, modifier = Modifier.fillMaxSize())
     }
 
-    if (renaming) TitleDialog("Rename board", board.title, "Rename", onDismiss = { renaming = false }) { renaming = false; onRename(it) }
+    if (renaming) TitleDialog(stringResource(R.string.board_rename_title), board.title, stringResource(R.string.board_rename), onDismiss = { renaming = false }) { renaming = false; onRename(it) }
     if (share) ShareDialog(roomUrl, onDismiss = { share = false },
         onSession = { share = false; onSession() }, onJoin = { share = false; onJoin(it) },
         onShareImage = { share = false; onShareImage() }, onShareFile = { share = false; onShareFile() })
@@ -376,49 +377,52 @@ private fun ShareDialog(
     var copied by remember { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Share board", color = FolioBrand.Ink) },
+        title = { Text(stringResource(R.string.board_share_title), color = FolioBrand.Ink) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                SectionLabel("Live session")
+                SectionLabel(stringResource(R.string.board_live_session))
                 if (roomUrl != null) {
-                    Text("People with this link see the board and draw on it live, from any browser. The session is end-to-end encrypted.", fontSize = 13.sp, color = FolioBrand.Muted)
+                    Text(stringResource(R.string.board_link_help), fontSize = 13.sp, color = FolioBrand.Muted)
                     Surface(shape = RoundedCornerShape(8.dp), color = Color.White, border = BorderStroke(1.dp, FolioBrand.Hairline)) {
                         Text(roomUrl, Modifier.fillMaxWidth().padding(10.dp), fontFamily = FontFamily.Monospace, fontSize = 12.sp, color = FolioBrand.Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
+                    val clipLabel = stringResource(R.string.board_clip_label)
+                    val joinMessage = stringResource(R.string.board_join_message, roomUrl)
+                    val sendLiveLink = stringResource(R.string.board_send_live_link)
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { clipboard?.setPrimaryClip(ClipData.newPlainText("Folio live board", roomUrl)); copied = true }) {
-                            Text(if (copied) "Copied" else "Copy link", color = FolioBrand.Ink)
+                        OutlinedButton(onClick = { clipboard?.setPrimaryClip(ClipData.newPlainText(clipLabel, roomUrl)); copied = true }) {
+                            Text(stringResource(if (copied) R.string.board_copied else R.string.board_copy_link), color = FolioBrand.Ink)
                         }
                         Button(onClick = {
                             context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain")
-                                .putExtra(Intent.EXTRA_TEXT, "Join my Folio board: $roomUrl"), "Send live link"))
-                        }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Send link…") }
+                                .putExtra(Intent.EXTRA_TEXT, joinMessage), sendLiveLink))
+                        }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text(stringResource(R.string.board_send_link)) }
                     }
-                    TextButton(onClick = onSession) { Text("Stop session…", color = FolioBrand.Muted) }
+                    TextButton(onClick = onSession) { Text(stringResource(R.string.board_stop_session), color = FolioBrand.Muted) }
                 } else {
-                    Text("Start a session and send the link in your call. Others watch and draw from any browser; the session is end-to-end encrypted.", fontSize = 13.sp, color = FolioBrand.Muted)
-                    Button(onClick = onSession, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Start live session") }
+                    Text(stringResource(R.string.board_start_help), fontSize = 13.sp, color = FolioBrand.Muted)
+                    Button(onClick = onSession, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text(stringResource(R.string.board_start_session)) }
                 }
                 HorizontalDivider(color = FolioBrand.Hairline)
-                SectionLabel("Join a session")
+                SectionLabel(stringResource(R.string.board_join_session))
                 OutlinedTextField(joinLink, { joinLink = it }, Modifier.fillMaxWidth(), singleLine = true,
                     placeholder = { Text("https://excalidraw.com/#room=…") },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
                     keyboardActions = KeyboardActions(onGo = { roomLink(joinLink)?.let(onJoin) }))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { joinLink = clipboardText() }) { Text("Paste", color = FolioBrand.Ink) }
+                    OutlinedButton(onClick = { joinLink = clipboardText() }) { Text(stringResource(R.string.board_paste), color = FolioBrand.Ink) }
                     Button(onClick = { roomLink(joinLink)?.let(onJoin) }, enabled = roomLink(joinLink) != null,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Join") }
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text(stringResource(R.string.board_join)) }
                 }
                 HorizontalDivider(color = FolioBrand.Hairline)
-                SectionLabel("Export")
+                SectionLabel(stringResource(R.string.board_export))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = onShareImage) { Text("Image (PNG)", color = FolioBrand.Ink) }
-                    OutlinedButton(onClick = onShareFile) { Text("Excalidraw file", color = FolioBrand.Ink) }
+                    OutlinedButton(onClick = onShareImage) { Text(stringResource(R.string.board_export_image), color = FolioBrand.Ink) }
+                    OutlinedButton(onClick = onShareFile) { Text(stringResource(R.string.board_export_file), color = FolioBrand.Ink) }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.board_done), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) } },
     )
 }
 
@@ -427,7 +431,7 @@ private fun roomLink(text: String): String? = Regex("https://(?:[\\w-]+\\.)?exca
 
 @Composable
 private fun SectionLabel(text: String) =
-    Text(text.uppercase(Locale.ROOT), fontSize = 11.sp, letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold, color = FolioBrand.Muted)
+    Text(text.uppercase(LocalConfiguration.current.locales[0]), fontSize = 11.sp, letterSpacing = 1.sp, fontWeight = FontWeight.SemiBold, color = FolioBrand.Muted)
 
 @Composable
 private fun TitleDialog(title: String, initial: String, action: String, onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
@@ -436,11 +440,11 @@ private fun TitleDialog(title: String, initial: String, action: String, onDismis
         onDismissRequest = onDismiss,
         title = { Text(title, color = FolioBrand.Ink) },
         text = {
-            OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("Untitled board") },
+            OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text(stringResource(R.string.board_untitled)) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { onConfirm(text.trim()) }))
         },
         confirmButton = { TextButton(onClick = { onConfirm(text.trim()) }) { Text(action, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = FolioBrand.Ink) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.board_cancel), color = FolioBrand.Ink) } },
     )
 }
 
@@ -453,22 +457,22 @@ private fun LiveBoardPressureDialog(mapper: PenPressureMapper, onPenSettings: ()
     fun save() = mapper.setBoard(min, max.coerceAtLeast(min), smooth, sensitivity)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Pen on the board", color = FolioBrand.Ink) },
+        title = { Text(stringResource(R.string.board_pen_on_board), color = FolioBrand.Ink) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("The activation threshold and pressure curve come from your pen settings. These options apply to live boards only.", fontSize = 13.sp, color = FolioBrand.Muted)
-                LabeledSlider("Sensitivity", sensitivity, 0f..1f) { sensitivity = it; save() }
-                Text("Higher reaches full width with a lighter touch. 0.50 is linear.", fontSize = 12.sp, color = FolioBrand.Muted)
-                LabeledSlider("Lightest stroke", min, 0f..0.5f) { min = it; save() }
-                LabeledSlider("Strongest stroke", max, 0.3f..1f) { max = it; save() }
-                LabeledSlider("Smoothing", smooth, 0f..PenPressureMapper.MAX_SMOOTHING) { smooth = it; save() }
+                Text(stringResource(R.string.board_pressure_help), fontSize = 13.sp, color = FolioBrand.Muted)
+                LabeledSlider(stringResource(R.string.board_sensitivity), sensitivity, 0f..1f) { sensitivity = it; save() }
+                Text(stringResource(R.string.board_sensitivity_help, String.format(LocalConfiguration.current.locales[0], "%.2f", 0.5f)), fontSize = 12.sp, color = FolioBrand.Muted)
+                LabeledSlider(stringResource(R.string.board_lightest_stroke), min, 0f..0.5f) { min = it; save() }
+                LabeledSlider(stringResource(R.string.board_strongest_stroke), max, 0.3f..1f) { max = it; save() }
+                LabeledSlider(stringResource(R.string.board_smoothing), smooth, 0f..PenPressureMapper.MAX_SMOOTHING) { smooth = it; save() }
                 TextButton(onClick = { min = PenPressureMapper.DEFAULT_MIN; max = 1f; smooth = 0f; sensitivity = PenPressureMapper.DEFAULT_SENSITIVITY; save() }) {
-                    Text("Reset to defaults", color = FolioBrand.Muted)
+                    Text(stringResource(R.string.board_reset_defaults), color = FolioBrand.Muted)
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) } },
-        dismissButton = { TextButton(onClick = onPenSettings) { Text("Pen settings…", color = FolioBrand.Ink) } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.board_done), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold) } },
+        dismissButton = { TextButton(onClick = onPenSettings) { Text(stringResource(R.string.board_pen_settings), color = FolioBrand.Ink) } },
     )
 }
 
@@ -477,7 +481,7 @@ private fun LabeledSlider(label: String, value: Float, range: ClosedFloatingPoin
     Column {
         Row(Modifier.fillMaxWidth()) {
             Text(label, Modifier.weight(1f), fontSize = 14.sp, color = FolioBrand.Ink)
-            Text(String.format(Locale.US, "%.2f", value), fontSize = 13.sp, color = FolioBrand.Muted)
+            Text(String.format(LocalConfiguration.current.locales[0], "%.2f", value), fontSize = 13.sp, color = FolioBrand.Muted)
         }
         Slider(value, onChange, valueRange = range, colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary))
     }
