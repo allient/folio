@@ -1,2 +1,6 @@
-Folio 1.0.12
-- Notas: la tinta vuelve a verse mientras escribes en algunas tabletas Samsung (Galaxy Tab S6 Lite). Desde la 1.0.6 el trazo podía aparecer solo al levantar el lápiz.
+Folio 1.0.13
+- Notas: arrastra imágenes desde otra app en pantalla dividida (por ejemplo Chrome) a una página y muévelas, cambia su tamaño o gíralas.
+- Notas: en pantalla dividida las páginas mantienen su forma y se desplazan en vez de aplastarse.
+- Lector: importa libros PDF y EPUB de hasta 1 GB.
+- Lazo y relleno más rápidos en páginas con mucho contenido.
+- Acerca de muestra quién mantiene Folio. Bibliotecas actualizadas.
