@@ -34,7 +34,7 @@ Folio is on [Google Play](https://play.google.com/store/apps/details?id=com.alli
 
 ## Roadmap
 
-- [Planned preferences](roadmap/planned-preferences.md): themes, colour options, languages
+- [Planned preferences](roadmap/planned-preferences.md): themes and colour options (languages are done)
 - [Responsive improvements](roadmap/responsive-improvements.md)
 
 ## Testing
