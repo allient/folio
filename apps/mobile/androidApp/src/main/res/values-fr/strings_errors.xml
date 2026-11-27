@@ -31,6 +31,7 @@
     <string name="error_backup_damaged">Cette sauvegarde est endommagée ou n\'est pas une sauvegarde Folio valide.</string>
     <string name="error_image_unsupported">Impossible d\'ouvrir ce format d\'image.</string>
     <string name="error_pdf_page_count">Importez un PDF de %1$d à %2$d pages.</string>
+    <string name="error_pdf_too_many_pages">Ce PDF compte %1$d pages, et un carnet en contient au plus %2$d. Pour le lire, importez-le plutôt comme livre.</string>
     <string name="error_file_too_large">Le fichier sélectionné est trop volumineux.</string>
     <string name="error_epub_not_epub">Ce fichier n\'est pas un livre EPUB.</string>
     <string name="error_epub_chapter_too_large">Cet EPUB contient un chapitre trop volumineux pour être importé.</string>

@@ -30,6 +30,7 @@
     <string name="error_backup_damaged">Este backup está danificado ou não é um backup válido do Folio.</string>
     <string name="error_image_unsupported">Não é possível abrir este formato de imagem.</string>
     <string name="error_pdf_page_count">Importe um PDF de %1$d a %2$d páginas.</string>
+    <string name="error_pdf_too_many_pages">Este PDF tem %1$d páginas, e um caderno comporta até %2$d. Para lê-lo, importe-o como livro.</string>
     <string name="error_file_too_large">O arquivo selecionado é grande demais.</string>
     <string name="error_epub_not_epub">Este arquivo não é um livro EPUB.</string>
     <string name="error_epub_chapter_too_large">Este EPUB tem um capítulo grande demais para ser importado.</string>

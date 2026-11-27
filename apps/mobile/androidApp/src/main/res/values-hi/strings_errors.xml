@@ -31,6 +31,7 @@
     <string name="error_backup_damaged">यह बैकअप खराब है या मान्य Folio बैकअप नहीं है।</string>
     <string name="error_image_unsupported">यह इमेज फ़ॉर्मैट खोला नहीं जा सकता।</string>
     <string name="error_pdf_page_count">%1$d–%2$d पेज वाली PDF इंपोर्ट करें।</string>
+    <string name="error_pdf_too_many_pages">इस PDF में %1$d पेज हैं, जबकि नोटबुक में अधिकतम %2$d पेज हो सकते हैं। इसे पढ़ने के लिए किताब के रूप में इंपोर्ट करें।</string>
     <string name="error_file_too_large">चुनी गई फ़ाइल बहुत बड़ी है।</string>
     <string name="error_epub_not_epub">यह फ़ाइल EPUB किताब नहीं है।</string>
     <string name="error_epub_chapter_too_large">इस EPUB का एक अध्याय इंपोर्ट करने के लिए बहुत बड़ा है।</string>
