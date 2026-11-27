@@ -88,6 +88,26 @@ class NotebookFilesTest {
         assertEquals(imported.pages[0].images[0].path, imported.pages[1].images[0].path)
     }
 
+    /** Two PDFs imported as notebooks (one picture per page) must still back up and restore. */
+    @Test
+    fun backupsWithManyPagePicturesExportAndRestore() {
+        val bytes = createImage().readBytes()
+        val media = File(context.filesDir, "media")
+        fun pdfLikeNote(title: String) = Notebook(title = title, pages = (1..600).map {
+            val page = File(media, "${UUID.randomUUID()}.png").apply { writeBytes(bytes) }
+            NotebookPage(images = listOf(InkImage(path = page.absolutePath, x = 0f, y = 0f, width = 1f, height = 1f)))
+        })
+        val first = pdfLikeNote("First PDF"); val second = pdfLikeNote("Second PDF")
+
+        val notebook = files.importBackup(Uri.fromFile(files.exportBackup(first)))
+        assertEquals(600, notebook.pages.size)
+        assertArrayEquals(bytes, File(notebook.pages.last().images.single().path).readBytes())
+
+        val library = files.importLibraryBackup(Uri.fromFile(files.exportLibraryBackup(listOf(first, second), com.allient.folio.home.LibrarySettings())))
+        assertEquals(listOf("First PDF", "Second PDF"), library.notebooks.map { it.title }.sorted())
+        assertEquals(1200, library.notebooks.sumOf { note -> note.pages.count { page -> File(page.images.single().path).readBytes().contentEquals(bytes) } })
+    }
+
     @Test
     fun importingSameBackupTwiceUsesDistinctNotebookAndContentIdentities() {
         val note = sampleNote(createImage())

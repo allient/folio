@@ -93,14 +93,13 @@ internal class NotebookFiles(private val context: Context) {
     fun exportBackup(note: Notebook): File {
         val json = JSONObject(serializeNotebook(note))
         val assets = linkedMapOf<String, File>()
+        val entryBySource = hashMapOf<String, String>()
         visitPaths(json) { path ->
             val source = File(path)
             requireUser(source.isFile && source.canonicalPath.startsWith(mediaDir.canonicalPath + File.separator), R.string.error_attachment_missing) {
                 "A notebook attachment is missing."
             }
-            val existing = assets.entries.firstOrNull { it.value.absolutePath == source.absolutePath }?.key
-            val entry = existing ?: "assets/${UUID.randomUUID()}_${safeName(source.name).replace("..", "_")}".also { assets[it] = source }
-            entry
+            entryBySource.getOrPut(source.absolutePath) { "assets/${UUID.randomUUID()}_${safeName(source.name).replace("..", "_")}".also { assets[it] = source } }
         }
         // Every successful export must fit the same limits used by our importer.
         requireUser(assets.size + 2 <= MAX_BACKUP_ENTRIES, R.string.error_backup_too_many_files) { "Backup contains too many files to restore." }
@@ -124,6 +123,7 @@ internal class NotebookFiles(private val context: Context) {
         require(notebooks.map { it.id }.distinct().size == notebooks.size) { "Notebook IDs must be unique." }
         val files = linkedMapOf<String, ByteArray>()
         val assets = linkedMapOf<String, File>()
+        val entryBySource = hashMapOf<String, String>()
         val index = JSONArray()
         val readerSnapshot = ReaderStore(context).use { it.snapshot() }
         var totalJsonBytes = 0L
@@ -134,9 +134,7 @@ internal class NotebookFiles(private val context: Context) {
                 requireUser(source.isFile && source.canonicalPath.startsWith(mediaDir.canonicalPath + File.separator), R.string.error_attachment_missing) {
                     "A notebook attachment is missing."
                 }
-                val assetPath = assets.entries.firstOrNull { it.value.canonicalPath == source.canonicalPath }?.key
-                    ?: "assets/${UUID.randomUUID()}_${safeName(source.name).replace("..", "_")}".also { assets[it] = source }
-                assetPath
+                entryBySource.getOrPut(source.canonicalPath) { "assets/${UUID.randomUUID()}_${safeName(source.name).replace("..", "_")}".also { assets[it] = source } }
             }
             val path = "notebooks/${safeName(note.id)}/notebook.json.zst"
             val bytes = json.toString().toByteArray(Charsets.UTF_8)
@@ -640,7 +638,8 @@ internal class NotebookFiles(private val context: Context) {
         (path == "notebook.json" || path == "notebook.json.zst" || path == "manifest.json" || path == "library.json" || path == "library.json.zst" || path.startsWith("notebooks/") || path.startsWith("assets/"))
 
     companion object {
-        const val MAX_BACKUP_ENTRIES = 1000
+        // Each page of a PDF imported as a notebook is one picture, so a library holds thousands of assets.
+        const val MAX_BACKUP_ENTRIES = 20_000
         const val MAX_JSON_BYTES = 32L * 1024 * 1024
         const val MAX_JSON_CONTAINER_BYTES = MAX_JSON_BYTES + 1024L * 1024
         const val MAX_ASSET_BYTES = 128L * 1024 * 1024
