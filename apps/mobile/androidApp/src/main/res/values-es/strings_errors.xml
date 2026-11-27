@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backup folder labels -->
+    <string name="backup_label_internal_storage">Almacenamiento interno</string>
+    <string name="backup_label_sd_card">Tarjeta SD / %1$s</string>
+    <string name="backup_label_selected_folder">Carpeta seleccionada</string>
+    <!-- Smart backups -->
+    <string name="error_backup_failed">No se pudo crear la copia de seguridad. Revisa la carpeta y el almacenamiento disponible.</string>
+    <string name="error_backup_low_space">No hay suficiente espacio libre para una copia de seguridad: se necesitan unos %1$s y hay %2$s libres. Libera espacio; Folio lo intentará de nuevo después de tu próximo cambio. Se conservaron las copias de seguridad existentes.</string>
+    <string name="error_backup_folder_access">Ya no hay acceso a la carpeta. Vuelve a elegir la carpeta de copias de seguridad.</string>
+    <string name="error_backup_verify">La copia guardada no coincide con el archivo. Se conservaron las copias de seguridad anteriores.</string>
+    <string name="error_backup_folder_unreadable">No se pudo leer la carpeta de copias de seguridad.</string>
+    <string name="error_backup_create_file">No se pudo crear una copia de seguridad en la carpeta seleccionada.</string>
+    <string name="error_backup_documents_folder">No se pudo terminar la copia de seguridad. Elige una carpeta en Documentos de este dispositivo.</string>
+    <string name="error_backup_open">No se pudo abrir la copia de seguridad.</string>
+    <string name="error_backup_folder_not_local">Elige una carpeta de este dispositivo.</string>
+    <string name="error_backup_folder_read_only">Folio no puede escribir en esta carpeta. Elige otra carpeta.</string>
+    <string name="error_backup_folder_open">No se pudo abrir esta carpeta. Elige otra carpeta.</string>
+    <string name="error_backup_folder_unusable">No se pudo usar esta carpeta. Elige otra.</string>
+    <!-- Backups and imports -->
+    <string name="error_attachment_missing">Falta un adjunto del cuaderno.</string>
+    <string name="error_backup_too_many_files">Esta copia de seguridad tiene demasiados archivos para restaurarla.</string>
+    <string name="error_backup_data_too_large">Los datos de los cuadernos superan el límite de 32 MiB de las copias de seguridad.</string>
+    <string name="error_backup_attachment_too_large">Un adjunto supera el límite de 128 MiB de las copias de seguridad.</string>
+    <string name="error_backup_attachment_too_large_named">Un adjunto supera el límite de 128 MiB de las copias de seguridad: %1$s</string>
+    <string name="error_backup_too_large">La copia de seguridad supera el límite de 2 GiB.</string>
+    <string name="error_backup_unsupported">Esta versión de Folio no admite el formato de esta copia de seguridad.</string>
+    <string name="error_backup_not_library">No es una copia de seguridad de biblioteca de Folio compatible.</string>
+    <string name="error_backup_is_library">Es una copia de seguridad de toda la biblioteca, así que no se puede importar como un solo cuaderno.</string>
+    <string name="error_backup_damaged">Esta copia de seguridad está dañada o no es una copia de seguridad válida de Folio.</string>
+    <string name="error_image_unsupported">No se puede abrir este formato de imagen.</string>
+    <string name="error_pdf_page_count">Importa un PDF de %1$d a %2$d páginas.</string>
+    <string name="error_file_too_large">El archivo seleccionado es demasiado grande.</string>
+    <string name="error_epub_not_epub">Este archivo no es un libro EPUB.</string>
+    <string name="error_epub_chapter_too_large">Este EPUB tiene un capítulo demasiado grande para importarlo.</string>
+    <string name="error_epub_drm_import">Este EPUB está protegido (DRM) y no se puede importar.</string>
+    <string name="error_epub_no_package">Este EPUB no tiene archivo de paquete.</string>
+    <string name="error_epub_no_text">Este EPUB no tiene texto para importar.</string>
+    <string name="error_epub_too_long">Este libro es demasiado largo para importarlo como cuaderno (más de %1$d páginas). Ábrelo en el lector.</string>
+    <string name="error_import_document">No se pudo importar el documento seleccionado.</string>
+    <string name="error_import_file">No se pudo importar este archivo.</string>
+    <string name="error_insert_file">No se pudo insertar este archivo.</string>
+    <string name="error_library_restore">No se pudo restaurar la copia de seguridad de la biblioteca de Folio.</string>
+    <string name="error_import_load_blocked">No se pudieron cargar los cuadernos existentes. El documento seleccionado no se importó.</string>
+    <string name="error_import_destination_missing">El cuaderno o la página de destino ya no existe.</string>
+    <string name="error_import_layer">Elige una capa visible y desbloqueada antes de insertar una imagen.</string>
+    <string name="error_canvas_no_pages">Los lienzos infinitos no tienen páginas. Inserta una imagen o adjunta el PDF.</string>
+    <!-- Notebook storage -->
+    <string name="error_save_first_notebook">No se pudo guardar tu primer cuaderno.</string>
+    <string name="error_save_notebooks">No se pudieron guardar los cuadernos en este dispositivo.</string>
+    <string name="error_notebooks_loading">Los cuadernos todavía se están cargando. Inténtalo de nuevo.</string>
+    <string name="error_notebooks_not_loaded">No se pudieron cargar los cuadernos existentes. Los datos originales se conservaron.</string>
+    <!-- Recordings -->
+    <string name="error_recording_unavailable">La grabación de audio no está disponible.</string>
+    <string name="error_recording_save">No se pudo guardar la grabación.</string>
+    <string name="error_recording_pause">No se pudo pausar la grabación.</string>
+    <string name="error_recording_resume">No se pudo reanudar la grabación.</string>
+    <string name="error_recording_running">Ya hay una grabación en curso.</string>
+    <string name="error_recording_empty">La grabación está vacía.</string>
+    <!-- Reader -->
+    <string name="error_annotation_too_large">Esta anotación es demasiado grande.</string>
+    <string name="error_document_too_large">Los documentos deben pesar menos de 1 GiB.</string>
+    <string name="error_not_enough_storage">No hay suficiente almacenamiento libre para importar este documento.</string>
+    <string name="error_book_not_supported">Este archivo no es un libro PDF ni EPUB.</string>
+    <string name="error_book_not_epub">Este archivo no es un libro EPUB. Importa un PDF o un EPUB sin DRM.</string>
+    <string name="error_epub_damaged">Este EPUB está dañado y no se puede abrir.</string>
+    <string name="error_epub_too_large">Este EPUB es demasiado grande para abrirlo.</string>
+    <string name="error_epub_open">No se pudo abrir este EPUB.</string>
+    <string name="error_epub_drm_open">Este libro tiene protección DRM. Importa un EPUB sin DRM.</string>
+    <string name="error_pdf_password">Este PDF está protegido con contraseña. Quita la contraseña en otra app y vuelve a importarlo.</string>
+    <string name="error_pdf_no_pages">Este PDF no tiene páginas.</string>
+    <string name="error_export_pdf_password">Este PDF está protegido con contraseña, así que no se puede exportar con anotaciones. Exporta tus notas de lectura.</string>
+    <string name="error_export_pdf_encrypted">Este PDF está cifrado, así que no se puede exportar con anotaciones. Exporta tus notas de lectura.</string>
+    <string name="error_export_pdf_no_annotations">Este PDF no permite anotaciones.</string>
+    <string name="error_reader_select_text">No se pudo seleccionar el texto.</string>
+    <string name="error_reader_render_page">No se pudo mostrar esta página.</string>
+    <string name="error_reader_page_memory">No hay suficiente memoria para dibujar esta página con este zoom. Aleja el zoom o cierra otros libros e inténtalo de nuevo.</string>
+    <string name="error_reader_annotations">No se pudieron mostrar las anotaciones.</string>
+    <string name="error_reader_save_ink">No se pudo guardar el trazo.</string>
+    <string name="error_reader_chapter">No se pudo cargar este capítulo.</string>
+    <string name="error_reader_search">No se pudo buscar en este libro.</string>
+    <!-- Handwriting -->
+    <string name="error_handwriting_language">No se admite la escritura a mano en este idioma.</string>
+</resources>

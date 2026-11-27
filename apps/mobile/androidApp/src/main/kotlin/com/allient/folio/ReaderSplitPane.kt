@@ -9,6 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -29,7 +30,7 @@ import java.io.File
 @Composable internal fun ReaderComparisonPane(document: ReaderDocument, startPage: Int, fragments: FragmentManager, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val app = context.applicationContext
-    val openError = stringResource(R.string.reader_error_open)
+    val resources = LocalResources.current
     val preferences = remember { app.getSharedPreferences("reader-preferences", android.content.Context.MODE_PRIVATE) }
     var session by remember(document.id) { mutableStateOf<PdfReaderSession?>(null) }
     var book by remember(document.id) { mutableStateOf<Publication?>(null) }
@@ -57,7 +58,7 @@ import java.io.File
                 ownedPdf?.let { page = page.coerceIn(0, it.pageCount - 1) }
                 session = ownedPdf; book = ownedBook
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (failure: Exception) { error = failure.message ?: openError }
+            catch (failure: Exception) { error = failure.userMessage(resources, R.string.reader_error_open) }
         }
         onDispose {
             loader.cancel()

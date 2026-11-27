@@ -45,14 +45,21 @@ import kotlin.coroutines.coroutineContext
 internal data class LocalBackupState(
     val enabled: Boolean = false,
     val folderUri: String? = null,
-    val folderLabel: String = "No folder selected",
+    /** What the settings screen shows for the folder; null when no folder was chosen. */
+    val folderName: BackupFolderName? = null,
     val generation: Long = 0,
     val lastSuccess: Long = 0,
     val lastFile: String? = null,
     val lastExport: Long = 0,
     val lastExportFile: String? = null,
     val signature: String? = null,
+    /** The last backup failure in English, for logs. Versions before 2026-11 stored only this. */
     val error: String? = null,
+    /** Which failure [error] is, as a stable code for [BackupProblems]; null for failures stored by older versions. */
+    val errorCode: String? = null,
+    /** For a "low-space" failure: the bytes a backup needs and the bytes that were free. */
+    val errorNeeded: Long = 0,
+    val errorFree: Long = 0,
     /** When the oldest change not yet in a backup was made; 0 when everything is backed up. */
     val firstUnbackedChange: Long = 0,
 ) {
@@ -74,16 +81,19 @@ internal class LocalBackupStore(context: Context, name: String = PREFERENCES) {
     val preferences: SharedPreferences = context.getSharedPreferences(name, Context.MODE_PRIVATE)
     fun read() = LocalBackupState(
         enabled = preferences.getBoolean("enabled", false), folderUri = preferences.getString("folderUri", null),
-        folderLabel = preferences.getString("folderLabel", null) ?: preferences.getString("folderUri", null)?.let { folderLabel(Uri.parse(it)) } ?: "No folder selected",
+        folderName = preferences.getString("folderUri", null)?.let { folderName(Uri.parse(it), preferences.getString("folderLabel", null)) },
         generation = preferences.getLong("generation", 0), lastSuccess = preferences.getLong("lastSuccess", 0),
         lastFile = preferences.getString("lastFile", null), lastExport = preferences.getLong("lastExport", 0),
         lastExportFile = preferences.getString("lastExportFile", null), signature = preferences.getString("signature", null), error = preferences.getString("error", null),
+        errorCode = preferences.getString("errorCode", null),
+        errorNeeded = preferences.getLong("errorNeeded", 0), errorFree = preferences.getLong("errorFree", 0),
         firstUnbackedChange = preferences.getLong("firstUnbackedChange", 0),
     )
-    fun configure(uri: Uri, label: String, enabled: Boolean) {
+    /** [name] is the folder's own display name, if the provider gave one. */
+    fun configure(uri: Uri, name: String?, enabled: Boolean) {
         val previous = read()
-        preferences.edit().putString("folderUri", uri.toString()).putString("folderLabel", label)
-            .putBoolean("enabled", enabled).putLong("generation", previous.generation + 1).remove("error")
+        preferences.edit().putString("folderUri", uri.toString()).apply { if (name.isNullOrBlank()) remove("folderLabel") else putString("folderLabel", name) }
+            .putBoolean("enabled", enabled).putLong("generation", previous.generation + 1).remove("error").remove("errorCode")
             .apply { if (previous.folderUri != uri.toString()) remove("signature").remove("lastFile").remove("lastSuccess") }.commit()
     }
     fun disable() { preferences.edit().putBoolean("enabled", false).putLong("generation", read().generation + 1).commit() }
@@ -99,10 +109,17 @@ internal class LocalBackupStore(context: Context, name: String = PREFERENCES) {
     }
     fun success(state: LocalBackupState, filename: String, signature: String, snapshotAt: Long) {
         if (isCurrent(state)) preferences.edit().putLong("lastSuccess", System.currentTimeMillis()).putString("lastFile", filename)
-            .putString("signature", signature).remove("error").clearPending(snapshotAt).commit()
+            .putString("signature", signature).remove("error").remove("errorCode").clearPending(snapshotAt).commit()
     }
     fun upToDate(state: LocalBackupState, snapshotAt: Long) { if (isCurrent(state)) preferences.edit().clearPending(snapshotAt).commit() }
-    fun error(state: LocalBackupState, message: String) { if (isCurrent(state)) preferences.edit().putString("error", message).commit() }
+    /** [message] is English, for logs; [code] is what the settings screen shows ([BackupProblems]). */
+    fun error(state: LocalBackupState, message: String, code: String) {
+        if (isCurrent(state)) preferences.edit().putString("error", message).putString("errorCode", code).commit()
+    }
+    fun lowSpace(state: LocalBackupState, message: String, needed: Long, free: Long) {
+        if (isCurrent(state)) preferences.edit().putString("error", message).putString("errorCode", BackupProblems.LOW_SPACE)
+            .putLong("errorNeeded", needed).putLong("errorFree", free).commit()
+    }
     /** A manual full-library export also counts as a backup of the changes made before [snapshotAt]. */
     fun exported(filename: String, snapshotAt: Long = System.currentTimeMillis()) {
         preferences.edit().putLong("lastExport", System.currentTimeMillis()).putString("lastExportFile", filename).clearPending(snapshotAt).commit()
@@ -110,14 +127,26 @@ internal class LocalBackupStore(context: Context, name: String = PREFERENCES) {
 
     companion object {
         const val PREFERENCES = "backup"
-        fun folderLabel(uri: Uri): String {
-            val id = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull() ?: return "Selected folder"
-            return if (uri.authority == "com.android.externalstorage.documents") {
+        /**
+         * The folder as the settings screen names it. Device storage folders are named by their path; for other
+         * providers [stored] is the display name saved when the folder was chosen. Versions before 2026-11 saved English
+         * placeholders ("Selected folder", "Internal storage", "SD card / …") there; they are read as no name.
+         */
+        fun folderName(uri: Uri, stored: String? = null): BackupFolderName {
+            val id = runCatching { DocumentsContract.getTreeDocumentId(uri) }.getOrNull()
+            if (id != null && uri.authority == "com.android.externalstorage.documents") {
                 val volume = id.substringBefore(':')
                 val path = id.substringAfter(':', "")
-                if (volume == "primary") path.ifBlank { "Internal storage" } else "SD card / $path"
-            } else "Selected folder"
+                return when {
+                    volume != "primary" -> BackupFolderName.SdCard(path)
+                    path.isBlank() -> BackupFolderName.InternalStorage
+                    else -> BackupFolderName.Named(path)
+                }
+            }
+            return stored?.takeIf { it.isNotBlank() && it !in LEGACY_PLACEHOLDERS && !it.startsWith("SD card / ") }
+                ?.let { BackupFolderName.Named(it) } ?: BackupFolderName.Selected
         }
+        private val LEGACY_PLACEHOLDERS = setOf("Selected folder", "No folder selected", "Internal storage")
         fun initialFolder(current: String?): Uri = current?.let { runCatching {
             val tree = Uri.parse(it)
             DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
@@ -274,7 +303,7 @@ internal interface BackupFolder {
             }
             val digest = MessageDigest.getInstance("SHA-256")
             val read = DigestInputStream(copy, digest).use { BackupArchiveVerifier.verify(it, expectedNotebookCount) }
-            if (read != archive.length() || !MessageDigest.isEqual(expected, digest.digest())) throw IOException("The backup copy does not match the archive. The previous backups were kept.")
+            if (read != archive.length() || !MessageDigest.isEqual(expected, digest.digest())) throw UserIoException(R.string.error_backup_verify, "The backup copy does not match the archive. The previous backups were kept.")
         }
     }
 }
@@ -296,15 +325,15 @@ internal class SafBackupFolder(private val context: Context, private val tree: U
                 add(BackupVersion(DocumentsContract.buildDocumentUriUsingTree(tree, cursor.getString(0)).toString(), name,
                     BackupNames.timestamp(name) ?: modified, if (cursor.isNull(2)) 0L else cursor.getLong(2), BackupNames.isPartial(name)))
             }
-        } } ?: throw IOException("Could not read the backup folder.")
+        } } ?: throw UserIoException(R.string.error_backup_folder_unreadable, "Could not read the backup folder.")
     }
 
     override fun write(archive: File, name: String, expectedNotebookCount: Int, checkActive: () -> Unit): BackupVersion {
         checkActive()
         val destination = DocumentsContract.createDocument(resolver, parent, "application/octet-stream", "$name.partial")
-            ?: throw IOException("Could not create a backup in the selected folder.")
+            ?: throw UserIoException(R.string.error_backup_create_file, "Could not create a backup in the selected folder.")
         try {
-            (resolver.openOutputStream(destination, "w") ?: throw IOException("Could not open the backup destination.")).use { out ->
+            (resolver.openOutputStream(destination, "w") ?: throw UserIoException(R.string.error_backup_create_file, "Could not open the backup destination.")).use { out ->
                 archive.inputStream().buffered().use { input ->
                     val buffer = ByteArray(64 * 1024)
                     while (true) { checkActive(); val count = input.read(buffer); if (count == -1) break; out.write(buffer, 0, count) }
@@ -312,10 +341,10 @@ internal class SafBackupFolder(private val context: Context, private val tree: U
                 }
             }
             checkActive()
-            (resolver.openInputStream(destination) ?: throw IOException("Could not read the backup back.")).use { BackupFolder.verifyCopy(archive, it, expectedNotebookCount) }
+            (resolver.openInputStream(destination) ?: throw UserIoException(R.string.error_backup_verify, "Could not read the backup back.")).use { BackupFolder.verifyCopy(archive, it, expectedNotebookCount) }
             checkActive()
             val complete = DocumentsContract.renameDocument(resolver, destination, name)
-                ?: throw IOException("Could not finish the backup. Choose a folder in Documents on this device.")
+                ?: throw UserIoException(R.string.error_backup_documents_folder, "Could not finish the backup. Choose a folder in Documents on this device.")
             return BackupVersion(complete.toString(), name, BackupNames.timestamp(name) ?: System.currentTimeMillis(), archive.length())
         } catch (error: Throwable) {
             runCatching { DocumentsContract.deleteDocument(resolver, destination) }
@@ -341,7 +370,7 @@ internal class SafBackupFolder(private val context: Context, private val tree: U
         }
     }.getOrNull()
 
-    override fun open(version: BackupVersion): InputStream = resolver.openInputStream(Uri.parse(version.id)) ?: throw IOException("Could not open the backup.")
+    override fun open(version: BackupVersion): InputStream = resolver.openInputStream(Uri.parse(version.id)) ?: throw UserIoException(R.string.error_backup_open, "Could not open the backup.")
 }
 
 /** A plain directory destination; used by tests and anywhere a File path is available. */
@@ -357,7 +386,7 @@ internal class DirectoryBackupFolder(private val directory: File) : BackupFolder
             temporary.inputStream().use { BackupFolder.verifyCopy(archive, it, expectedNotebookCount) }
             checkActive()
             val target = File(directory, name)
-            if (!temporary.renameTo(target)) throw IOException("Could not finish the backup.")
+            if (!temporary.renameTo(target)) throw UserIoException(R.string.error_backup_failed, "Could not finish the backup.")
             return BackupVersion(target.absolutePath, name, BackupNames.timestamp(name) ?: target.lastModified(), target.length())
         } catch (error: Throwable) { temporary.delete(); throw error }
     }
@@ -405,8 +434,7 @@ internal class LocalBackupRunner(
             val needed = maxOf(2 * estimate, MIN_FREE_BYTES)
             val free = listOfNotNull(localFreeBytes(), folder.freeBytes()).minOrNull() ?: Long.MAX_VALUE
             if (free < needed) {
-                store.error(settings, "Not enough free space for a backup: about ${megabytes(needed)} is needed and ${megabytes(free)} is free. " +
-                    "Free up some space; Folio tries again after your next change. Existing backups were kept.")
+                store.lowSpace(settings, "Not enough free space for a backup: about ${megabytes(needed)} is needed and ${megabytes(free)} is free.", needed, free)
                 return Outcome.LowSpace(needed, free)
             }
             archive = files.exportLibraryBackup(snapshot.notebooks, snapshot.settings)
@@ -530,8 +558,8 @@ class LocalBackupWorker(context: Context, parameters: WorkerParameters) : Corout
             // Settings changed mid-copy: the new settings schedule their own backup, so this run just ends.
             if (isActive) Result.success() else throw cancelled
         } catch (error: Exception) {
-            store.error(settings, if (error is SecurityException) "Folder access is no longer available. Choose the backup folder again."
-                else error.message?.takeIf { it.isNotBlank() } ?: "Could not create the backup. Check the folder and available storage.")
+            android.util.Log.w("Folio", "Smart backup failed", error)
+            store.error(settings, error.message?.takeIf { it.isNotBlank() } ?: error.javaClass.simpleName, BackupProblems.code(error))
             if (error is IOException && runAttemptCount < 2) Result.retry() else Result.failure()
         }
     } }
@@ -548,7 +576,7 @@ class LocalBackupWorker(context: Context, parameters: WorkerParameters) : Corout
         }
         internal fun checkFolderGrant(context: Context, uri: Uri) {
             if (!context.contentResolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission && it.isWritePermission })
-                throw SecurityException("Folder access is no longer available. Choose the backup folder again.")
+                throw SecurityException("Folder access is no longer available. Choose the backup folder again.") // BackupProblems shows error_backup_folder_access
         }
     }
 }
@@ -609,21 +637,21 @@ internal class LocalBackupViewModel(application: Application) : AndroidViewModel
                     val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                     val previous = store.read()
                     context.contentResolver.takePersistableUriPermission(uri, flags)
-                    var label = LocalBackupStore.folderLabel(uri)
+                    var name: String? = null
                     try {
                         val parent = DocumentsContract.buildDocumentUriUsingTree(uri, DocumentsContract.getTreeDocumentId(uri))
                         context.contentResolver.query(parent, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME, DocumentsContract.Document.COLUMN_MIME_TYPE,
                             DocumentsContract.Document.COLUMN_FLAGS), null, null, null)?.use { cursor ->
-                            require(cursor.moveToFirst() && cursor.getString(1) == DocumentsContract.Document.MIME_TYPE_DIR) { "Choose a folder on this device." }
-                            require(cursor.getInt(2) and DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE != 0) { "Folio cannot write to this folder. Choose another folder." }
-                            if (label == "Selected folder") label = cursor.getString(0)
-                        } ?: error("Could not open this folder. Choose another folder.")
+                            requireUser(cursor.moveToFirst() && cursor.getString(1) == DocumentsContract.Document.MIME_TYPE_DIR, R.string.error_backup_folder_not_local) { "Choose a folder on this device." }
+                            requireUser(cursor.getInt(2) and DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE != 0, R.string.error_backup_folder_read_only) { "Folio cannot write to this folder. Choose another folder." }
+                            name = cursor.getString(0)
+                        } ?: throw UserStateException(R.string.error_backup_folder_open, "Could not open this folder. Choose another folder.")
                     } catch (error: Exception) {
                         // Do not keep a grant for a folder that was rejected (apps have a limited number of grants).
                         if (previous.folderUri != uri.toString()) runCatching { context.contentResolver.releasePersistableUriPermission(uri, flags) }
                         throw error
                     }
-                    store.configure(uri, label, enable)
+                    store.configure(uri, name, enable)
                     LocalBackupScheduler.disable(context)
                     if (previous.folderUri != null && previous.folderUri != uri.toString()) runCatching {
                         context.contentResolver.releasePersistableUriPermission(Uri.parse(previous.folderUri), flags)
@@ -631,11 +659,65 @@ internal class LocalBackupViewModel(application: Application) : AndroidViewModel
                     if (enable) { LocalBackupScheduler.enable(context); LocalBackupScheduler.now(context) }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { folderError = error.message ?: "Could not use this folder. Please choose another." }
+            catch (error: Exception) { folderError = error.userMessage(AppLocales.resources(getApplication()), R.string.error_backup_folder_unusable) }
             finally { state = store.read(); choosingFolder = false; refreshVersions() }
         }
     }
     fun backUpNow() { if (state.enabled && state.folderUri != null) LocalBackupScheduler.now(getApplication()) }
     fun recordExport(filename: String) { store.exported(filename); state = store.read() }
     override fun onCleared() { store.preferences.unregisterOnSharedPreferenceChangeListener(listener); super.onCleared() }
+}
+
+/** The backup folder as the settings screen names it ([label]); kept apart from display text so it follows the app language. */
+internal sealed interface BackupFolderName {
+    /** A path on the device or the folder's own name: shown as is. */
+    data class Named(val name: String) : BackupFolderName
+    data object InternalStorage : BackupFolderName
+    data class SdCard(val path: String) : BackupFolderName
+    /** A folder whose provider gave no name. */
+    data object Selected : BackupFolderName
+
+    fun label(resources: android.content.res.Resources): String = when (this) {
+        is Named -> name
+        InternalStorage -> resources.getString(R.string.backup_label_internal_storage)
+        is SdCard -> resources.getString(R.string.backup_label_sd_card, path)
+        Selected -> resources.getString(R.string.backup_label_selected_folder)
+    }
+}
+
+/**
+ * Smart backup failures are stored (by the worker) as stable codes, not text, so the settings screen shows them in the
+ * current app language. Unknown codes and failures stored by older versions show the generic message.
+ */
+internal object BackupProblems {
+    private const val FAILED = "failed"
+    const val LOW_SPACE = "low-space"
+    private val messages = linkedMapOf(
+        FAILED to R.string.error_backup_failed,
+        "folder-access" to R.string.error_backup_folder_access,
+        "verify" to R.string.error_backup_verify,
+        "folder-unreadable" to R.string.error_backup_folder_unreadable,
+        "create-file" to R.string.error_backup_create_file,
+        "documents-folder" to R.string.error_backup_documents_folder,
+        "too-large" to R.string.error_backup_too_large,
+        "data-too-large" to R.string.error_backup_data_too_large,
+        "too-many-files" to R.string.error_backup_too_many_files,
+        "attachment-missing" to R.string.error_attachment_missing,
+        "attachment-too-large" to R.string.error_backup_attachment_too_large,
+    )
+
+    fun code(error: Throwable): String {
+        if (error is SecurityException) return "folder-access"
+        val res = error.findUserMessage()?.messageRes ?: return FAILED
+        if (res == R.string.error_backup_attachment_too_large_named) return "attachment-too-large"
+        return messages.entries.firstOrNull { it.value == res }?.key ?: FAILED
+    }
+
+    /** The message for [state]'s last failure, or null when the last backup worked. */
+    fun message(resources: android.content.res.Resources, state: LocalBackupState): String? {
+        if (state.error == null && state.errorCode == null) return null
+        if (state.errorCode == LOW_SPACE) return resources.getString(R.string.error_backup_low_space,
+            formatBackupSize(resources, state.errorNeeded), formatBackupSize(resources, state.errorFree))
+        return resources.getString(messages[state.errorCode] ?: R.string.error_backup_failed)
+    }
 }

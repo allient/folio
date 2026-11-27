@@ -78,7 +78,7 @@ internal class NotebookAudioRecorder(
 
     @Suppress("DEPRECATION")
     private fun startOnWorker(targetNotebookId: String) {
-        check(recorder == null) { "A recording is already running." }
+        checkUser(recorder == null, R.string.error_recording_running) { "A recording is already running." }
         val directory = File(context.filesDir, "media").apply { mkdirs() }
         val file = File(directory, "${UUID.randomUUID()}.m4a")
         val next = if (Build.VERSION.SDK_INT >= 31) MediaRecorder(context) else MediaRecorder()
@@ -129,7 +129,7 @@ internal class NotebookAudioRecorder(
         paused = false
         try {
             active.stop()
-            require(file.length() > 0) { "Recording is empty." }
+            requireUser(file.length() > 0, R.string.error_recording_empty) { "Recording is empty." }
         } catch (error: Throwable) { file.delete(); throw error }
         finally { active.release() }
         val time = SimpleDateFormat("yyyy-MM-dd HH.mm", Locale.US).format(Date())

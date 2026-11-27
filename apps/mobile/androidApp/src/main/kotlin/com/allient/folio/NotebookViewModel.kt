@@ -58,6 +58,9 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
         private set
 
     private val storage = NotebookStorage(application)
+    /** Messages in the app language: the Application context alone does not follow Preferences → Language before Android 13. */
+    private fun resources() = AppLocales.resources(getApplication())
+    private fun text(id: Int): String = resources().getString(id)
     private val main = Handler(Looper.getMainLooper())
     private val worker = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "folio-local-storage")
@@ -104,14 +107,15 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                     try {
                         storage.save(initial, loadedLibrary)
                     } catch (error: Exception) {
-                        initialSaveError = error.message ?: "Could not save your first notebook"
+                        initialSaveError = error.userMessage(resources(), R.string.error_save_first_notebook)
                     }
                 }
                 if (initialLoadError == null && initialSaveError == null) {
                     preferences.edit().putBoolean("initialized", true).commit()
                 }
             } catch (error: Exception) {
-                initialLoadError = error.message ?: "Could not open local notebooks"
+                // A technical detail shown under the translated explanation (main_open_failed_message).
+                initialLoadError = error.message ?: error.javaClass.simpleName
             }
             postMain {
                 notebooks = initial
@@ -137,11 +141,11 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
         onMain {
             if (cleared) return@onMain
             if (loading) {
-                saveError = "Notebooks are still loading. Please try again."
+                saveError = text(R.string.error_notebooks_loading)
                 return@onMain
             }
             if (loadError != null) {
-                saveError = "Existing notebooks could not be loaded. Original data has been preserved."
+                saveError = text(R.string.error_notebooks_not_loaded)
                 return@onMain
             }
             // Models and nested lists are immutable snapshots from the editor.
@@ -235,7 +239,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
     internal fun importIntoNotebook(uri: Uri, notebookId: String, kind: String, pageId: String?, layerId: String, drop: ImageDrop? = null) {
         onMain {
             if (notebooks.any { it.id == notebookId && it.infiniteCanvas } && kind in listOf("pdf", "page-image")) {
-                importError = "Infinite canvases have no pages. Insert an image or attach the PDF instead."
+                importError = text(R.string.error_canvas_no_pages)
                 return@onMain
             }
             waitingEditorImports.addLast(EditorImportRequest(uri, notebookId, kind, pageId, layerId, drop))
@@ -257,7 +261,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
             recorder.start(notebookId) { result ->
                 if (cleared) return@start
                 if (result.isFailure) {
-                    audioError = result.exceptionOrNull()?.message ?: "Audio recording is not available."
+                    audioError = result.exceptionOrNull()?.userMessage(resources(), R.string.error_recording_unavailable)
                     if (recordingStatus == RecordingStatus.Starting) {
                         recordingStatus = RecordingStatus.Idle
                         recordingNotebookId = null
@@ -274,7 +278,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
             recordingStatus = RecordingStatus.Stopping
             recorder.stop { result ->
                 if (cleared) return@stop
-                result.exceptionOrNull()?.let { audioError = it.message ?: "The recording could not be saved." }
+                result.exceptionOrNull()?.let { audioError = it.userMessage(resources(), R.string.error_recording_save) }
                 recordingStatus = RecordingStatus.Idle
                 recordingNotebookId = null
                 synchronized(lock) { activeRecordingPlacement = null }
@@ -288,7 +292,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
             recordingStatus = RecordingStatus.Pausing
             recorder.pause { result ->
                 if (cleared) return@pause
-                if (result.isFailure) audioError = result.exceptionOrNull()?.message ?: "The recording could not be paused."
+                if (result.isFailure) audioError = result.exceptionOrNull()?.userMessage(resources(), R.string.error_recording_pause)
                 if (recordingStatus == RecordingStatus.Pausing) {
                     recordingStatus = if (result.isSuccess) RecordingStatus.Paused else RecordingStatus.Recording
                 }
@@ -302,7 +306,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
             recordingStatus = RecordingStatus.Resuming
             recorder.resume { result ->
                 if (cleared) return@resume
-                if (result.isFailure) audioError = result.exceptionOrNull()?.message ?: "The recording could not be resumed."
+                if (result.isFailure) audioError = result.exceptionOrNull()?.userMessage(resources(), R.string.error_recording_resume)
                 if (recordingStatus == RecordingStatus.Resuming) {
                     recordingStatus = if (result.isSuccess) RecordingStatus.Recording else RecordingStatus.Paused
                 }
@@ -362,7 +366,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
             waitingImports.clear()
             waitingLibraryImports.clear()
             waitingEditorImports.clear()
-            importError = "Existing notebooks could not be loaded. The selected document was not imported."
+            importError = text(R.string.error_import_load_blocked)
             return
         }
         if (waitingEditorImports.isNotEmpty()) {
@@ -388,7 +392,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                     }
                 } catch (error: Exception) {
                     postMain {
-                        importError = error.message?.takeIf { it.isNotBlank() } ?: "The Folio library backup could not be restored."
+                        importError = error.userMessage(resources(), R.string.error_library_restore)
                         importing = false
                         startNextImport()
                     }
@@ -413,7 +417,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                 }
             } catch (error: Exception) {
                 postMain {
-                    importError = error.message?.takeIf { it.isNotBlank() } ?: "The selected document could not be imported."
+                    importError = error.userMessage(resources(), R.string.error_import_document)
                     importing = false
                     startNextImport()
                 }
@@ -436,12 +440,12 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                     try {
                         val previousPage = if (request.kind == "image") notebooks.firstOrNull { it.id == request.notebookId }?.pages?.firstOrNull { it.id == request.pageId } else null
                         val merged = mergeEditorImport(notebooks, result)
-                        requireNotNull(merged) { "The destination notebook or page no longer exists." }
+                        if (merged == null) throw UserInputException(R.string.error_import_destination_missing, "The destination notebook or page no longer exists.")
                         saveNotes(merged)
                         editorImportNotice = EditorImportNotice(request.notebookId, if (request.kind == "pdf" || request.kind == "page-image") result.pages.firstOrNull()?.id else request.pageId, request.kind, previousPage,
                             selectImageIds = if (request.drop != null) result.pages.flatMap { it.images }.map { it.id } else emptyList())
                     } catch (error: Exception) {
-                        importError = error.message ?: "This file could not be inserted."
+                        importError = error.userMessage(resources(), R.string.error_insert_file)
                         worker.execute { deleteImportedResult(result) }
                     } finally {
                         synchronized(lock) { completedEditorImports.remove(result.id) }
@@ -451,7 +455,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                 }
             } catch (error: Exception) {
                 postMain {
-                    importError = error.message ?: "This file could not be imported."
+                    importError = error.userMessage(resources(), R.string.error_import_file)
                     importing = false
                     startNextImport()
                 }
@@ -467,7 +471,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                 val page = target.pages.firstOrNull { it.id == request.pageId } ?: return null
                 val layer = page.layers.firstOrNull { it.id == request.layerId && it.visible && !it.locked }
                     ?: page.layers.firstOrNull { it.visible && !it.locked }
-                requireNotNull(layer) { "Choose a visible, unlocked layer before inserting an image." }
+                if (layer == null) throw UserInputException(R.string.error_import_layer, "Choose a visible, unlocked layer before inserting an image.")
                 val placed = result.pages.flatMap { it.images }.map { image ->
                     val drop = request.drop ?: return@map image.copy(layerId = layer.id)
                     // importImages fitted the image to a 1200×1920 page; recover its pixel ratio and size it for the page on screen.
@@ -535,7 +539,8 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                 storage.save(snapshot.notes, snapshot.library)
                 null
             } catch (error: Exception) {
-                error.message ?: "Could not save notebooks to this device"
+                android.util.Log.e("Folio", "Could not save notebooks", error)
+                error.userMessage(resources(), R.string.error_save_notebooks)
             }
             postMain {
                 // A completed older write must not mark newer changes as saved.

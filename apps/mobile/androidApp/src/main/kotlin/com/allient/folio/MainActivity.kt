@@ -183,7 +183,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                 backup.recordExport(uri.lastPathSegment?.substringAfterLast('/') ?: resources.getString(R.string.main_backup_file_fallback))
                 backupExportMessage = resources.getString(R.string.main_backup_exported)
             } catch (error: CancellationException) { throw error }
-            catch (error: Exception) { backupExportMessage = error.message ?: resources.getString(R.string.main_backup_export_failed) }
+            catch (error: Exception) { backupExportMessage = error.userMessage(resources, R.string.main_backup_export_failed) }
             finally { archive.delete() }
         }
     }
@@ -196,7 +196,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                 val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
                 saveLibraryBackup.launch("Folio-Full-Library-$stamp.${FolioFormat.EXTENSION}")
             } catch (error: CancellationException) { throw error }
-            catch (error: Exception) { backupExportMessage = error.message ?: resources.getString(R.string.main_backup_create_failed) }
+            catch (error: Exception) { backupExportMessage = error.userMessage(resources, R.string.main_backup_create_failed) }
         }
     }
     val backupReminder = backup.state.needsReminder(System.currentTimeMillis())
@@ -256,10 +256,10 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                     val settings = backup.state
                     com.allient.folio.home.BackupSettingsScreen(
                         state = com.allient.folio.home.BackupSettingsUi(
-                            enabled = settings.enabled, folder = settings.folderLabel,
+                            enabled = settings.enabled, folder = settings.folderName?.label(resources),
                             status = backupStatus(resources, settings.mostRecentBackup, backup.versions),
                             lastFile = settings.mostRecentFile, running = backup.running, choosingFolder = backup.choosingFolder,
-                            error = backup.folderError ?: settings.error, savingNotes = repository.isSaving,
+                            error = backup.folderError ?: BackupProblems.message(resources, settings), savingNotes = repository.isSaving,
                             versions = backup.versions.map { com.allient.folio.home.BackupVersionUi(it.id, backupDate(resources, it.createdAt), formatBackupSize(resources, it.size)) },
                         ),
                         onBack = { showSettings = false },
@@ -409,7 +409,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                                     } }
                                     files.shareFile(output, when (format) { "png" -> "image/png"; "folio" -> "application/zip"; else -> "application/pdf" })
                                 } catch (error: CancellationException) { throw error }
-                                catch (error: Exception) { importError = error.message ?: resources.getString(R.string.main_export_failed) }
+                                catch (error: Exception) { importError = error.userMessage(resources, R.string.main_export_failed) }
                             }
                         } },
                         onOpenSettings = { showSettings = true },

@@ -100,7 +100,7 @@ internal class ReaderViewModel(application: Application) : AndroidViewModel(appl
             withContext(Dispatchers.Main) {
                 pendingWrites--
                 result.onSuccess { (document, notes) -> if (current?.id == id) { current = document; annotations = notes ?: local?.invoke(annotations) ?: annotations } }
-                    .onFailure { error = it.message ?: text(R.string.reader_error_save) }
+                    .onFailure { error = it.userMessage(resources(), R.string.reader_error_save) }
             }
         }
     }
@@ -114,11 +114,12 @@ internal class ReaderViewModel(application: Application) : AndroidViewModel(appl
     }
     private fun task(action: suspend () -> Unit) = viewModelScope.launch {
         try { action() } catch (cancelled: CancellationException) { throw cancelled }
-        catch (failure: Exception) { error = failure.message ?: text(R.string.reader_error_operation); loading = false }
+        catch (failure: Exception) { error = failure.userMessage(resources(), R.string.reader_error_operation); loading = false }
         catch (failure: OutOfMemoryError) { error = text(R.string.reader_error_memory); loading = false }
     }
     /** UI text in the app language: the Application context alone would not follow Preferences → Language before Android 13. */
-    private fun text(id: Int): String = AppLocales.wrap(getApplication()).getString(id)
+    private fun text(id: Int): String = resources().getString(id)
+    private fun resources() = AppLocales.resources(getApplication())
     // The store stays open while accepted writes finish; close it at the end of the queue.
     override fun onCleared() { ReaderWrites.scope.launch { ReaderWrites.ordered { store.close() } }; super.onCleared() }
 }

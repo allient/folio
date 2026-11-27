@@ -15,7 +15,6 @@
     <string name="reader_error_fit">Could not fit page content</string>
     <string name="reader_error_no_text">No selectable text here. This may be a scanned page; OCR is required for text highlights.</string>
     <string name="reader_error_no_app_link">No app can open this link</string>
-    <string name="reader_error_chapter">Could not load this chapter: %1$s</string>
     <string name="reader_title">Reader</string>
     <string name="reader_ok">OK</string>
     <string name="reader_cancel">Cancel</string>

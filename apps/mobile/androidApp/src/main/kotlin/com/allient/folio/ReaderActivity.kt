@@ -128,7 +128,7 @@ class ReaderActivity : AppCompatActivity() {
                     page = document.locator.takeIf { it.isNotBlank() }?.let { JSONObject(it).optInt("page") }?.coerceIn(0, pdf!!.pageCount - 1) ?: 0
                 } else publication = withContext(Dispatchers.IO) { EpubReaderEngine.open(this@ReaderActivity, File(document.path)) }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (error: Exception) { engineError = error.message ?: getString(R.string.reader_error_open) }
+            catch (error: Exception) { engineError = error.userMessage(resources, R.string.reader_error_open) }
             catch (error: OutOfMemoryError) { engineError = getString(R.string.reader_error_memory_open) }
             finally { engineLoading = false }
         }
@@ -426,7 +426,7 @@ class ReaderActivity : AppCompatActivity() {
                         else File(dir,"$name (notes).md").apply { writeText(markdown) }
                     }
                     NotebookFiles(this@ReaderActivity).shareFile(file, if (kind == "pdf") "application/pdf" else "text/markdown")
-                } catch (error: Exception) { if (error is CancellationException) throw error; model.error = error.message ?: getString(R.string.reader_error_export) }
+                } catch (error: Exception) { if (error is CancellationException) throw error; model.error = error.userMessage(resources, R.string.reader_error_export) }
                 finally { exporting = false }
             }
         }
@@ -442,7 +442,7 @@ class ReaderActivity : AppCompatActivity() {
                     chromeVisible = true
                     readerNotice = if (count > 0) resources.getQuantityString(R.plurals.reader_ocr_recognized, count, count, index + 1) else getString(R.string.reader_ocr_none)
                 } catch (cancelled: CancellationException) { throw cancelled }
-                catch (error: Exception) { model.error = error.message ?: getString(R.string.reader_error_ocr) }
+                catch (error: Exception) { model.error = error.userMessage(resources, R.string.reader_error_ocr) }
                 finally { recognizing = false; panel = null }
             }
         }
@@ -466,7 +466,7 @@ class ReaderActivity : AppCompatActivity() {
                             if (pdfContentFit) {
                                 try { value = withContext(Dispatchers.IO) { session.contentBounds(index) } }
                                 catch (cancelled: CancellationException) { throw cancelled }
-                                catch (error: Exception) { model.error = error.message ?: getString(R.string.reader_error_fit) }
+                                catch (error: Exception) { model.error = error.userMessage(resources, R.string.reader_error_fit) }
                             }
                         }
                         AndroidView(factory={PdfPageReaderView(it)},update={ view ->
@@ -564,7 +564,7 @@ class ReaderActivity : AppCompatActivity() {
                                         val uri=android.net.Uri.parse(url.toString())
                                         if(uri.scheme in listOf("https","http","mailto")) try { startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,uri)) } catch(error:android.content.ActivityNotFoundException){model.error=getString(R.string.reader_error_no_app_link)}
                                     }
-                                    override fun onResourceLoadFailed(href: org.readium.r2.shared.util.Url,error: org.readium.r2.shared.util.data.ReadError) { model.error=getString(R.string.reader_error_chapter, error.message.orEmpty()) }
+                                    override fun onResourceLoadFailed(href: org.readium.r2.shared.util.Url,error: org.readium.r2.shared.util.data.ReadError) { android.util.Log.w("Folio", "Could not load chapter ${href}: ${error.message}"); model.error=getString(R.string.error_reader_chapter) }
                                 })
                             val fragment=factory.instantiate(classLoader,EpubNavigatorFragment::class.java.name) as EpubNavigatorFragment
                             post {
@@ -1187,7 +1187,7 @@ class ReaderActivity : AppCompatActivity() {
                                         } finally { iterator.close() }
                                     }
                                 } catch(cancelled:CancellationException){throw cancelled}
-                                catch(error:Exception){model.error=error.message}
+                                catch(error:Exception){model.error=error.userMessage(resources, R.string.error_reader_search)}
                                 finally{searching=false}
                             }
                         }

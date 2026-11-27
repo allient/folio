@@ -560,7 +560,7 @@ internal fun NotebookEditor(
         if (uri != null && file != null) scope.launch {
             busy = resources.getString(R.string.editor_busy_saving_document)
             try { withContext(Dispatchers.IO) { files.writeToUri(file, uri) } }
-            catch (error: Exception) { message = error.message ?: resources.getString(R.string.editor_error_save_document) }
+            catch (error: Exception) { message = error.userMessage(resources, R.string.editor_error_save_document) }
             finally { busy = null }
         }
     }
@@ -579,7 +579,7 @@ internal fun NotebookEditor(
                 AppAnalytics.event("notebook_exported", "format" to kind)
                 if (share) files.shareFile(output, when(kind) { "pdf" -> "application/pdf"; "png" -> "image/png"; else -> "application/octet-stream" })
                 else { pendingExportPath = output.absolutePath; saveDocument.launch(output.name) }
-            } catch (error: Exception) { message = error.message ?: resources.getString(R.string.editor_error_export) }
+            } catch (error: Exception) { message = error.userMessage(resources, R.string.editor_error_export) }
             finally { busy = null }
         }
     }

@@ -71,7 +71,7 @@ internal object HandwritingRecognizer {
      * are scaled to document units so the recognizer sees the real proportions of the writing.
      */
     suspend fun recognize(strokes: List<InkStroke>, tag: String): List<String> {
-        val model = model(tag) ?: throw IllegalArgumentException("Handwriting in this language isn't supported.")
+        val model = model(tag) ?: throw UserInputException(R.string.error_handwriting_language, "Handwriting in this language isn't supported.")
         val manager = RemoteModelManager.getInstance()
         if (!manager.isModelDownloaded(model).await()) manager.download(model, DownloadConditions.Builder().build()).await()
         val ink = Ink.builder().apply {
@@ -138,7 +138,7 @@ internal fun ConvertToTextPanel(strokes: List<InkStroke>, onReplace: (String) ->
             throw error
         } catch (error: Exception) {
             status = if (error is MlKitException && error.errorCode == MlKitException.UNAVAILABLE) resources.getString(R.string.tools_hw_download_failed)
-            else error.message ?: resources.getString(R.string.tools_hw_read_failed)
+            else error.userMessage(resources, R.string.tools_hw_read_failed)
         } finally {
             busy = false
         }

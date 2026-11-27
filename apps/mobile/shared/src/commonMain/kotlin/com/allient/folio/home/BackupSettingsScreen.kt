@@ -33,16 +33,20 @@ data class BackupVersionUi(val id: String, val date: String, val size: String)
 
 data class BackupSettingsUi(
     val enabled: Boolean = false,
-    val folder: String = "No folder selected",
+    /** The backup folder's name in the app language; null when no folder was chosen. */
+    val folder: String? = null,
     /** For example "Last backup 12:41 · 3 versions · 84 MB". */
-    val status: String = "Not backed up yet",
+    val status: String = "",
     val lastFile: String? = null,
     val running: Boolean = false,
     val choosingFolder: Boolean = false,
     val error: String? = null,
     val savingNotes: Boolean = false,
     val versions: List<BackupVersionUi> = emptyList(),
-)
+) {
+    /** The folder card shows once a folder was chosen, or while smart backups are on (to choose one). */
+    val showsFolder: Boolean get() = enabled || folder != null
+}
 
 @Composable
 fun BackupSettingsScreen(state: BackupSettingsUi, onBack: () -> Unit, onEnabled: (Boolean) -> Unit,
@@ -98,11 +102,11 @@ fun BackupSettingsScreen(state: BackupSettingsUi, onBack: () -> Unit, onEnabled:
                         if (!state.enabled && state.lastFile != null) Text(stringResource(Res.string.backup_files_kept), fontSize = 12.sp, color = muted)
                     }
                 }
-                if (state.enabled || state.folder != "No folder selected") {
+                if (state.showsFolder) {
                     Surface(shape = RoundedCornerShape(24.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                         Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text(stringResource(Res.string.backup_folder), fontSize = 13.sp, color = muted)
-                            Text(state.folder, fontSize = 17.sp, fontWeight = FontWeight.Medium, modifier = Modifier.testTag("backup-folder-path"))
+                            Text(state.folder ?: stringResource(Res.string.backup_no_folder_selected), fontSize = 17.sp, fontWeight = FontWeight.Medium, modifier = Modifier.testTag("backup-folder-path"))
                             OutlinedButton(onClick = onChooseFolder, enabled = !busy && !state.savingNotes,
                                 shape = RoundedCornerShape(14.dp), modifier = Modifier.testTag("backup-choose-folder").heightIn(min = 48.dp)) { Text(stringResource(Res.string.backup_change_folder)) }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

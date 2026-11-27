@@ -14,7 +14,6 @@
     <string name="reader_error_fit">Não foi possível ajustar o conteúdo da página</string>
     <string name="reader_error_no_text">Não há texto selecionável aqui. Pode ser uma página digitalizada; é preciso OCR para destacar texto.</string>
     <string name="reader_error_no_app_link">Nenhum app consegue abrir este link</string>
-    <string name="reader_error_chapter">Não foi possível carregar este capítulo: %1$s</string>
     <string name="reader_title">Leitor</string>
     <string name="reader_ok">OK</string>
     <string name="reader_cancel">Cancelar</string>

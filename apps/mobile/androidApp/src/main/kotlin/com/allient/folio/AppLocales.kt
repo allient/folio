@@ -60,6 +60,17 @@ internal object AppLocales {
         return context
     }
 
+    /**
+     * Resources in the app language for code without an activity (ViewModels, workers). Unlike [wrap] it changes no
+     * global state, so it is safe on any thread.
+     */
+    fun resources(context: Context): android.content.res.Resources {
+        val choice = if (Build.VERSION.SDK_INT < 33) choice(context) else ""
+        if (choice.isEmpty()) return context.resources
+        val configuration = Configuration(context.resources.configuration).apply { setLocales(LocaleList.forLanguageTags(choice)) }
+        return context.createConfigurationContext(configuration).resources
+    }
+
     /** The locale the app shows: the first of the context's locales Folio is translated into, else English. */
     fun resolved(context: Context): Locale {
         val locales = context.resources.configuration.locales
