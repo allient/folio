@@ -29,6 +29,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import android.content.res.Resources
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -105,12 +109,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel, reader: ReaderViewModel) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val files = remember(context) { NotebookFiles(context.applicationContext) }
     val scope = rememberCoroutineScope()
     var openNotebookId by rememberSaveable { mutableStateOf<String?>(null) }
     val homeStore = remember(context) { HomePreferencesStore(context.applicationContext) }
     var homePreferences by remember { mutableStateOf(homeStore.read()) }
-    val appVersion = remember(context) { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: "unknown" }
+    val appVersion = remember(context) { runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: resources.getString(R.string.main_version_unknown) }
     val dateFormat = remember { java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US) }
     var pendingReaderFolderId by rememberSaveable { mutableStateOf<String?>(null) }
     val readBook = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -175,10 +180,10 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
         if (uri == null) archive?.delete() else if (archive != null) scope.launch {
             try {
                 withContext(Dispatchers.IO) { files.writeToUri(archive, uri) }
-                backup.recordExport(uri.lastPathSegment?.substringAfterLast('/') ?: "Folio full library backup")
-                backupExportMessage = "Your full Folio library backup was exported. Keep this file somewhere safe."
+                backup.recordExport(uri.lastPathSegment?.substringAfterLast('/') ?: resources.getString(R.string.main_backup_file_fallback))
+                backupExportMessage = resources.getString(R.string.main_backup_exported)
             } catch (error: CancellationException) { throw error }
-            catch (error: Exception) { backupExportMessage = error.message ?: "Could not export the library backup." }
+            catch (error: Exception) { backupExportMessage = error.message ?: resources.getString(R.string.main_backup_export_failed) }
             finally { archive.delete() }
         }
     }
@@ -191,7 +196,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                 val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
                 saveLibraryBackup.launch("Folio-Full-Library-$stamp.${FolioFormat.EXTENSION}")
             } catch (error: CancellationException) { throw error }
-            catch (error: Exception) { backupExportMessage = error.message ?: "Could not create the library backup." }
+            catch (error: Exception) { backupExportMessage = error.message ?: resources.getString(R.string.main_backup_create_failed) }
         }
     }
     val backupReminder = backup.state.needsReminder(System.currentTimeMillis())
@@ -240,11 +245,11 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
             when {
                 repository.loading -> Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     CircularProgressIndicator(color = FolioBrand.Sage)
-                    Text("Opening notebooks…", Modifier.padding(top = 18.dp))
+                    Text(stringResource(R.string.main_opening), Modifier.padding(top = 18.dp))
                 }
                 repository.loadError != null -> Column(Modifier.fillMaxSize().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Text("Could not open your notebooks", fontSize = 22.sp, fontWeight = FontWeight.Medium)
-                    Text("Your existing local data has been preserved. Close and reopen Folio to try again.", Modifier.padding(top = 14.dp))
+                    Text(stringResource(R.string.main_open_failed_title), fontSize = 22.sp, fontWeight = FontWeight.Medium)
+                    Text(stringResource(R.string.main_open_failed_message), Modifier.padding(top = 14.dp))
                     Text(repository.loadError.orEmpty(), Modifier.padding(top = 14.dp), color = ChromeMuted, fontSize = 12.sp)
                 }
                 showSettings -> {
@@ -252,10 +257,10 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                     com.allient.folio.home.BackupSettingsScreen(
                         state = com.allient.folio.home.BackupSettingsUi(
                             enabled = settings.enabled, folder = settings.folderLabel,
-                            status = backupStatus(settings.mostRecentBackup, backup.versions),
+                            status = backupStatus(resources, settings.mostRecentBackup, backup.versions),
                             lastFile = settings.mostRecentFile, running = backup.running, choosingFolder = backup.choosingFolder,
                             error = backup.folderError ?: settings.error, savingNotes = repository.isSaving,
-                            versions = backup.versions.map { com.allient.folio.home.BackupVersionUi(it.id, backupDate(it.createdAt), formatBackupSize(it.size)) },
+                            versions = backup.versions.map { com.allient.folio.home.BackupVersionUi(it.id, backupDate(resources, it.createdAt), formatBackupSize(resources, it.size)) },
                         ),
                         onBack = { showSettings = false },
                         onEnabled = { if (it) openBackupFolderPicker(true) else backup.disable() },
@@ -271,28 +276,31 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                     if (backupReminder) {
                         Surface(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp).testTag("backup-reminder"), shape = RoundedCornerShape(16.dp), color = Color(0xFFFFF4D6)) {
                             Row(Modifier.padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(if (backup.state.enabled) "Recent changes haven’t been backed up for 3 days. Check Smart backups in Settings, or export a copy now."
-                                    else "Recent changes haven’t been backed up for 3 days. Turn on Smart backups so Folio saves copies for you, or export one now.",
+                                Text(stringResource(if (backup.state.enabled) R.string.main_reminder_enabled else R.string.main_reminder_disabled),
                                     Modifier.weight(1f), fontSize = 13.sp, color = Color(0xFF4B3B13))
-                                TextButton(onClick = ::exportFullLibraryBackup, enabled = !repository.isSaving && !backup.running) { Text("Export backup") }
-                                if (backup.state.enabled) TextButton(onClick = { showSettings = true }, Modifier.testTag("backup-reminder-settings")) { Text("Settings") }
-                                else Button(onClick = { showSmartBackupGuide = true }, Modifier.testTag("backup-reminder-turn-on"), enabled = !backup.choosingFolder) { Text("Turn on") }
+                                TextButton(onClick = ::exportFullLibraryBackup, enabled = !repository.isSaving && !backup.running) { Text(stringResource(R.string.main_export_backup)) }
+                                if (backup.state.enabled) TextButton(onClick = { showSettings = true }, Modifier.testTag("backup-reminder-settings")) { Text(stringResource(R.string.main_settings)) }
+                                else Button(onClick = { showSmartBackupGuide = true }, Modifier.testTag("backup-reminder-turn-on"), enabled = !backup.choosingFolder) { Text(stringResource(R.string.main_turn_on)) }
                             }
                         }
                     }
                     if (repository.saveError != null) {
                         Row(Modifier.fillMaxWidth().background(Color(0xFFF7E6E4)).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Changes could not be saved: ${repository.saveError}", Modifier.weight(1f), fontSize = 12.sp)
-                            TextButton(onClick = { repository.saveNotes(repository.notebooks) }) { Text("Retry") }
+                            Text(stringResource(R.string.main_save_failed, repository.saveError.orEmpty()), Modifier.weight(1f), fontSize = 12.sp)
+                            TextButton(onClick = { repository.saveNotes(repository.notebooks) }) { Text(stringResource(R.string.main_retry)) }
                         }
                     }
                     if (reader.busy) Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         LinearProgressIndicator(Modifier.weight(1f), color = ChromeInk)
-                        Text("Importing book…", Modifier.padding(start = 12.dp), fontSize = 12.sp, color = ChromeMuted)
+                        Text(stringResource(R.string.main_importing_book), Modifier.padding(start = 12.dp), fontSize = 12.sp, color = ChromeMuted)
                     }
-                    val homeBooks = remember(reader.documents) { reader.documents.map { doc ->
+                    val homeBooks = remember(reader.documents, resources) { reader.documents.map { doc ->
                         com.allient.folio.home.HomeBook(doc.id, doc.title, doc.author, doc.format, doc.folderId, doc.favorite, doc.openedAt, doc.createdAt.takeIf { it > 0 } ?: doc.openedAt,
-                            when { doc.openedAt > 0 -> "Read ${dateFormat.format(java.util.Date(doc.openedAt))}"; doc.createdAt > 0 -> "Added ${dateFormat.format(java.util.Date(doc.createdAt))}"; else -> "New" },
+                            when {
+                                doc.openedAt > 0 -> resources.getString(R.string.main_book_read, dateFormat.format(java.util.Date(doc.openedAt)))
+                                doc.createdAt > 0 -> resources.getString(R.string.main_book_added, dateFormat.format(java.util.Date(doc.createdAt)))
+                                else -> resources.getString(R.string.main_book_new)
+                            },
                             doc.progress.toFloat(), doc.pageCount, !java.io.File(doc.path).isFile, doc.deletedAt)
                     } }
                     com.allient.folio.home.NotebookHome(
@@ -383,7 +391,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                         onMove = { id, folder -> repository.saveNotes(repository.notebooks.map { if (it.id == id) it.copy(folderId = folder) else it }) },
                         onRename = { id, title -> repository.saveNotes(repository.notebooks.map { if (it.id == id) it.copy(title = title, updatedAt = System.currentTimeMillis()) else it }) },
                         onCopy = { id -> repository.notebooks.firstOrNull { it.id == id }?.let { original ->
-                            val copied = original.copy(id = java.util.UUID.randomUUID().toString(), title = "${original.title} copy", updatedAt = System.currentTimeMillis(), openedAt = 0, lastViewedPageId = null,
+                            val copied = original.copy(id = java.util.UUID.randomUUID().toString(), title = resources.getString(R.string.main_notebook_copy, original.title),updatedAt = System.currentTimeMillis(), openedAt = 0, lastViewedPageId = null,
                                 pages = original.pages.map { page -> page.copy(id = java.util.UUID.randomUUID().toString(),
                                     strokes = page.strokes.map { it.copy(id = java.util.UUID.randomUUID().toString()) },
                                     texts = page.texts.map { it.copy(id = java.util.UUID.randomUUID().toString()) },
@@ -401,7 +409,7 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                                     } }
                                     files.shareFile(output, when (format) { "png" -> "image/png"; "folio" -> "application/zip"; else -> "application/pdf" })
                                 } catch (error: CancellationException) { throw error }
-                                catch (error: Exception) { importError = error.message ?: "Could not export this notebook." }
+                                catch (error: Exception) { importError = error.message ?: resources.getString(R.string.main_export_failed) }
                             }
                         } },
                         onOpenSettings = { showSettings = true },
@@ -433,40 +441,40 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                     FolioDialogSurface {
                         Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(color = FolioBrand.Sage)
-                            Text("Importing document…", Modifier.padding(top = 20.dp))
-                            Text("Large PDFs can take a moment.", Modifier.padding(top = 8.dp), fontSize = 12.sp, color = ChromeMuted)
+                            Text(stringResource(R.string.main_importing_document), Modifier.padding(top = 20.dp))
+                            Text(stringResource(R.string.main_large_pdfs), Modifier.padding(top = 8.dp), fontSize = 12.sp, color = ChromeMuted)
                         }
                     }
                 }
             }
             (importError ?: repository.importError ?: repository.audioError)?.let { message ->
-                AlertDialog(onDismissRequest = { importError = null; repository.clearImportError(); repository.clearAudioError() }, title = { Text("Operation failed") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { importError = null; repository.clearImportError(); repository.clearAudioError() }) { Text("OK") } })
+                AlertDialog(onDismissRequest = { importError = null; repository.clearImportError(); repository.clearAudioError() }, title = { Text(stringResource(R.string.main_operation_failed)) }, text = { Text(message) }, confirmButton = { TextButton(onClick = { importError = null; repository.clearImportError(); repository.clearAudioError() }) { Text(stringResource(R.string.main_ok)) } })
             }
             libraryRestoreComplete?.let { count ->
-                AlertDialog(onDismissRequest = { libraryRestoreComplete = null }, title = { Text("Library restored") }, text = { Text("Added $count notebooks and their folders. Existing notebooks were kept.") }, confirmButton = { TextButton(onClick = { libraryRestoreComplete = null }) { Text("OK") } })
+                AlertDialog(onDismissRequest = { libraryRestoreComplete = null }, title = { Text(stringResource(R.string.main_library_restored)) }, text = { Text(pluralStringResource(R.plurals.main_library_restored_message, count, count)) }, confirmButton = { TextButton(onClick = { libraryRestoreComplete = null }) { Text(stringResource(R.string.main_ok)) } })
             }
             reader.error?.let { message ->
-                AlertDialog(onDismissRequest = { reader.error = null }, title = { Text("Reading library") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { reader.error = null }) { Text("OK") } })
+                AlertDialog(onDismissRequest = { reader.error = null }, title = { Text(stringResource(R.string.main_reading_library)) }, text = { Text(message) }, confirmButton = { TextButton(onClick = { reader.error = null }) { Text(stringResource(R.string.main_ok)) } })
             }
             if (showSmartBackupGuide) AlertDialog(onDismissRequest = { showSmartBackupGuide = false }, modifier = Modifier.testTag("smart-backup-guide"),
-                title = { Text("Turn on Smart backups") },
+                title = { Text(stringResource(R.string.main_smart_backup_title)) },
                 text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Folio will copy your whole library to a folder on this device after you edit, when you leave the app, and every few hours. Older copies are thinned out automatically.")
-                    Text("1. Tap Choose folder.")
-                    Text("2. Pick a folder, or create one such as Documents/Folio.")
-                    Text("3. Tap Use this folder, then Allow.")
-                    Text("The first backup starts right away. You can change the folder or turn this off in Settings → Smart backups.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.main_smart_backup_intro))
+                    Text(stringResource(R.string.main_smart_backup_step1))
+                    Text(stringResource(R.string.main_smart_backup_step2))
+                    Text(stringResource(R.string.main_smart_backup_step3))
+                    Text(stringResource(R.string.main_smart_backup_footer), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } },
-                confirmButton = { Button(onClick = { showSmartBackupGuide = false; openBackupFolderPicker(true) }, Modifier.testTag("smart-backup-choose-folder")) { Text("Choose folder") } },
-                dismissButton = { TextButton(onClick = { showSmartBackupGuide = false }) { Text("Not now") } })
+                confirmButton = { Button(onClick = { showSmartBackupGuide = false; openBackupFolderPicker(true) }, Modifier.testTag("smart-backup-choose-folder")) { Text(stringResource(R.string.main_choose_folder)) } },
+                dismissButton = { TextButton(onClick = { showSmartBackupGuide = false }) { Text(stringResource(R.string.main_not_now)) } })
             if (!showSettings) backup.folderError?.let { message ->
-                AlertDialog(onDismissRequest = { backup.clearFolderError() }, title = { Text("Smart backups") }, text = { Text(message) },
-                    confirmButton = { TextButton(onClick = { backup.clearFolderError(); showSmartBackupGuide = true }) { Text("Try again") } },
-                    dismissButton = { TextButton(onClick = { backup.clearFolderError() }) { Text("Close") } })
+                AlertDialog(onDismissRequest = { backup.clearFolderError() }, title = { Text(stringResource(R.string.main_smart_backups)) }, text = { Text(message) },
+                    confirmButton = { TextButton(onClick = { backup.clearFolderError(); showSmartBackupGuide = true }) { Text(stringResource(R.string.main_try_again)) } },
+                    dismissButton = { TextButton(onClick = { backup.clearFolderError() }) { Text(stringResource(R.string.main_close)) } })
             }
             backupExportMessage?.let { message ->
-                AlertDialog(onDismissRequest = { backupExportMessage = null }, title = { Text("Library backup") }, text = { Text(message) },
-                    confirmButton = { TextButton(onClick = { backupExportMessage = null }) { Text("OK") } })
+                AlertDialog(onDismissRequest = { backupExportMessage = null }, title = { Text(stringResource(R.string.main_library_backup)) }, text = { Text(message) },
+                    confirmButton = { TextButton(onClick = { backupExportMessage = null }) { Text(stringResource(R.string.main_ok)) } })
             }
         }
     }
@@ -478,25 +486,31 @@ private fun isToday(time: Long): Boolean {
     return day.get(java.util.Calendar.YEAR) == today.get(java.util.Calendar.YEAR) && day.get(java.util.Calendar.DAY_OF_YEAR) == today.get(java.util.Calendar.DAY_OF_YEAR)
 }
 
-private fun backupDate(time: Long): String {
-    val clock = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(time))
-    return if (isToday(time)) "Today $clock" else "${java.text.SimpleDateFormat("EEE, MMM d", java.util.Locale.getDefault()).format(java.util.Date(time))} $clock"
+/** A date in the app language's own order and words ("Thu, Nov 26", "jue, 26 nov"); AppLocales sets the default locale. */
+private fun localDate(skeleton: String, time: Long): String {
+    val locale = java.util.Locale.getDefault()
+    return java.text.SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton), locale).format(java.util.Date(time))
 }
 
-internal fun formatBackupSize(bytes: Long): String = when {
-    bytes >= 1024L * 1024 * 1024 -> String.format(java.util.Locale.US, "%.1f GB", bytes / (1024.0 * 1024 * 1024))
-    bytes >= 10L * 1024 * 1024 -> "${bytes / (1024 * 1024)} MB"
-    bytes >= 1024L * 1024 -> String.format(java.util.Locale.US, "%.1f MB", bytes / (1024.0 * 1024))
-    else -> "${maxOf(1, bytes / 1024)} KB"
+private fun backupDate(resources: Resources, time: Long): String {
+    val clock = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(time))
+    return if (isToday(time)) resources.getString(R.string.main_today_at, clock)
+    else resources.getString(R.string.main_date_time, localDate("EEEMMMd", time), clock)
+}
+
+/** Sizes with the app language's decimal separator ("1,5 GB" in Spanish and Portuguese). */
+internal fun formatBackupSize(resources: Resources, bytes: Long): String = when {
+    bytes >= 1024L * 1024 * 1024 -> resources.getString(R.string.main_size_gb, bytes / (1024.0 * 1024 * 1024))
+    bytes >= 10L * 1024 * 1024 -> resources.getString(R.string.main_size_mb, (bytes / (1024 * 1024)).toInt())
+    bytes >= 1024L * 1024 -> resources.getString(R.string.main_size_mb_decimal, bytes / (1024.0 * 1024))
+    else -> resources.getString(R.string.main_size_kb, maxOf(1L, bytes / 1024).toInt())
 }
 
 /** "Last backup 12:41 · 3 versions · 84 MB". */
-private fun backupStatus(lastBackup: Long, versions: List<BackupVersion>): String {
-    if (lastBackup <= 0) return "Not backed up yet"
+private fun backupStatus(resources: Resources, lastBackup: Long, versions: List<BackupVersion>): String {
+    if (lastBackup <= 0) return resources.getString(R.string.main_not_backed_up)
     val clock = java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(lastBackup))
-    val time = if (isToday(lastBackup)) clock else "${java.text.SimpleDateFormat("MMM d", java.util.Locale.getDefault()).format(java.util.Date(lastBackup))}, $clock"
-    return buildString {
-        append("Last backup ").append(time)
-        if (versions.isNotEmpty()) append(" · ${versions.size} ${if (versions.size == 1) "version" else "versions"} · ${formatBackupSize(versions.sumOf { it.size })}")
-    }
+    val time = if (isToday(lastBackup)) clock else resources.getString(R.string.main_day_time, localDate("MMMd", lastBackup), clock)
+    return if (versions.isEmpty()) resources.getString(R.string.main_last_backup, time)
+    else resources.getQuantityString(R.plurals.main_last_backup_versions, versions.size, time, versions.size, formatBackupSize(resources, versions.sumOf { it.size }))
 }

@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -165,19 +167,19 @@ internal fun ColorMenuDot(color: Int, label: String, options: List<Int>, onPick:
         ColorDot(color, false, label) { open = true }
         DropdownMenu(open, { open = false }, modifier = Modifier.penPressureFilter()) {
             Row(Modifier.padding(horizontal = 10.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                options.forEach { option -> ColorDot(option, option == color, "$label ${option.toUInt().toString(16)}") { onPick(option); open = false } }
+                options.forEach { option -> ColorDot(option, option == color, stringResource(R.string.block_color_option, label, option.toUInt().toString(16))) { onPick(option); open = false } }
             }
         }
     }
 }
 
 @Composable
-private fun Stepper(label: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
+private fun Stepper(label: String, fewer: String, more: String, value: Int, range: IntRange, onChange: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), fontSize = 14.sp)
-        FilledTonalIconButton({ onChange((value - 1).coerceIn(range)) }, Modifier.size(36.dp).semantics { contentDescription = "Fewer $label" }) { Text("−", fontSize = 18.sp) }
+        FilledTonalIconButton({ onChange((value - 1).coerceIn(range)) }, Modifier.size(36.dp).semantics { contentDescription = fewer }) { Text("−", fontSize = 18.sp) }
         Text("$value", Modifier.width(44.dp), fontSize = 15.sp, fontWeight = FontWeight.Medium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        FilledTonalIconButton({ onChange((value + 1).coerceIn(range)) }, Modifier.size(36.dp).semantics { contentDescription = "More $label" }) { Text("+", fontSize = 18.sp) }
+        FilledTonalIconButton({ onChange((value + 1).coerceIn(range)) }, Modifier.size(36.dp).semantics { contentDescription = more }) { Text("+", fontSize = 18.sp) }
     }
 }
 
@@ -196,18 +198,21 @@ internal fun TableSheet(draft: TableDraft, onDraft: (TableDraft) -> Unit, onInse
             ys.forEach { drawLine(line, Offset(inset, inset + h * it), Offset(inset + w, inset + h * it), stroke) }
             xs.forEach { drawLine(line, Offset(inset + w * it, inset), Offset(inset + w * it, inset + h), stroke) }
         }
-        ToolToggle("Header column", "Shade the first column", draft.headerColumn) { onDraft(draft.copy(headerColumn = it)) }
-        ToolToggle("Header row", "Shade the first row", draft.headerRow) { onDraft(draft.copy(headerRow = it)) }
-        Stepper("Columns", draft.columns, 1..12) { onDraft(draft.copy(columns = it)) }
-        Stepper("Rows", draft.rows, 1..20) { onDraft(draft.copy(rows = it)) }
+        ToolToggle(stringResource(R.string.block_header_column), stringResource(R.string.block_header_column_hint), draft.headerColumn) { onDraft(draft.copy(headerColumn = it)) }
+        ToolToggle(stringResource(R.string.block_header_row), stringResource(R.string.block_header_row_hint), draft.headerRow) { onDraft(draft.copy(headerRow = it)) }
+        Stepper(stringResource(R.string.block_columns), stringResource(R.string.block_fewer_columns), stringResource(R.string.block_more_columns), draft.columns, 1..12) { onDraft(draft.copy(columns = it)) }
+        Stepper(stringResource(R.string.block_rows), stringResource(R.string.block_fewer_rows), stringResource(R.string.block_more_rows), draft.rows, 1..20) { onDraft(draft.copy(rows = it)) }
         HorizontalDivider()
+        val borderWidth = stringResource(R.string.block_border_width)
+        val borderColor = stringResource(R.string.block_border_color)
+        val fillColor = stringResource(R.string.block_fill_color)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Border width", Modifier.weight(1f), fontSize = 14.sp); Text("${draft.borderWidth.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(borderWidth, Modifier.weight(1f), fontSize = 14.sp); Text("${draft.borderWidth.toInt()}", fontSize = 15.sp, fontWeight = FontWeight.Medium)
         }
-        Slider(draft.borderWidth, { onDraft(draft.copy(borderWidth = it.toInt().toFloat())) }, valueRange = 0f..8f, steps = 7, modifier = Modifier.semantics { contentDescription = "Border width" })
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Border color", Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(draft.borderColor, "Border color", TableBorderColors) { onDraft(draft.copy(borderColor = it)) } }
-        Row(verticalAlignment = Alignment.CenterVertically) { Text("Fill color", Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(draft.fill, "Fill color", TableFillColors) { onDraft(draft.copy(fill = it)) } }
-        Button(onInsert, Modifier.fillMaxWidth().testTag("insert-table"), shape = RoundedCornerShape(14.dp)) { Text("Insert table") }
+        Slider(draft.borderWidth, { onDraft(draft.copy(borderWidth = it.toInt().toFloat())) }, valueRange = 0f..8f, steps = 7, modifier = Modifier.semantics { contentDescription = borderWidth })
+        Row(verticalAlignment = Alignment.CenterVertically) { Text(borderColor, Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(draft.borderColor, borderColor, TableBorderColors) { onDraft(draft.copy(borderColor = it)) } }
+        Row(verticalAlignment = Alignment.CenterVertically) { Text(fillColor, Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(draft.fill, fillColor, TableFillColors) { onDraft(draft.copy(fill = it)) } }
+        Button(onInsert, Modifier.fillMaxWidth().testTag("insert-table"), shape = RoundedCornerShape(14.dp)) { Text(stringResource(R.string.block_insert_table)) }
     }
 }
 
@@ -217,14 +222,16 @@ internal fun StickerSheet(onPick: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StickerCategories.forEachIndexed { index, (icon, _) ->
+                val categoryDescription = stringResource(R.string.block_sticker_category, index + 1)
                 Surface(onClick = { category = index }, shape = RoundedCornerShape(20.dp), color = if (category == index) Color(0xFFE5EFEC) else Color.White,
                     border = BorderStroke(if (category == index) 2.dp else 1.dp, if (category == index) Color(0xFF357568) else Color(0xFFCCCCCC)),
-                    modifier = Modifier.semantics { contentDescription = "Sticker category ${index + 1}" }) { Text(icon, Modifier.padding(horizontal = 16.dp, vertical = 6.dp), fontSize = 24.sp) }
+                    modifier = Modifier.semantics { contentDescription = categoryDescription }) { Text(icon, Modifier.padding(horizontal = 16.dp, vertical = 6.dp), fontSize = 24.sp) }
             }
         }
         StickerCategories[category].second.chunked(6).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                row.forEach { emoji -> Box(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(10.dp)).clickable { onPick(emoji) }.semantics { contentDescription = "Sticker $emoji" }, contentAlignment = Alignment.Center) { Text(emoji, fontSize = 30.sp) } }
+                row.forEach { emoji -> val stickerDescription = stringResource(R.string.block_sticker, emoji)
+                    Box(Modifier.weight(1f).height(52.dp).clip(RoundedCornerShape(10.dp)).clickable { onPick(emoji) }.semantics { contentDescription = stickerDescription }, contentAlignment = Alignment.Center) { Text(emoji, fontSize = 30.sp) } }
                 repeat(6 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }
@@ -244,49 +251,55 @@ private fun ToolChip(label: String, selected: Boolean = false, enabled: Boolean 
 internal fun TableStructureControls(block: InkBlock, cells: List<Int>?, onChange: (InkBlock) -> Unit, onCells: (List<Int>?) -> Unit) {
     if (cells != null && cells.size == 4) {
         val first = cells[0]; val last = cells[2]; val left = cells[1]; val right = cells[3]
-        Text("Selected cells", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF666670))
-        // Pairs read as one decision each: where to add, what to delete, merge or split.
-        val actions: List<Triple<String, Boolean, () -> Unit>> = listOf(
-            Triple("Row above", true) { onChange(block.insertRow(first)); onCells(listOf(first + 1, left, first + 1, right)) },
-            Triple("Row below", true) { onChange(block.insertRow(last + 1)); onCells(null) },
-            Triple("Column left", true) { onChange(block.insertColumn(left)); onCells(listOf(first, left + 1, last, left + 1)) },
-            Triple("Column right", true) { onChange(block.insertColumn(right + 1)); onCells(null) },
-            Triple("Delete row", block.rows.size > 1) { var next = block; for (r in last downTo first) next = next.deleteRow(r); onChange(next); onCells(null) },
-            Triple("Delete column", block.columns.size > 1) { var next = block; for (c in right downTo left) next = next.deleteColumn(c); onChange(next); onCells(null) },
-            Triple("Merge cells", !(first == last && left == right)) { onChange(block.mergeRange(cells)); onCells(block.expandToMerges(cells)) },
-            Triple("Unmerge", block.mergeContaining(first, left) != null) { onChange(block.unmerge(first, left)) },
+        Text(stringResource(R.string.block_selected_cells), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF666670))
+        // Pairs read as one decision each: where to add, what to delete, merge or split. The flag marks destructive actions.
+        val actions: List<TableAction> = listOf(
+            TableAction(R.string.block_row_above, true) { onChange(block.insertRow(first)); onCells(listOf(first + 1, left, first + 1, right)) },
+            TableAction(R.string.block_row_below, true) { onChange(block.insertRow(last + 1)); onCells(null) },
+            TableAction(R.string.block_column_left, true) { onChange(block.insertColumn(left)); onCells(listOf(first, left + 1, last, left + 1)) },
+            TableAction(R.string.block_column_right, true) { onChange(block.insertColumn(right + 1)); onCells(null) },
+            TableAction(R.string.block_delete_row, block.rows.size > 1, destructive = true) { var next = block; for (r in last downTo first) next = next.deleteRow(r); onChange(next); onCells(null) },
+            TableAction(R.string.block_delete_column, block.columns.size > 1, destructive = true) { var next = block; for (c in right downTo left) next = next.deleteColumn(c); onChange(next); onCells(null) },
+            TableAction(R.string.block_merge_cells, !(first == last && left == right)) { onChange(block.mergeRange(cells)); onCells(block.expandToMerges(cells)) },
+            TableAction(R.string.block_unmerge, block.mergeContaining(first, left) != null) { onChange(block.unmerge(first, left)) },
         )
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             actions.chunked(2).forEach { pair -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                pair.forEach { (label, enabled, run) ->
-                    OutlinedButton(run, Modifier.weight(1f), enabled = enabled, shape = RoundedCornerShape(12.dp),
-                        colors = if (label.startsWith("Delete")) ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB3261E)) else ButtonDefaults.outlinedButtonColors()) { Text(label, fontSize = 13.sp) }
+                pair.forEach { action ->
+                    OutlinedButton(action.run, Modifier.weight(1f), enabled = action.enabled, shape = RoundedCornerShape(12.dp),
+                        colors = if (action.destructive) ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB3261E)) else ButtonDefaults.outlinedButtonColors()) {
+                        Text(stringResource(action.label), fontSize = 13.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    }
                 }
             } }
         }
         HorizontalDivider(Modifier.padding(vertical = 12.dp), color = Color(0xFFE4E4E8))
-    } else Text("Tip: tap a cell first to add or delete rows and columns at that spot, or tap two cells to merge them.",
+    } else Text(stringResource(R.string.block_table_tip),
         fontSize = 12.sp, color = Color(0xFF666670), modifier = Modifier.padding(bottom = 8.dp))
-    TableStepper("Rows", block.rows.size.coerceAtLeast(1), { onChange(block.copy(rows = resizeFractions(block.rows, it))) })
-    TableStepper("Columns", block.columns.size.coerceAtLeast(1), { onChange(block.copy(columns = resizeFractions(block.columns, it))) })
+    TableStepper(stringResource(R.string.block_rows), stringResource(R.string.block_fewer_rows), stringResource(R.string.block_more_rows),
+        block.rows.size.coerceAtLeast(1), { onChange(block.copy(rows = resizeFractions(block.rows, it))) })
+    TableStepper(stringResource(R.string.block_columns), stringResource(R.string.block_fewer_columns), stringResource(R.string.block_more_columns),
+        block.columns.size.coerceAtLeast(1), { onChange(block.copy(columns = resizeFractions(block.columns, it))) })
     OutlinedButton({ onChange(block.copy(rows = equalFractions(block.rows.size), columns = equalFractions(block.columns.size))) },
-        Modifier.fillMaxWidth().padding(vertical = 8.dp), shape = RoundedCornerShape(12.dp)) { Text("Make rows and columns equal") }
+        Modifier.fillMaxWidth().padding(vertical = 8.dp), shape = RoundedCornerShape(12.dp)) { Text(stringResource(R.string.block_equalize)) }
     HorizontalDivider(Modifier.padding(vertical = 8.dp), color = Color(0xFFE4E4E8))
-    ToolToggle("Header row", "Shade the first row.", block.headerRow) { onChange(block.copy(headerRow = it)) }
+    ToolToggle(stringResource(R.string.block_header_row), stringResource(R.string.block_header_row_hint), block.headerRow) { onChange(block.copy(headerRow = it)) }
     Spacer(Modifier.height(8.dp))
-    ToolToggle("Header column", "Shade the first column.", block.headerColumn) { onChange(block.copy(headerColumn = it)) }
+    ToolToggle(stringResource(R.string.block_header_column), stringResource(R.string.block_header_column_hint), block.headerColumn) { onChange(block.copy(headerColumn = it)) }
 }
+
+private class TableAction(@StringRes val label: Int, val enabled: Boolean, val destructive: Boolean = false, val run: () -> Unit)
 
 /** A labelled − count + control. */
 @Composable
-private fun TableStepper(label: String, value: Int, onValue: (Int) -> Unit, min: Int = 1, max: Int = 40) {
+private fun TableStepper(label: String, fewer: String, more: String, value: Int, onValue: (Int) -> Unit, min: Int = 1, max: Int = 40) {
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f), fontSize = 14.sp)
         Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFF2F2F4)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton({ onValue(value - 1) }, enabled = value > min, modifier = Modifier.semantics { contentDescription = "Fewer ${label.lowercase()}" }) { Text("−", fontSize = 20.sp) }
+                TextButton({ onValue(value - 1) }, enabled = value > min, modifier = Modifier.semantics { contentDescription = fewer }) { Text("−", fontSize = 20.sp) }
                 Text("$value", Modifier.widthIn(min = 32.dp), fontSize = 16.sp, fontWeight = FontWeight.Medium, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                TextButton({ onValue(value + 1) }, enabled = value < max, modifier = Modifier.semantics { contentDescription = "More ${label.lowercase()}" }) { Text("+", fontSize = 20.sp) }
+                TextButton({ onValue(value + 1) }, enabled = value < max, modifier = Modifier.semantics { contentDescription = more }) { Text("+", fontSize = 20.sp) }
             }
         }
     }
@@ -295,19 +308,22 @@ private fun TableStepper(label: String, value: Int, onValue: (Int) -> Unit, min:
 /** Border and fill, opened from the table's selection bar. */
 @Composable
 internal fun TableStyleControls(block: InkBlock, onChange: (InkBlock) -> Unit) {
-    TableStepper("Border width", block.borderWidth.toInt(), { onChange(block.copy(borderWidth = it.toFloat())) }, min = 0, max = 8)
-    Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("Border color", Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(block.borderColor, "Border color", TableBorderColors) { onChange(block.copy(borderColor = it)) } }
-    Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text("Fill color", Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(block.fill, "Fill color", TableFillColors) { onChange(block.copy(fill = it)) } }
+    val borderColor = stringResource(R.string.block_border_color)
+    val fillColor = stringResource(R.string.block_fill_color)
+    TableStepper(stringResource(R.string.block_border_width), stringResource(R.string.block_thinner_border), stringResource(R.string.block_thicker_border),
+        block.borderWidth.toInt(), { onChange(block.copy(borderWidth = it.toFloat())) }, min = 0, max = 8)
+    Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text(borderColor, Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(block.borderColor, borderColor, TableBorderColors) { onChange(block.copy(borderColor = it)) } }
+    Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) { Text(fillColor, Modifier.weight(1f), fontSize = 14.sp); ColorMenuDot(block.fill, fillColor, TableFillColors) { onChange(block.copy(fill = it)) } }
 }
 
 /** Note colour and text size, opened from the note's selection bar. */
 @Composable
 internal fun StickyStyleControls(block: InkBlock, onChange: (InkBlock) -> Unit) {
-    Text("Color", fontSize = 13.sp)
+    Text(stringResource(R.string.block_color), fontSize = 13.sp)
     Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        StickyColors.forEach { color -> ColorDot(color, block.fill == color, "Note color ${color.toUInt().toString(16)}", diameter = 36) { onChange(block.copy(fill = color)) } }
+        StickyColors.forEach { color -> ColorDot(color, block.fill == color, stringResource(R.string.block_note_color, color.toUInt().toString(16)), diameter = 36) { onChange(block.copy(fill = color)) } }
     }
-    Text("Text size", fontSize = 13.sp)
+    Text(stringResource(R.string.block_text_size), fontSize = 13.sp)
     Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         ToolChip("A−") { onChange(block.copy(textSize = (block.textSize - 2f).coerceAtLeast(8f))) }
         Text("${block.textSize.toInt()}", fontSize = 14.sp)
@@ -318,7 +334,7 @@ internal fun StickyStyleControls(block: InkBlock, onChange: (InkBlock) -> Unit) 
 @Composable
 internal fun StickyTextDialog(initial: String, onSave: (String) -> Unit, onDismiss: () -> Unit) {
     var value by remember { mutableStateOf(initial) }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Sticky note") },
-        text = { OutlinedTextField(value, { value = it }, Modifier.fillMaxWidth().testTag("sticky-text"), minLines = 3, maxLines = 8, placeholder = { Text("Write a note") }) },
-        confirmButton = { TextButton({ onSave(value) }) { Text("Save") } }, dismissButton = { TextButton(onDismiss) { Text("Cancel") } })
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.block_sticky_note)) },
+        text = { OutlinedTextField(value, { value = it }, Modifier.fillMaxWidth().testTag("sticky-text"), minLines = 3, maxLines = 8, placeholder = { Text(stringResource(R.string.block_write_note)) }) },
+        confirmButton = { TextButton({ onSave(value) }) { Text(stringResource(R.string.tools_save)) } }, dismissButton = { TextButton(onDismiss) { Text(stringResource(R.string.tools_cancel)) } })
 }

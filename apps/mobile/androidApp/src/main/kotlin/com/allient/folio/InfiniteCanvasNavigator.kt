@@ -15,6 +15,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -28,7 +30,8 @@ import androidx.compose.ui.unit.sp
     val bottom = maxOf(bounds.bottom, pins.maxOfOrNull { it.y } ?: bounds.bottom, y+spanY/2) + .2f
     Surface(modifier, color = Color.White, shape = RoundedCornerShape(10.dp), border = BorderStroke(1.dp, ChromeLine), shadowElevation = 2.dp) {
         Column(Modifier.padding(6.dp)) {
-            Canvas(Modifier.size(140.dp, 82.dp).semantics { contentDescription = "Infinite canvas map. Tap to navigate" }
+            val mapDescription = stringResource(R.string.tools_canvas_map)
+            Canvas(Modifier.size(140.dp, 82.dp).semantics { contentDescription = mapDescription }
                 .pointerInput(left, right, top, bottom) { detectTapGestures { onJump(left + it.x/size.width*(right-left), top + it.y/size.height*(bottom-top)) } }) {
                 fun point(px: Float, py: Float) = Offset((px-left)/(right-left)*size.width, (py-top)/(bottom-top)*size.height)
                 drawRect(Color(0xFFF5F5F3))
@@ -39,11 +42,11 @@ import androidx.compose.ui.unit.sp
                 drawRect(Color(0x443B79A8), point(x-spanX/2,y-spanY/2), Size(spanX/(right-left)*size.width, spanY/(bottom-top)*size.height))
                 drawRect(Color(0xFF376CA3), point(x-spanX/2,y-spanY/2), Size(spanX/(right-left)*size.width, spanY/(bottom-top)*size.height), style = Stroke(1.dp.toPx()))
             }
-            Text("${(zoom*100).toInt()}% · ${(x*600).toInt()}, ${(y*960).toInt()} px", fontSize = 9.sp)
+            Text(stringResource(R.string.tools_canvas_position, (zoom * 100).toInt(), (x * 600).toInt(), (y * 960).toInt()), fontSize = 9.sp)
             Row {
-                InkToolButton(InkIcon.Search, "Back to content", onLocate, buttonSize = 40.dp)
-                InkToolButton(InkIcon.Tag, "Open canvas pins", onPins, buttonSize = 40.dp)
-                Text("${pins.size} pins", fontSize = 10.sp, modifier = Modifier.padding(top = 12.dp))
+                InkToolButton(InkIcon.Search, stringResource(R.string.tools_canvas_back_to_content), onLocate, buttonSize = 40.dp, tag = "Back to content")
+                InkToolButton(InkIcon.Tag, stringResource(R.string.tools_canvas_open_pins), onPins, buttonSize = 40.dp, tag = "Open canvas pins")
+                Text(pluralStringResource(R.plurals.tools_canvas_pins, pins.size, pins.size), fontSize = 10.sp, modifier = Modifier.padding(top = 12.dp))
             }
         }
     }

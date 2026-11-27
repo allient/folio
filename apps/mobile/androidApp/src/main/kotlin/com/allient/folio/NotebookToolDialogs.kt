@@ -21,11 +21,15 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun ToolDialog(title: String, onDismiss: () -> Unit, expanded: Boolean = false,
-                        footer: (@Composable () -> Unit)? = null, content: @Composable ColumnScope.() -> Unit) {
+                        footer: (@Composable () -> Unit)? = null,
+                        // The close button's test tag ("action-close-pens") stays English: pass the English title when [title] is translated.
+                        tag: String = title,
+                        content: @Composable ColumnScope.() -> Unit) {
     val availableHeight = LocalConfiguration.current.screenHeightDp.dp * .94f
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = !expanded)) {
         FolioDialogSurface(modifier = Modifier.semantics { testTagsAsResourceId = true }) {
@@ -33,7 +37,7 @@ internal fun ToolDialog(title: String, onDismiss: () -> Unit, expanded: Boolean 
                 .then(if (expanded) Modifier.fillMaxWidth(.94f).height(availableHeight) else Modifier.heightIn(max = minOf(720.dp, availableHeight)))) {
                 Row(Modifier.fillMaxWidth().padding(start = 18.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(title, fontSize = 17.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-                    InkToolButton(InkIcon.Close, "Close $title", onDismiss)
+                    InkToolButton(InkIcon.Close, stringResource(R.string.tools_close_named, title), onDismiss, tag = "Close $tag")
                 }
                 Box(Modifier.fillMaxWidth().height(1.dp).background(ChromeLine))
                 Column(Modifier.weight(1f, fill = expanded).fillMaxWidth().verticalScroll(rememberScrollState()).padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)

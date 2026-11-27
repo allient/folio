@@ -19,6 +19,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import java.util.Locale
 
 /** RGB selection preserves the brush's independently configured opacity. */
@@ -33,11 +34,13 @@ internal fun BrushColorPicker(initial: Int, onDismiss: () -> Unit, onApply: (Int
     fun updateHex() { hex = String.format(Locale.US, "%06X", rgb() and 0xFFFFFF) }
     val valid = hex.matches(Regex("[0-9a-fA-F]{6}"))
     val currentHue by rememberUpdatedState(hue)
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Custom color") }, text = {
+    val fieldDescription = stringResource(R.string.brush_saturation_description)
+    val hueDescription = stringResource(R.string.brush_hue_description)
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(stringResource(R.string.tools_custom_color)) }, text = {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Drag to choose saturation and brightness", fontSize = 12.sp)
+            Text(stringResource(R.string.brush_saturation_hint), fontSize = 12.sp)
             Canvas(Modifier.fillMaxWidth().height(170.dp)
-                .semantics { contentDescription = "Color saturation and brightness" }
+                .semantics { contentDescription = fieldDescription }
                 .pointerInput(Unit) { awaitEachGesture {
                     val down = awaitFirstDown()
                     fun choose(point: Offset) {
@@ -57,11 +60,11 @@ internal fun BrushColorPicker(initial: Int, onDismiss: () -> Unit, onApply: (Int
                 drawCircle(Color.Black, 8.dp.toPx(), center, style = Stroke(3.dp.toPx()))
                 drawCircle(Color.White, 8.dp.toPx(), center, style = Stroke(1.5f.dp.toPx()))
             }
-            Text("Hue", fontSize = 12.sp)
+            Text(stringResource(R.string.brush_hue), fontSize = 12.sp)
             Box(Modifier.fillMaxWidth().height(8.dp).background(Brush.horizontalGradient(
                 listOf(Color.Red, Color.Yellow, Color.Green, Color.Cyan, Color.Blue, Color.Magenta, Color.Red)), RoundedCornerShape(4.dp)))
             Slider(hue, { hue = it; updateHex() }, valueRange = 0f..360f,
-                modifier = Modifier.semantics { contentDescription = "Color hue" })
+                modifier = Modifier.semantics { contentDescription = hueDescription })
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.size(52.dp).background(Color(rgb()), RoundedCornerShape(12.dp)).border(1.dp, ChromeLine, RoundedCornerShape(12.dp)))
                 OutlinedTextField(hex, { value ->
@@ -71,15 +74,15 @@ internal fun BrushColorPicker(initial: Int, onDismiss: () -> Unit, onApply: (Int
                         val next = FloatArray(3); android.graphics.Color.colorToHSV(parsed, next)
                         hue = next[0]; saturation = next[1]; brightness = next[2]
                     }
-                }, label = { Text("Hex color") }, prefix = { Text("#") }, singleLine = true,
+                }, label = { Text(stringResource(R.string.brush_hex_color)) }, prefix = { Text("#") }, singleLine = true,
                     isError = !valid, modifier = Modifier.weight(1f))
             }
-            if (!valid) Text("Enter six hexadecimal digits, for example 345C91.", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
-            Text("Opacity is kept unchanged.", fontSize = 11.sp, color = ChromeMuted)
+            if (!valid) Text(stringResource(R.string.brush_hex_error), fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
+            Text(stringResource(R.string.brush_opacity_kept), fontSize = 11.sp, color = ChromeMuted)
             if (onPickFromPage != null) OutlinedButton(onClick = onPickFromPage, modifier = Modifier.fillMaxWidth()) {
-                InkSymbol(InkIcon.Eyedropper, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text("Pick from page")
+                InkSymbol(InkIcon.Eyedropper, Modifier.size(18.dp)); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.tools_pick_from_page))
             }
         }
-    }, confirmButton = { TextButton(enabled = valid, onClick = { onApply((initial and 0xFF000000.toInt()) or (rgb() and 0xFFFFFF)) }) { Text("Use color") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }, shape = RoundedCornerShape(24.dp))
+    }, confirmButton = { TextButton(enabled = valid, onClick = { onApply((initial and 0xFF000000.toInt()) or (rgb() and 0xFFFFFF)) }) { Text(stringResource(R.string.brush_use_color)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.tools_cancel)) } }, shape = RoundedCornerShape(24.dp))
 }
