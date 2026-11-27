@@ -1,3 +1,5 @@
+<a href="https://allient.io"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/made-at-allient-dark.svg"><img src=".github/assets/made-at-allient.svg" alt="Made at Allient" align="right"></picture></a>
+
 <p align="center">
   <img src="packages/brand/png/folio-icon-primary-192.png" width="96" height="96" alt="Folio icon">
 </p>
@@ -46,6 +48,11 @@ Folio is made for people who think with a pen. It feels like paper, opens instan
 - Open a PDF or EPUB as a notebook (**+ → Import PDF/EPUB as notebook**) to write on its pages. A PDF page becomes a picture; an EPUB becomes pages of typed text (images and styling are left out), each chapter starting on a new page.
 - An infinite canvas with pins and a minimap.
 - Layers, lasso, shapes, fill, text, tables, stickers, sticky notes, images, a ruler, a zoom window and voice notes.
+- Drag images straight from another app in split screen (for example Chrome) onto a page, then move, resize or rotate them. Pages keep their shape in split screen and scroll instead of shrinking.
+
+<p align="center">
+  <img src="apps/docs/src/assets/screenshots/drag-and-drop.png" width="360" alt="Chrome and Folio in split screen: a cat photo dragged from Google Images onto a notebook page">
+</p>
 
 **Handwriting to text**
 - Select handwriting with the lasso → **Convert to text** to turn it into a typed text box, in 300+ languages, on your device.

@@ -289,6 +289,18 @@ internal fun NotebookEditor(
     }
     var drawingViewportWidthPx by remember { mutableIntStateOf(0) }
     var drawingViewportHeightPx by remember { mutableIntStateOf(0) }
+    // Pages keep the shape they have full screen. In split screen or a freeform window the drawing area is smaller, and
+    // squashing the page to fit it distorted images and ink; instead the page keeps its aspect and scrolls (0 = fill the view).
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val reducedWindow = remember(configuration) { context.isReducedWindow() }
+    val landscapeDisplay = remember(configuration) { context.displayIsLandscape() }
+    val fullPageAspectKey = if (landscapeDisplay) "page-aspect-landscape" else "page-aspect-portrait"
+    LaunchedEffect(reducedWindow, drawingViewportWidthPx, drawingViewportHeightPx, fullPageAspectKey) {
+        if (!reducedWindow && drawingViewportWidthPx > 0 && drawingViewportHeightPx > 0)
+            preferences.edit().putFloat(fullPageAspectKey, drawingViewportHeightPx.toFloat() / drawingViewportWidthPx).apply()
+    }
+    val pageAspect = if (!reducedWindow || notebook.infiniteCanvas) 0f
+        else preferences.getFloat(fullPageAspectKey, 0f).takeIf { it > 0f } ?: context.estimatedFullPageAspect(drawingViewportWidthPx, drawingViewportHeightPx)
     val panelXdpi = context.resources.displayMetrics.xdpi
     var zoom by remember(savedPage.id) { mutableFloatStateOf(1f) }
     var viewportCenterX by remember(savedPage.id) { mutableFloatStateOf(.5f) }
@@ -580,6 +592,10 @@ internal fun NotebookEditor(
                 undoStack = (undoStack + importNotice.previousPage).takeLast(80)
                 redoStack = emptyList()
             }
+            // A dropped image is selected in the current tool, like a new sticker: drag to move, handles to resize and rotate.
+            if (importNotice.kind == "image" && importNotice.pageId == page.id) importNotice.selectImageIds.lastOrNull()?.let { id ->
+                selectedBlockId = null; sheet = null; canvas?.post { canvas?.selectObject(id, isText = false) }
+            }
             repository.consumeEditorImport(importNotice.token)
         }
     }
@@ -611,10 +627,15 @@ internal fun NotebookEditor(
         if (editableLayer(activeLayer)) return true
         message = "Choose a visible, unlocked layer first."; return false
     }
+    fun dropImage(uri: android.net.Uri, pageId: String, point: Offset, pageAspect: Float): Boolean {
+        if (!requireEditableLayer()) return false
+        repository.importIntoNotebook(uri, notebook.id, "image", pageId, activeLayer, ImageDrop(point.x, point.y, pageAspect))
+        return true
+    }
     /** A page-normalised rectangle of [width] centred on the current view; [aspect] is on-screen height / width. */
     fun placeBlock(width: Float, aspect: Float): android.graphics.RectF {
-        val cw = (canvas?.width ?: 1).coerceAtLeast(1).toFloat(); val ch = (canvas?.height ?: 1).coerceAtLeast(1).toFloat()
-        val documentHeight = if (notebook.infiniteCanvas) cw * 1.6f else ch
+        val cw = (canvas?.width ?: 1).coerceAtLeast(1).toFloat()
+        val documentHeight = if (notebook.infiniteCanvas) cw * 1.6f else cw * (canvas?.pageAspect ?: 1f)
         val height = (width * cw * aspect / documentHeight).coerceIn(.04f, 1f)
         var x = viewportCenterX - width / 2f; var y = viewportCenterY - height / 2f
         if (!notebook.infiniteCanvas) { x = x.coerceIn(0f, (1f - width).coerceAtLeast(0f)); y = y.coerceIn(0f, (1f - height).coerceAtLeast(0f)) }
@@ -645,12 +666,18 @@ internal fun NotebookEditor(
     fun addSticker(emoji: String) {
         if (!requireEditableLayer()) return
         val box = placeBlock(.2f, 1f)
-        val file = runCatching { renderStickerFile(context, emoji) }.getOrElse { message = "Could not create this sticker."; return }
-        canvas?.flushInput()
-        val sticker = InkImage(path = file.absolutePath, x = box.left, y = box.top, width = box.width(), height = box.height(), layerId = activeLayer, z = frontUnderInk())
-        applyPage(page.copy(images = page.images + sticker))
-        // Selected right away in the current tool, like a new shape: drag to move, handles to resize.
-        selectedBlockId = null; sheet = null; canvas?.selectObject(sticker.id, isText = false)
+        val layer = activeLayer
+        scope.launch {
+            // Rendering and writing the PNG is file I/O: keep it off the main thread.
+            val file = try { withContext(Dispatchers.IO) { renderStickerFile(context, emoji) } }
+                catch (error: kotlinx.coroutines.CancellationException) { throw error }
+                catch (_: Exception) { message = "Could not create this sticker."; return@launch }
+            canvas?.flushInput()
+            val sticker = InkImage(path = file.absolutePath, x = box.left, y = box.top, width = box.width(), height = box.height(), layerId = layer, z = frontUnderInk())
+            applyPage(page.copy(images = page.images + sticker))
+            // Selected right away in the current tool, like a new shape: drag to move, handles to resize.
+            selectedBlockId = null; sheet = null; canvas?.selectObject(sticker.id, isText = false)
+        }
     }
     fun selectEraser() {
         canvas?.flushInput(); showBrush = false; selectedIds = emptySet()
@@ -1471,7 +1498,7 @@ internal fun NotebookEditor(
                 Box(Modifier.weight(1f).fillMaxHeight().clipToBounds().onSizeChanged { drawingViewportWidthPx = it.width; drawingViewportHeightPx = it.height }) {
                     if (effectivePageLayout == "Scroll") {
                         androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
-                            val pageHeight = maxHeight
+                            val pageHeight = if (pageAspect > 0f) maxWidth * pageAspect else maxHeight
                             LazyColumn(state = pageListState, modifier = Modifier.fillMaxSize(), userScrollEnabled = !fingerDrawing && (notebook.infiniteCanvas || singleFingerSwipe)) {
                                 items(notebook.pages, key = { it.id }) { model ->
                                     val index = notebook.pages.indexOfFirst { it.id == model.id }
@@ -1497,7 +1524,7 @@ internal fun NotebookEditor(
                                             val destination = safeIndex + delta
                                             if (destination in notebook.pages.indices) { canvas?.flushInput(); pageIndex = destination }
                                         },
-                                        onCanvas = { if (model.id == page.id) canvas = it },
+                                        onCanvas = { view -> view.onImageDrop = { uri, point, aspect -> dropImage(uri, model.id, point, aspect) }; if (model.id == page.id) canvas = view },
                                         onPageChange = { changed ->
                                             if (model.id == page.id) applyPage(changed) else replacePage(changed)
                                             if (model.id != page.id) pageIndex = index
@@ -1557,8 +1584,10 @@ internal fun NotebookEditor(
                                     view.onObjectsChanged = { texts, images -> applyPage(page.copy(texts = texts, images = images)) }
                                     view.onObjectSelectionChanged = { id, text -> selectedObjectId = id; selectedObjectIsText = text }
                                     view.onCanvasAction = { handleCanvasAction(it) }; view.canPaste = clipboard.isNotEmpty()
+                                    view.onImageDrop = { uri, point, aspect -> dropImage(uri, page.id, point, aspect) }
                                     view.brush = selectedBrush; view.threshold = threshold
                                     view.infiniteCanvas = notebook.infiniteCanvas
+                                    view.documentAspect = pageAspect
                                     view.onAddPin = { location -> editingPin = null; pendingPin = location; pinName = "Pin ${latestNotebook.pins.size + 1}" }
                                     view.pressureCurve = pressureCurve; view.pressureCurveEnabled = pressureCurveEnabled
                                     view.velocityCurveEnabled = velocityCurveEnabled; view.velocityCurve = velocityCurve
@@ -1636,7 +1665,7 @@ internal fun NotebookEditor(
                                 modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds().onSizeChanged { zoomPanelSize = it }, update = { view ->
                                     view.onStrokesChanged = { updated -> applyPage(page.copy(strokes = updated.filter { stroke -> page.layers.any { it.id == stroke.layerId } })) }
                                     view.infiniteCanvas = notebook.infiniteCanvas
-                                    view.documentAspect = (canvas?.let { if (it.width > 0) it.height.toFloat() / it.width else 0f }) ?: 0f
+                                    view.documentAspect = canvas?.pageAspect ?: 0f
                                     view.mode = CanvasMode.Write; view.fingerDrawing = true; view.pinchToZoomEnabled = false
                                     view.brush = selectedBrush; view.threshold = threshold
                                     view.pressureCurve = pressureCurve; view.pressureCurveEnabled = pressureCurveEnabled

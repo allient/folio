@@ -15,7 +15,12 @@ import java.io.File
 import java.util.UUID
 
 internal enum class RecordingStatus { Idle, Starting, Recording, Pausing, Paused, Resuming, Stopping }
-internal data class EditorImportNotice(val notebookId: String, val pageId: String?, val kind: String, val previousPage: NotebookPage? = null, val token: String = UUID.randomUUID().toString())
+internal data class EditorImportNotice(val notebookId: String, val pageId: String?, val kind: String, val previousPage: NotebookPage? = null, val token: String = UUID.randomUUID().toString(),
+    /** Images placed by drag and drop, selected right away so they can be moved, resized and rotated. */
+    val selectImageIds: List<String> = emptyList())
+
+/** Where a dragged image was dropped (page fractions) and the page's width/height on screen. */
+internal data class ImageDrop(val x: Float, val y: Float, val pageAspect: Float)
 
 /** Retains notebooks across activity recreation and orders all local disk operations. */
 internal class NotebookViewModel(application: Application) : AndroidViewModel(application) {
@@ -62,7 +67,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
     private val waitingLibraryImports = java.util.ArrayDeque<Uri>()
     private val completedImports = linkedMapOf<String, Notebook>()
     private val files = NotebookFiles(application)
-    private data class EditorImportRequest(val uri: Uri, val notebookId: String, val kind: String, val pageId: String?, val layerId: String)
+    private data class EditorImportRequest(val uri: Uri, val notebookId: String, val kind: String, val pageId: String?, val layerId: String, val drop: ImageDrop? = null)
     private data class EditorImportResult(val request: EditorImportRequest, val pages: List<NotebookPage> = emptyList(), val attachment: NoteAttachment? = null, val id: String = UUID.randomUUID().toString())
     private data class RecordingPlacement(val notebookId: String, val pageId: String?, val layerId: String)
     private data class CompletedRecording(val placement: RecordingPlacement, val attachment: NoteAttachment)
@@ -226,13 +231,14 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
         }
     }
 
-    fun importIntoNotebook(uri: Uri, notebookId: String, kind: String, pageId: String?, layerId: String) {
+    /** [drop] places an image at a page point (0..1, from drag and drop) at half its fitted size instead of filling the page. */
+    internal fun importIntoNotebook(uri: Uri, notebookId: String, kind: String, pageId: String?, layerId: String, drop: ImageDrop? = null) {
         onMain {
             if (notebooks.any { it.id == notebookId && it.infiniteCanvas } && kind in listOf("pdf", "page-image")) {
                 importError = "Infinite canvases have no pages. Insert an image or attach the PDF instead."
                 return@onMain
             }
-            waitingEditorImports.addLast(EditorImportRequest(uri, notebookId, kind, pageId, layerId))
+            waitingEditorImports.addLast(EditorImportRequest(uri, notebookId, kind, pageId, layerId, drop))
             startNextImport()
         }
     }
@@ -432,7 +438,8 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                         val merged = mergeEditorImport(notebooks, result)
                         requireNotNull(merged) { "The destination notebook or page no longer exists." }
                         saveNotes(merged)
-                        editorImportNotice = EditorImportNotice(request.notebookId, if (request.kind == "pdf" || request.kind == "page-image") result.pages.firstOrNull()?.id else request.pageId, request.kind, previousPage)
+                        editorImportNotice = EditorImportNotice(request.notebookId, if (request.kind == "pdf" || request.kind == "page-image") result.pages.firstOrNull()?.id else request.pageId, request.kind, previousPage,
+                            selectImageIds = if (request.drop != null) result.pages.flatMap { it.images }.map { it.id } else emptyList())
                     } catch (error: Exception) {
                         importError = error.message ?: "This file could not be inserted."
                         worker.execute { deleteImportedResult(result) }
@@ -461,7 +468,16 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                 val layer = page.layers.firstOrNull { it.id == request.layerId && it.visible && !it.locked }
                     ?: page.layers.firstOrNull { it.visible && !it.locked }
                 requireNotNull(layer) { "Choose a visible, unlocked layer before inserting an image." }
-                val changed = page.copy(images = page.images + result.pages.flatMap { it.images }.map { it.copy(layerId = layer.id) })
+                val placed = result.pages.flatMap { it.images }.map { image ->
+                    val drop = request.drop ?: return@map image.copy(layerId = layer.id)
+                    // importImages fitted the image to a 1200×1920 page; recover its pixel ratio and size it for the page on screen.
+                    val imageRatio = image.width * 1200f / (image.height * 1920f)
+                    var w = 0.5f; var h = w * drop.pageAspect / imageRatio
+                    if (h > 0.6f) { h = 0.6f; w = h * imageRatio / drop.pageAspect }
+                    image.copy(layerId = layer.id, width = w, height = h,
+                        x = (drop.x - w / 2f).coerceIn(0f, (1f - w).coerceAtLeast(0f)), y = (drop.y - h / 2f).coerceIn(0f, (1f - h).coerceAtLeast(0f)))
+                }
+                val changed = page.copy(images = page.images + placed)
                 target.copy(pages = target.pages.map { if (it.id == page.id) changed else it })
             }
             "pdf" -> target.copy(pages = target.pages + result.pages, lastViewedPageId = result.pages.firstOrNull()?.id ?: target.lastViewedPageId)

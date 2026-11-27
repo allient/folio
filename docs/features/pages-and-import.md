@@ -23,6 +23,16 @@ How it works: `InkCanvasView.onPageDrag` reports the horizontal drag in screen c
 
 Open it from the page counter. Cards are small (about four per row on a tablet). **Select** (or a long press on a page) switches to selection mode: tick pages, **Select all**, then **Delete** after a confirmation. A notebook always keeps at least one page.
 
+## Drag images in from another app
+
+With Folio and another app in split screen, long-press an image in the other app (Google Images in Chrome, Photos, Files) and drop it on a notebook page. It lands where you let go, at half the page width with its own proportions, and is selected right away so you can move, resize or rotate it. The drop goes through the same import as **Insert → Image**, so Folio keeps its own copy and Undo works. Drops are refused on a hidden or locked layer, and an app that drags only a link (no image file) is ignored. The PDF reader doesn't take drops yet.
+
+In split screen a page keeps the shape it has full screen and scrolls (two fingers, the Pan tool, or one finger with finger drawing off) instead of being squashed into the smaller window.
+
+![Chrome and Folio in split screen: a cat photo dragged from Google Images onto a notebook page](../../apps/docs/src/assets/screenshots/drag-and-drop.png)
+
+Code: `InkCanvasView.handleImageDrag` (drop target), `NotebookViewModel.mergeEditorImport` (placement), `ViewUtils.isReducedWindow` and `InkCanvasView.documentAspect` (page shape in split screen).
+
 ## Import a PDF or EPUB as a notebook
 
 **+ → Import PDF/EPUB as notebook** bypasses the reader.

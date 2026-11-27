@@ -251,6 +251,8 @@ private data class AboutLink(val tag: String, val icon: androidx.compose.ui.grap
 internal fun AboutScreen(version: String, onBack: () -> Unit) {
     val style = LocalHomeStyle.current
     val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val inAppBrowser = com.allient.folio.LocalInAppBrowser.current
+    fun openAllient() { inAppBrowser?.invoke(com.allient.folio.FolioLinks.ALLIENT) ?: uriHandler.openUri(com.allient.folio.FolioLinks.ALLIENT) }
     val links = listOf(
         AboutLink("website", Lucide.Globe, "Documentation and more info", "folio.allient.io", com.allient.folio.FolioLinks.SITE),
         AboutLink("github", Lucide.Github, "Like Folio? Star it on GitHub", "github.com/allient/folio", com.allient.folio.FolioLinks.GITHUB),
@@ -269,13 +271,24 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
         ScreenHeader("About", onBack)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 680.dp).fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                     com.allient.folio.FolioIcon(Modifier.size(84.dp))
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text("Folio", fontSize = 30.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, letterSpacing = (-.5).sp)
                         Text("Handwritten Notes & eReader", Modifier.padding(top = 2.dp), fontSize = 15.sp, color = com.allient.folio.FolioBrand.Sage)
                         Text("Version $version", Modifier.padding(top = 10.dp).clip(RoundedCornerShape(style.pill)).background(style.soft).padding(horizontal = 12.dp, vertical = 4.dp).testTag("about-version"),
                             fontSize = 13.sp, color = HomeInk)
+                    }
+                    // Small "Made at Allient" badge, like the one in the README; opens allient.io inside the app.
+                    Row(Modifier.align(Alignment.Top).padding(top = 6.dp).clip(RoundedCornerShape(4.dp)).height(IntrinsicSize.Min)
+                        .clickable(role = Role.Button, onClickLabel = "Open allient.io") { openAllient() }
+                        .semantics(mergeDescendants = true) { contentDescription = "Made at Allient" }.testTag("about-maintainer"),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text("Made at", Modifier.fillMaxHeight().background(Color(0xFFE4E7EB)).padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 12.sp, color = Color(0xFF4B5563))
+                        Box(Modifier.fillMaxHeight().background(Color(0xFFF3F4F6)).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                            com.allient.folio.AllientLogo(Modifier.height(13.dp))
+                        }
                     }
                 }
                 Column(Modifier.padding(top = 24.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).background(style.soft.copy(alpha = .5f)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -311,8 +324,8 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
                         if (index < libraries.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = HomeHairline)
                     }
                 }
-                Text("Folio is open source under the Apache License 2.0. Made by Allient.", Modifier.padding(top = 24.dp, bottom = 8.dp).clickable(role = Role.Button, onClickLabel = "Open allient.io") { uriHandler.openUri(com.allient.folio.FolioLinks.ALLIENT) }.testTag("about-allient"),
-                    fontSize = 13.sp, color = HomeMuted)
+                Text("Folio is open source under the Apache License 2.0. Made by Allient.", Modifier.padding(top = 24.dp, bottom = 8.dp).clickable(role = Role.Button, onClickLabel = "Open allient.io") { openAllient() }.testTag("about-allient").fillMaxWidth(),
+                    fontSize = 13.sp, color = HomeMuted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
