@@ -93,7 +93,7 @@ internal class LocalBackupStore(context: Context, name: String = PREFERENCES) {
     fun configure(uri: Uri, name: String?, enabled: Boolean) {
         val previous = read()
         preferences.edit().putString("folderUri", uri.toString()).apply { if (name.isNullOrBlank()) remove("folderLabel") else putString("folderLabel", name) }
-            .putBoolean("enabled", enabled).putLong("generation", previous.generation + 1).remove("error").remove("errorCode")
+            .putBoolean("enabled", enabled).putLong("generation", previous.generation + 1).remove("error").remove("errorCode").remove("errorNeeded").remove("errorFree")
             .apply { if (previous.folderUri != uri.toString()) remove("signature").remove("lastFile").remove("lastSuccess") }.commit()
     }
     fun disable() { preferences.edit().putBoolean("enabled", false).putLong("generation", read().generation + 1).commit() }
@@ -109,7 +109,7 @@ internal class LocalBackupStore(context: Context, name: String = PREFERENCES) {
     }
     fun success(state: LocalBackupState, filename: String, signature: String, snapshotAt: Long) {
         if (isCurrent(state)) preferences.edit().putLong("lastSuccess", System.currentTimeMillis()).putString("lastFile", filename)
-            .putString("signature", signature).remove("error").remove("errorCode").clearPending(snapshotAt).commit()
+            .putString("signature", signature).remove("error").remove("errorCode").remove("errorNeeded").remove("errorFree").clearPending(snapshotAt).commit()
     }
     fun upToDate(state: LocalBackupState, snapshotAt: Long) { if (isCurrent(state)) preferences.edit().clearPending(snapshotAt).commit() }
     /** [message] is English, for logs; [code] is what the settings screen shows ([BackupProblems]). */

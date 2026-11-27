@@ -133,6 +133,6 @@ internal class NotebookAudioRecorder(
         } catch (error: Throwable) { file.delete(); throw error }
         finally { active.release() }
         val time = SimpleDateFormat("yyyy-MM-dd HH.mm", Locale.US).format(Date())
-        onRecorded(target, NoteAttachment(name = "Recording $time.m4a", path = file.absolutePath, mimeType = "audio/mp4"))
+        onRecorded(target, NoteAttachment(name = AppLocales.resources(context).getString(R.string.default_recording_name, time) + ".m4a", path = file.absolutePath, mimeType = "audio/mp4"))
     }
 }

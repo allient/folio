@@ -102,7 +102,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
                 if (storage.loadError == null) loadedLibrary = storage.loadLibrary()
                 initialLoadError = storage.loadError
                 if (initialLoadError == null && initial.isEmpty() && !initialized) {
-                    initial = listOf(Notebook(title = "My First Note"))
+                    initial = listOf(Notebook(title = AppLocales.resources(getApplication()).getString(R.string.default_first_notebook)))
                     created = true
                     try {
                         storage.save(initial, loadedLibrary)
@@ -505,7 +505,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
 
     private fun readImportedNotebook(uri: Uri): Notebook {
         val application = getApplication<Application>()
-        var name = uri.lastPathSegment?.substringAfterLast('/') ?: "Imported notebook"
+        var name = uri.lastPathSegment?.substringAfterLast('/') ?: AppLocales.resources(application).getString(R.string.default_imported_notebook)
         runCatching {
             application.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
                 val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
@@ -513,7 +513,7 @@ internal class NotebookViewModel(application: Application) : AndroidViewModel(ap
             }
         }
         val mime = runCatching { application.contentResolver.getType(uri) }.getOrNull().orEmpty()
-        val title = name.substringBeforeLast('.', name).ifBlank { "Imported notebook" }
+        val title = name.substringBeforeLast('.', name).ifBlank { AppLocales.resources(application).getString(R.string.default_imported_notebook) }
         val extension = name.substringAfterLast('.', "").lowercase(java.util.Locale.ROOT)
         return when {
             mime == "application/pdf" || extension == "pdf" -> Notebook(title = title, pages = files.importPdfPages(uri))
