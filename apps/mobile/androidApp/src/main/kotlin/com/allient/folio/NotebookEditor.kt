@@ -440,9 +440,13 @@ internal fun NotebookEditor(
     // Neighbour pages are rendered ahead as full-quality snapshots, so the sliding preview matches the real page.
     val snapshotPages = effectivePageLayout == "Single Page"
     val snapshotContext = androidx.compose.ui.platform.LocalContext.current
+    // Previews have the page's real shape (landscape: portrait width, centred; split screen: full width, taller), so the
+    // sliding page looks like the canvas that replaces it.
+    val snapshotPageWidth = if (landscapePageWidthPx > 0) landscapePageWidthPx else drawingViewportWidthPx
+    val snapshotPageHeight = if (pageAspect > 0f) (snapshotPageWidth * pageAspect).toInt() else drawingViewportHeightPx
     val pendingPage = remember(page.template, notebook.pages.size) { NotebookPage(template = page.template) } // the page a swipe past the end adds
-    val previousSnapshot by rememberPageSnapshot(if (snapshotPages) notebook.pages.getOrNull(safeIndex - 1) else null, drawingViewportWidthPx, drawingViewportHeightPx, snapshotContext.filesDir)
-    val nextSnapshot by rememberPageSnapshot(if (snapshotPages) (notebook.pages.getOrNull(safeIndex + 1) ?: pendingPage) else null, drawingViewportWidthPx, drawingViewportHeightPx, snapshotContext.filesDir)
+    val previousSnapshot by rememberPageSnapshot(if (snapshotPages) notebook.pages.getOrNull(safeIndex - 1) else null, drawingViewportWidthPx, drawingViewportHeightPx, snapshotContext.filesDir, snapshotPageWidth, snapshotPageHeight)
+    val nextSnapshot by rememberPageSnapshot(if (snapshotPages) (notebook.pages.getOrNull(safeIndex + 1) ?: pendingPage) else null, drawingViewportWidthPx, drawingViewportHeightPx, snapshotContext.filesDir, snapshotPageWidth, snapshotPageHeight)
     var addingPage by remember { mutableStateOf(false) }
     var landingSnapshot by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
     var lastDrag by remember { mutableStateOf(0f to 0L) }
