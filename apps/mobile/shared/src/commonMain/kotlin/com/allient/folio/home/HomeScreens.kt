@@ -29,6 +29,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.selection.selectable
+import knotes.shared.generated.resources.prefs_group_appearance
+import knotes.shared.generated.resources.prefs_group_library
+import knotes.shared.generated.resources.prefs_group_general
+import androidx.compose.ui.semantics.selected
+import androidx.compose.foundation.selection.toggleable
 import com.composables.icons.lucide.Bug
 import com.composables.icons.lucide.ExternalLink
 import com.composables.icons.lucide.Github
@@ -112,36 +117,86 @@ internal fun TrashScreen(
         dismissButton = { TextButton(onClick = { confirmEmpty = false }) { Text(stringResource(Res.string.home_cancel)) } })
 }
 
+/** A titled group of settings rows on one white panel, rows separated by hairlines. */
 @Composable
-private fun PreferenceSection(title: String, detail: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(top = 26.dp)) {
-        Text(title, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
-        if (detail != null) Text(detail, Modifier.padding(top = 4.dp), fontSize = 12.sp, lineHeight = 17.sp, color = HomeMuted)
-        Spacer(Modifier.height(12.dp))
-        content()
+private fun PreferenceGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
+    val style = LocalHomeStyle.current
+    Text(title, Modifier.padding(start = 4.dp, top = 28.dp, bottom = 8.dp), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HomeMuted)
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.card)).background(Color.White).border(1.dp, HomeHairline, RoundedCornerShape(style.card)), content = content)
+}
+
+@Composable
+private fun PreferenceDivider() = HorizontalDivider(Modifier.padding(start = 16.dp), color = HomeHairline)
+
+/**
+ * One setting: its name and a short explanation on the left, its control on the right. [below] is shown under the text
+ * across the full width (the accent swatches).
+ */
+@Composable
+private fun PreferenceRow(title: String, detail: String? = null, modifier: Modifier = Modifier, below: (@Composable () -> Unit)? = null,
+                          trailing: @Composable () -> Unit = {}) {
+    Column(modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.Center) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = HomeInk)
+                if (detail != null) Text(detail, Modifier.padding(top = 3.dp), fontSize = 12.sp, lineHeight = 17.sp, color = HomeMuted)
+            }
+            trailing()
+        }
+        if (below != null) Box(Modifier.padding(top = 14.dp)) { below() }
+    }
+}
+
+/**
+ * A select: shows the current choice with a chevron and opens a menu of the options, the current one checked.
+ * The button is tagged [tag]; each option keeps the tag the old radio rows had (`"$optionTag-<id>"`).
+ */
+@Composable
+private fun <T> PreferenceSelect(options: List<Pair<T, String>>, selected: T, tag: String, optionTag: String, onSelect: (T) -> Unit) {
+    val style = LocalHomeStyle.current
+    var open by remember { mutableStateOf(false) }
+    val current = options.firstOrNull { it.first == selected }?.second.orEmpty()
+    Box {
+        Row(Modifier.widthIn(min = 120.dp, max = 240.dp).heightIn(min = 40.dp).clip(RoundedCornerShape(style.item))
+            .border(1.dp, HomeLine, RoundedCornerShape(style.item)).background(HomeBackground)
+            .clickable(role = Role.DropdownList, onClickLabel = current) { open = true }.padding(start = 14.dp, end = 10.dp).testTag(tag),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(current, Modifier.weight(1f, fill = false), fontSize = 14.sp, color = HomeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            HomeSymbol(Symbol.ChevronDown, Modifier.size(16.dp))
+        }
+        DropdownMenu(open, { open = false }, containerColor = Color.White) {
+            options.forEach { (id, label) ->
+                val chosen = id == selected
+                DropdownMenuItem(text = { Text(label, fontSize = 14.sp, fontWeight = if (chosen) FontWeight.SemiBold else FontWeight.Normal, color = HomeInk) },
+                    onClick = { open = false; if (!chosen) onSelect(id) },
+                    trailingIcon = { if (chosen) HomeSymbol(Symbol.Check, Modifier.size(16.dp), tint = style.accent) else Spacer(Modifier.size(16.dp)) },
+                    modifier = Modifier.testTag("$optionTag-$id").semantics { this.selected = chosen })
+            }
+        }
     }
 }
 
 @Composable
-private fun ChoiceRow(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
+private fun PreferenceSwitch(checked: Boolean, onChange: (Boolean) -> Unit) {
     val style = LocalHomeStyle.current
-    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(RoundedCornerShape(style.item)).selectable(selected, role = Role.RadioButton, onClick = onClick)
-        .padding(horizontal = 4.dp).testTag(tag), verticalAlignment = Alignment.CenterVertically) {
-        RadioButton(selected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = style.accent))
-        Text(label, Modifier.padding(start = 12.dp), fontSize = 14.sp, color = HomeInk)
-    }
+    Switch(checked, onCheckedChange = null, colors = SwitchDefaults.colors(checkedTrackColor = style.accent, checkedThumbColor = Color.White,
+        uncheckedTrackColor = HomeHairline, uncheckedBorderColor = HomeLine, uncheckedThumbColor = Color.White))
 }
 
+/** The accent colours as round swatches; the chosen one has a ring in its own colour. */
 @Composable
-private fun OptionCard(label: String, selected: Boolean, tag: String, modifier: Modifier, onClick: () -> Unit, content: @Composable () -> Unit) {
-    val style = LocalHomeStyle.current
-    Column(modifier.clip(RoundedCornerShape(style.card)).border(if (selected) 2.dp else 1.dp, if (selected) style.accent else HomeHairline, RoundedCornerShape(style.card))
-        .background(if (selected) style.soft.copy(alpha = .45f) else Color.White).selectable(selected, role = Role.RadioButton, onClick = onClick)
-        .padding(12.dp).testTag(tag).semantics { contentDescription = label }) {
-        content()
-        Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, Modifier.weight(1f), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = HomeInk, maxLines = 1)
-            if (selected) HomeSymbol(Symbol.Check, Modifier.size(16.dp), tint = style.accent)
+private fun AccentSwatches(selected: String, onSelect: (String) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        AccentPresets.forEach { preset ->
+            val chosen = preset.id == selected
+            val name = accentName(preset)
+            Box(Modifier.size(44.dp).clip(CircleShape).border(if (chosen) 2.dp else 0.dp, if (chosen) preset.primary else Color.Transparent, CircleShape)
+                .selectable(chosen, role = Role.RadioButton) { onSelect(preset.id) }.padding(5.dp).testTag("accent-${preset.id}")
+                .semantics { contentDescription = name }, contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxSize().clip(CircleShape).background(preset.primary), contentAlignment = Alignment.Center) {
+                    if (chosen) HomeSymbol(Symbol.Check, Modifier.size(16.dp), tint = Color.White)
+                }
+            }
         }
     }
 }
@@ -152,107 +207,65 @@ internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreference
     var confirmReset by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(HomeBackground).testTag("preferences-screen")) {
         ScreenHeader(stringResource(Res.string.prefs_title), onBack)
-        BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-            val columns = if (maxWidth >= 600.dp) 4 else 2
-            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Column(Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
-                    PreferenceSection(stringResource(Res.string.pref_language_title), stringResource(Res.string.pref_language_detail)) {
-                        ChoiceRow(stringResource(Res.string.pref_language_system), value.language.isEmpty(), "language-system") { onChange(value.copy(language = "")) }
-                        com.allient.folio.AppLanguages.supported.forEach { language ->
-                            ChoiceRow(language.nativeName, value.language == language.tag, "language-${language.tag}") { onChange(value.copy(language = language.tag)) }
-                        }
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(Modifier.widthIn(max = 720.dp).fillMaxWidth()) {
+                PreferenceGroup(stringResource(Res.string.prefs_group_general)) {
+                    val languages = listOf("" to stringResource(Res.string.pref_language_system)) + com.allient.folio.AppLanguages.supported.map { it.tag to it.nativeName }
+                    PreferenceRow(stringResource(Res.string.pref_language_title), stringResource(Res.string.pref_language_detail)) {
+                        PreferenceSelect(languages, value.language, "pref-language", "language") { onChange(value.copy(language = it)) }
                     }
-                    PreferenceSection(stringResource(Res.string.prefs_accent_title), stringResource(Res.string.prefs_accent_detail)) {
-                        AccentPresets.chunked(columns).forEach { row ->
-                            Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                row.forEach { preset ->
-                                    OptionCard(accentName(preset), value.accent == preset.id, "accent-${preset.id}", Modifier.weight(1f), { onChange(value.copy(accent = preset.id)) }) {
-                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                            Box(Modifier.size(30.dp).clip(CircleShape).background(preset.primary))
-                                            Box(Modifier.size(30.dp).clip(CircleShape).background(preset.soft).border(1.dp, HomeHairline, CircleShape))
-                                        }
-                                    }
-                                }
-                                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
-                            }
-                        }
+                    PreferenceDivider()
+                    PreferenceRow(stringResource(Res.string.prefs_fullscreen_title), stringResource(Res.string.prefs_fullscreen_detail),
+                        Modifier.toggleable(value.startFullscreen, role = Role.Switch) { onChange(value.copy(startFullscreen = it)) }.testTag("pref-start-fullscreen")) {
+                        PreferenceSwitch(value.startFullscreen) { onChange(value.copy(startFullscreen = it)) }
                     }
-                    PreferenceSection(stringResource(Res.string.prefs_corners_title), stringResource(Res.string.prefs_corners_detail)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            CornerStyles.forEach { (id, _) ->
-                                val label = cornerStyleName(id)
-                                val sample = homeStyle(value.copy(corners = id))
-                                OptionCard(label, value.corners == id, "corners-$id", Modifier.weight(1f), { onChange(value.copy(corners = id)) }) {
-                                    Box(Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(sample.card)).border(1.5.dp, HomeLine, RoundedCornerShape(sample.card)).background(Color(0xFFFAFAFA)))
-                                }
-                            }
-                        }
-                    }
-                    PreferenceSection(stringResource(Res.string.prefs_view_title), stringResource(Res.string.prefs_view_detail)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            listOf("grid" to stringResource(Res.string.home_view_grid), "list" to stringResource(Res.string.home_view_list)).forEach { (id, label) ->
-                                OptionCard(label, value.viewMode == id, "view-$id", Modifier.weight(1f), { onChange(value.copy(viewMode = id)) }) {
-                                    if (id == "grid") Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) { repeat(3) { Box(Modifier.size(22.dp, 28.dp).clip(RoundedCornerShape(4.dp)).border(1.dp, HomeLine, RoundedCornerShape(4.dp))) } }
-                                    else Column(verticalArrangement = Arrangement.spacedBy(5.dp)) { repeat(3) { Box(Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(3.dp)).background(HomeHairline)) } }
-                                }
-                            }
-                        }
-                    }
-                    PreferenceSection(stringResource(Res.string.prefs_sort_title), stringResource(Res.string.prefs_sort_detail)) {
-                        HomeSort.all.forEach { (id, _) -> ChoiceRow(sortName(id), value.sort == id, "sort-$id") { onChange(value.copy(sort = id)) } }
-                    }
-                    PreferenceSection(stringResource(Res.string.prefs_notebooks_title)) {
-                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.item)).clickable { onChange(value.copy(startFullscreen = !value.startFullscreen)) }.padding(vertical = 4.dp).testTag("pref-start-fullscreen"),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(value.startFullscreen, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = style.accent))
-                            Column(Modifier.padding(start = 12.dp)) {
-                                Text(stringResource(Res.string.prefs_fullscreen_title), fontSize = 14.sp, color = HomeInk)
-                                Text(stringResource(Res.string.prefs_fullscreen_detail), fontSize = 12.sp, lineHeight = 17.sp, color = HomeMuted)
-                            }
-                        }
-                    }
-                    PreferenceSection(stringResource(Res.string.prefs_privacy_title)) {
-                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.item)).clickable { onChange(value.copy(shareUsageStats = !value.shareUsageStats)) }.padding(vertical = 4.dp).testTag("pref-usage-stats"),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(value.shareUsageStats, onCheckedChange = null, colors = CheckboxDefaults.colors(checkedColor = style.accent))
-                            Column(Modifier.padding(start = 12.dp)) {
-                                Text(stringResource(Res.string.prefs_usage_title), fontSize = 14.sp, color = HomeInk)
-                                Text(stringResource(Res.string.prefs_usage_detail), fontSize = 12.sp, lineHeight = 17.sp, color = HomeMuted)
-                            }
-                        }
-                    }
-                    PreferenceSection(stringResource(Res.string.prefs_trash_title), stringResource(Res.string.prefs_trash_detail)) {
-                        TrashRules.retentionOptions.forEach { (days, _) -> ChoiceRow(retentionName(days), value.trashRetentionDays == days, "retention-$days") { onChange(value.copy(trashRetentionDays = days)) } }
-                    }
-                    if (onOpenPen != null) PreferenceSection(stringResource(Res.string.prefs_pen_title)) {
-                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.item)).border(1.dp, HomeHairline, RoundedCornerShape(style.item)).clickable(onClick = onOpenPen)
-                            .padding(horizontal = 16.dp, vertical = 14.dp).testTag("pref-pen-pressure"), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(stringResource(Res.string.prefs_pen_pressure_title), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = HomeInk)
-                                Text(stringResource(Res.string.prefs_pen_pressure_detail), fontSize = 12.sp, color = HomeMuted)
-                            }
-                            HomeSymbol(Symbol.ChevronRight, Modifier.size(16.dp))
-                        }
-                    }
-                    PreferenceSection(stringResource(Res.string.prefs_backup_title)) {
-                        Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.item)).border(1.dp, HomeHairline, RoundedCornerShape(style.item)).clickable(onClick = onOpenBackup)
-                            .padding(horizontal = 16.dp, vertical = 14.dp).testTag("pref-backup-settings"), verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f)) {
-                                Text(stringResource(Res.string.backup_settings_title), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = HomeInk)
-                                Text(stringResource(Res.string.prefs_backup_detail), fontSize = 12.sp, color = HomeMuted)
-                            }
-                            HomeSymbol(Symbol.ChevronRight, Modifier.size(16.dp))
-                        }
-                    }
-                    OutlinedButton(onClick = { confirmReset = true }, modifier = Modifier.padding(top = 32.dp).heightIn(min = 48.dp).testTag("pref-reset"),
-                        shape = RoundedCornerShape(style.item), border = BorderStroke(1.dp, HomeLine)) { Text(stringResource(Res.string.prefs_reset), color = HomeInk) }
                 }
+                PreferenceGroup(stringResource(Res.string.prefs_group_library)) {
+                    PreferenceRow(stringResource(Res.string.prefs_view_title), stringResource(Res.string.prefs_view_detail)) {
+                        PreferenceSelect(listOf("grid" to stringResource(Res.string.home_view_grid), "list" to stringResource(Res.string.home_view_list)),
+                            value.viewMode, "pref-view", "view") { onChange(value.copy(viewMode = it)) }
+                    }
+                    PreferenceDivider()
+                    PreferenceRow(stringResource(Res.string.prefs_sort_title), stringResource(Res.string.prefs_sort_detail)) {
+                        PreferenceSelect(HomeSort.all.map { (id, _) -> id to sortName(id) }, value.sort, "pref-sort", "sort") { onChange(value.copy(sort = it)) }
+                    }
+                    PreferenceDivider()
+                    PreferenceRow(stringResource(Res.string.prefs_trash_title), stringResource(Res.string.prefs_trash_detail)) {
+                        PreferenceSelect(TrashRules.retentionOptions.map { (days, _) -> days to retentionName(days) }, value.trashRetentionDays, "pref-retention", "retention") {
+                            onChange(value.copy(trashRetentionDays = it))
+                        }
+                    }
+                }
+                PreferenceGroup(stringResource(Res.string.prefs_group_appearance)) {
+                    PreferenceRow(stringResource(Res.string.prefs_accent_title), stringResource(Res.string.prefs_accent_detail),
+                        below = { AccentSwatches(value.accent) { onChange(value.copy(accent = it)) } })
+                    PreferenceDivider()
+                    PreferenceRow(stringResource(Res.string.prefs_corners_title), stringResource(Res.string.prefs_corners_detail)) {
+                        PreferenceSelect(CornerStyles.map { (id, _) -> id to cornerStyleName(id) }, value.corners, "pref-corners", "corners") { onChange(value.copy(corners = it)) }
+                    }
+                }
+                if (onOpenPen != null) PreferenceGroup(stringResource(Res.string.prefs_pen_title)) {
+                    PreferenceRow(stringResource(Res.string.prefs_pen_pressure_title), stringResource(Res.string.prefs_pen_pressure_detail),
+                        Modifier.clickable(onClick = onOpenPen).testTag("pref-pen-pressure")) { HomeSymbol(Symbol.ChevronRight, Modifier.size(16.dp)) }
+                }
+                PreferenceGroup(stringResource(Res.string.prefs_backup_title)) {
+                    PreferenceRow(stringResource(Res.string.backup_settings_title), stringResource(Res.string.prefs_backup_detail),
+                        Modifier.clickable(onClick = onOpenBackup).testTag("pref-backup-settings")) { HomeSymbol(Symbol.ChevronRight, Modifier.size(16.dp)) }
+                }
+                PreferenceGroup(stringResource(Res.string.prefs_privacy_title)) {
+                    PreferenceRow(stringResource(Res.string.prefs_usage_title), stringResource(Res.string.prefs_usage_detail),
+                        Modifier.toggleable(value.shareUsageStats, role = Role.Switch) { onChange(value.copy(shareUsageStats = it)) }.testTag("pref-usage-stats")) {
+                        PreferenceSwitch(value.shareUsageStats) { onChange(value.copy(shareUsageStats = it)) }
+                    }
+                }
+                TextButton(onClick = { confirmReset = true }, modifier = Modifier.padding(top = 24.dp).heightIn(min = 48.dp).testTag("pref-reset"),
+                    shape = RoundedCornerShape(style.item)) { Text(stringResource(Res.string.prefs_reset), color = HomeDanger) }
             }
         }
     }
     if (confirmReset) AlertDialog(onDismissRequest = { confirmReset = false }, title = { Text(stringResource(Res.string.prefs_reset_title)) },
         text = { Text(stringResource(Res.string.prefs_reset_text)) },
-        confirmButton = { TextButton(onClick = { onChange(HomePreferences(shareUsageStats = value.shareUsageStats)); confirmReset = false }, modifier = Modifier.testTag("pref-confirm-reset")) { Text(stringResource(Res.string.prefs_reset_confirm)) } },
+        confirmButton = { TextButton(onClick = { onChange(HomePreferences(shareUsageStats = value.shareUsageStats, language = value.language)); confirmReset = false }, modifier = Modifier.testTag("pref-confirm-reset")) { Text(stringResource(Res.string.prefs_reset_confirm)) } },
         dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(stringResource(Res.string.home_cancel)) } })
 }
 

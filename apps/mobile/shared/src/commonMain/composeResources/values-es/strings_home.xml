@@ -476,4 +476,8 @@
     <string name="folder_color_rose">Rosa</string>
     <string name="folder_color_peach">Durazno</string>
     <string name="folder_color_sand">Arena</string>
+    <!-- Preferences groups -->
+    <string name="prefs_group_general">General</string>
+    <string name="prefs_group_library">Biblioteca</string>
+    <string name="prefs_group_appearance">Apariencia</string>
 </resources>
