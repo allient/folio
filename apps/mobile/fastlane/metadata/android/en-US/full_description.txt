@@ -26,6 +26,9 @@ Folio is a calm, focused notebook for your stylus. Write by hand, sketch on an i
 • Smart backups to a folder you choose, with daily, weekly and monthly versions
 • Export pages as PDF or PNG, or a notebook as an editable .folio file
 
+<b>In your language</b>
+• English, Spanish, Portuguese, French, German, Hindi and Chinese
+
 <b>Private by design</b>
 Folio works fully offline. Your notes and books never leave your device unless you export or share them yourself. Folio shares anonymous usage statistics (which screens and features are used) to improve the app; you can turn this off in Preferences. The microphone is used only when you record a voice note.
 

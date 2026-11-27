@@ -26,6 +26,9 @@ Folio es un cuaderno tranquilo y enfocado para tu lápiz óptico. Escribe a mano
 • Copias de seguridad inteligentes en la carpeta que elijas, con versiones diarias, semanales y mensuales
 • Exporta páginas como PDF o PNG, o un cuaderno como archivo .folio editable
 
+<b>En tu idioma</b>
+• Inglés, español, portugués, francés, alemán, hindi y chino
+
 <b>Privado por diseño</b>
 Folio funciona sin conexión. Tus notas y libros nunca salen de tu dispositivo a menos que tú los exportes o compartas. Folio comparte estadísticas de uso anónimas (qué pantallas y funciones se usan) para mejorar la app; puedes desactivarlo en Preferencias. El micrófono solo se usa cuando grabas una nota de voz.
 
