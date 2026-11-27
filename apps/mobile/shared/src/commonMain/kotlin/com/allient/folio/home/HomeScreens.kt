@@ -1,5 +1,10 @@
 package com.allient.folio.home
 
+import knotes.shared.generated.resources.Res
+import knotes.shared.generated.resources.pref_language_detail
+import knotes.shared.generated.resources.pref_language_system
+import knotes.shared.generated.resources.pref_language_title
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -152,6 +157,12 @@ internal fun PreferencesScreen(value: HomePreferences, onChange: (HomePreference
             val columns = if (maxWidth >= 600.dp) 4 else 2
             Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(bottom = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Column(Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
+                    PreferenceSection(stringResource(Res.string.pref_language_title), stringResource(Res.string.pref_language_detail)) {
+                        ChoiceRow(stringResource(Res.string.pref_language_system), value.language.isEmpty(), "language-system") { onChange(value.copy(language = "")) }
+                        com.allient.folio.AppLanguages.supported.forEach { language ->
+                            ChoiceRow(language.nativeName, value.language == language.tag, "language-${language.tag}") { onChange(value.copy(language = language.tag)) }
+                        }
+                    }
                     PreferenceSection("Accent colour", "Used for the library: the selected tab, the + button, the sidebar, check marks and links.") {
                         AccentPresets.chunked(columns).forEach { row ->
                             Row(Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

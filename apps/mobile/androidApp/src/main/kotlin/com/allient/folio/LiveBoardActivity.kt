@@ -76,6 +76,7 @@ import java.util.Locale
  * one from Share, send the link, and others join from any browser.
  */
 class LiveBoardActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) = super.attachBaseContext(AppLocales.wrap(newBase))
     private lateinit var store: LiveBoardStore
     private lateinit var mapper: PenPressureMapper
     private lateinit var web: PressureFilteringWebView

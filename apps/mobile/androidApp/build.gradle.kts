@@ -77,6 +77,10 @@ android {
     namespace = "com.allient.folio"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    // Per-app language (Android 13+): AGP builds the locale list from the res/values-<language> folders and
+    // res/resources.properties (default English). Languages are listed in shared AppLanguages.
+    androidResources { generateLocaleConfig = true }
+
     defaultConfig {
         applicationId = "com.allient.folio"
         minSdk = libs.versions.android.minSdk.get().toInt()

@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) = super.attachBaseContext(AppLocales.wrap(newBase))
     private val penFilter = PenPressureFilter()
     private lateinit var updates: PlayUpdates
 
@@ -357,6 +358,8 @@ private fun FolioApp(repository: NotebookViewModel, backup: LocalBackupViewModel
                         onPreferencesChange = {
                             if (it.shareUsageStats != AppAnalytics.collecting) AppAnalytics.setEnabled(it.shareUsageStats)
                             homePreferences = it; homeStore.write(it)
+                            // Applying a language restarts the activity in it (the choice itself is stored by AppLocales).
+                            if (it.language != AppLocales.choice(context)) (context as? android.app.Activity)?.let { activity -> AppLocales.choose(activity, it.language) }
                         },
                         now = System::currentTimeMillis,
                         formatDate = { dateFormat.format(java.util.Date(it)) },

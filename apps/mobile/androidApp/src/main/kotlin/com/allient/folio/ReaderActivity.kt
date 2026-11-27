@@ -71,6 +71,7 @@ import java.io.File
 import kotlin.math.roundToInt
 
 class ReaderActivity : AppCompatActivity() {
+    override fun attachBaseContext(newBase: android.content.Context) = super.attachBaseContext(AppLocales.wrap(newBase))
     private lateinit var model: ReaderViewModel
     // The notebook library is loaded only when study mode (or linking a notebook) needs it, not every time a book opens.
     private var notebookRepositoryOrNull: NotebookViewModel? = null
