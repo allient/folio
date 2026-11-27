@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Preferences → Language. Language names themselves come from AppLanguages and are never translated. -->
+    <string name="pref_language_title">语言</string>
+    <string name="pref_language_detail">Folio 跟随设备语言。如果该语言不可用，Folio 将使用英语。</string>
+    <string name="pref_language_system">设备语言</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Default names given to new content, Simplified Chinese. Saved as the user's own text, so they stay in the language they were created in. -->
+<resources>
+    <string name="default_first_notebook">我的第一本笔记</string>
+    <string name="default_imported_notebook">导入的笔记本</string>
+    <string name="default_recording_name">录音 %1$s</string>
+</resources>
