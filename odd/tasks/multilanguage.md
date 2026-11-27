@@ -18,11 +18,11 @@ Branch: `feature/multilanguage` (from `development`). Delivery: ask-on-risk, wor
 | ID | Specs | Route | Status | Commit |
 |---|---|---|---|---|
 | T1 | S1, S2, S3, S5, S6 | inline | done | 5c39be2 |
-| T2 | S1, S4 | delegated (parallel, worktree) | in progress | |
-| T3 | S1, S4 | delegated (parallel, worktree) | in progress | |
-| T7 | S1, S4 | delegated (parallel, worktree) | in progress | |
-| T4 | S1, S4 | delegated (parallel, worktree) | in progress | |
-| T5 | S4, S7 | pending route | pending | |
+| T2 | S1, S4 | delegated (parallel, worktree) | done | f8165d2 |
+| T3 | S1, S4 | delegated (parallel, worktree) | done | ff05dcf |
+| T7 | S1, S4 | delegated (parallel, worktree) | done | 87bd1a9 |
+| T4 | S1, S4 | delegated (parallel, worktree) | done | 15aa884 |
+| T5 | S4, S7 | delegated (context backstop) | in progress | |
 | T6 | S1–S7 | inline | pending | |
 
 - T1: Infrastructure. `values/strings.xml` in composeResources and androidApp res (plus `-es`, `-pt`), AGP `generateLocaleConfig` + `resources.properties`, a `AppLanguage` model (shared, ordered list of supported tags), locale bridge so Compose resources follow the app locale (`Locale.setDefault` from `AppCompatDelegate.getApplicationLocales()`), Preferences → Language picker, Android 13 system setting sync. Proves the pipeline with the Preferences/About screens.
@@ -41,3 +41,6 @@ Branch: `feature/multilanguage` (from `development`). Delivery: ask-on-risk, wor
 - L4: Compose resources 1.12.2 pick the language from `androidx.compose.ui.text.intl.Locale.current` (Java default locale), not the Android per-app locale, so T1 must set the default locale from the app locale.
 - L5: T1 verified on MNP1095 (Android 14): Preferences → Language switches the app (Spanish, Portuguese); `cmd locale set-app-locales` (system per-app setting) switches it too and the picker follows; generated locale config = en-US, es, pt. Pre-33 path not device-tested (no device below API 33).
 - L6: Route for T2/T3/T4/T7: Writer trigger (a) parallelism: four independent units, disjoint files, each hundreds of strings; each in its own git worktree so Gradle builds don't collide; per-area string files (`strings_<area>.xml`) so no shared file. Glossary in each writer prompt keeps terms consistent.
+- L7: Merged T2 (f8165d2, 389 keys), T3 (ff05dcf, 330), T4 (15aa884, 256), T7 (87bd1a9, 442); key parity en/es/pt verified by each writer. Follow-ups fixed in 90ca125: editor InkToolButton/DrawingChoice/ToolDialog pass English `tag` (rememberEnglishResources), template picker uses translated names, `bundle.language.enableSplit = false` (lint AppBundleLocaleChanges: Play language splits would drop in-app-chosen languages).
+- L8: Verified: assembleDebug + lintDebug (0 errors), shared host tests, iOS compile, full device suite on MNP1095: 113 tests, only the 5 known InkCanvasViewTest failures.
+- L9: Open for T5: backup screen hides its folder card by comparing `state.folder` with "No folder selected" (BackupSettingsScreen); host labels in LocalBackup.kt/MainActivity backup state still English. Open for T6: Portuguese rail labels may clip (InkRailButton 9 sp, 48 dp); two " · " joins remain (book details line, bulk delete message).
