@@ -80,6 +80,9 @@ android {
     // Per-app language (Android 13+): AGP builds the locale list from the res/values-<language> folders and
     // res/resources.properties (default English). Languages are listed in shared AppLanguages.
     androidResources { generateLocaleConfig = true }
+    // Every install carries all languages: Preferences → Language can pick one the device isn't set to, and Play's
+    // per-language splits would leave it without its strings.
+    bundle { language { enableSplit = false } }
 
     defaultConfig {
         applicationId = "com.allient.folio"

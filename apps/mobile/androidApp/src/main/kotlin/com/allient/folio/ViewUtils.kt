@@ -56,3 +56,17 @@ fun android.content.Context.findActivity(): android.app.Activity? {
     while (current is android.content.ContextWrapper) { if (current is android.app.Activity) return current; current = current.baseContext }
     return null
 }
+
+/**
+ * The app's resources in English. Test tags and flows use the English labels, so components whose tag is built from
+ * their label take `tag = english.getString(...)` when the shown label is translated.
+ */
+@androidx.compose.runtime.Composable
+internal fun rememberEnglishResources(): android.content.res.Resources {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val current = androidx.compose.ui.platform.LocalConfiguration.current
+    return androidx.compose.runtime.remember(context, current) {
+        val configuration = android.content.res.Configuration(current).apply { setLocale(java.util.Locale.ENGLISH) }
+        context.createConfigurationContext(configuration).resources
+    }
+}

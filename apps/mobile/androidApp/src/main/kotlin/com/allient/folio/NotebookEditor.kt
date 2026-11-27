@@ -161,6 +161,8 @@ internal fun NotebookEditor(
     startInFocusMode: Boolean = false,
 ) {
     val context = LocalContext.current
+    // Tags stay English whatever the app language (see rememberEnglishResources).
+    val english = rememberEnglishResources()
     // Messages set from callbacks resolve through the configuration-aware resources, so they follow the app language.
     val resources = androidx.compose.ui.platform.LocalResources.current
     val scope = rememberCoroutineScope()
@@ -750,7 +752,7 @@ internal fun NotebookEditor(
             expanded = dialog == "shapes",
             footer = if (dialog == "shapes") { {
                 Button(onClick = { canvas?.flushInput(); mode = CanvasMode.Shape; if (selectedBrush.eraser) selectedBrush = previousPen; selectedIds = emptySet(); sheet = null }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp)) { Text(stringResource(R.string.editor_draw_shape)) }
-            } } else null) {
+            } } else null, tag = when (dialog) { "edit text" -> "Text box"; "to text" -> "Convert to text"; "tags" -> "Tags"; "outline" -> "Page outline"; else -> dialog.replaceFirstChar { it.uppercase() } }) {
             when (dialog) {
                 "paper" -> {
                     val paper = com.allient.folio.InfinitePaper.parse(page.template) ?: com.allient.folio.InfinitePaper("blank")
@@ -758,13 +760,13 @@ internal fun NotebookEditor(
                     Text(stringResource(R.string.editor_paper_pattern), fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         com.allient.folio.InfinitePaper.patterns.forEach { (id, label) ->
-                            androidx.compose.material3.FilterChip(selected = paper.pattern == id, onClick = { set(paper.copy(pattern = id)) }, label = { Text(label.removeSuffix(" paper"), fontSize = 12.sp) })
+                            androidx.compose.material3.FilterChip(selected = paper.pattern == id, onClick = { set(paper.copy(pattern = id)) }, label = { Text(com.allient.folio.infinitePaperPatternName(id).removeSuffix(" paper"), fontSize = 12.sp) })
                         }
                     }
                     Text(stringResource(R.string.editor_paper_background), fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         com.allient.folio.InfinitePaper.colors.forEach { (id, label) ->
-                            androidx.compose.material3.FilterChip(selected = paper.color == id, onClick = { set(paper.copy(color = id)) }, label = { Text(label, fontSize = 12.sp) },
+                            androidx.compose.material3.FilterChip(selected = paper.color == id, onClick = { set(paper.copy(color = id)) }, label = { Text(com.allient.folio.infinitePaperColorName(id), fontSize = 12.sp) },
                                 leadingIcon = { Box(Modifier.size(14.dp).clip(CircleShape).background(Color(com.allient.folio.InfinitePaper.colorArgb(id))).border(1.dp, ChromeLine, CircleShape)) })
                         }
                     }
@@ -784,7 +786,7 @@ internal fun NotebookEditor(
                             InkSymbol(InkIcon.Tag)
                             Text(pin.name, Modifier.weight(1f).clickable { canvas?.jumpTo(pin.x, pin.y, pin.zoom); sheet = null }.padding(12.dp), fontSize = 13.sp)
                             Box {
-                                InkToolButton(InkIcon.More, stringResource(R.string.editor_pin_options, pin.name), { pinMenu = pin.id })
+                                InkToolButton(InkIcon.More, stringResource(R.string.editor_pin_options, pin.name), { pinMenu = pin.id }, tag = english.getString(R.string.editor_pin_options, pin.name))
                                 DropdownMenu(pinMenu == pin.id, { pinMenu = null }, modifier = Modifier.penPressureFilter()) {
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_rename)) }, onClick = { editingPin = pin; pinName = pin.name; pendingPin = Offset(pin.x, pin.y); pinMenu = null })
                                     DropdownMenuItem(text = { Text(stringResource(R.string.editor_delete)) }, onClick = { latestOnChange(latestNotebook.copy(pins = latestNotebook.pins.filterNot { it.id == pin.id }, updatedAt = System.currentTimeMillis())); pinMenu = null })
@@ -800,7 +802,7 @@ internal fun NotebookEditor(
                     Text(stringResource(R.string.editor_select_template), fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         NotebookTemplateCatalog.categories.forEach { category ->
-                            TextButton(onClick = { templateCategory = category }) { Text(category, color = if (templateCategory == category) ChromeInk else ChromeMuted, fontWeight = if (templateCategory == category) FontWeight.Bold else FontWeight.Normal, fontSize = 11.sp) }
+                            TextButton(onClick = { templateCategory = category }) { Text(com.allient.folio.templateCategoryName(category), color = if (templateCategory == category) ChromeInk else ChromeMuted, fontWeight = if (templateCategory == category) FontWeight.Bold else FontWeight.Normal, fontSize = 11.sp) }
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -811,7 +813,7 @@ internal fun NotebookEditor(
                         Text(stringResource(R.string.editor_all_pages), Modifier.clickable { applyAll = true }, fontSize = 11.sp)
                     }
                     val recentTemplates = notebook.pages.asReversed().map { it.template }.distinct().take(8)
-                    val shown = NotebookTemplateCatalog.inCategory(templateCategory, recentTemplates).map { it.id to it.name }
+                    val shown = NotebookTemplateCatalog.inCategory(templateCategory, recentTemplates).map { it.id to com.allient.folio.templateName(it) }
                     LazyVerticalGrid(columns = GridCells.Adaptive(92.dp), modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         gridItems(shown, key = { it.first }) { (id, name) ->
                             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(if (page.template == id) Color(0xFFE5EFEC) else Color.White).border(if (page.template == id) 2.dp else 1.dp, if (page.template == id) Color(0xFF357568) else ChromeLine, RoundedCornerShape(12.dp)).clickable {
@@ -895,7 +897,7 @@ internal fun NotebookEditor(
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             LassoKind.entries.forEach { kind -> DrawingChoice(when (kind) { LassoKind.Smart -> stringResource(R.string.editor_lasso_smart); LassoKind.Freeform -> stringResource(R.string.editor_lasso_freehand); LassoKind.Rectangle -> stringResource(R.string.editor_lasso_rectangle) }, kind == lassoKind, {
                                 canvas?.flushInput(); lassoKind = kind; mode = CanvasMode.Lasso; selectedIds = emptySet(); sheet = null
-                            }, Modifier.weight(1f)) { InkSymbol(if (kind == LassoKind.Rectangle) InkIcon.RectangleSelect else InkIcon.Lasso) } }
+                            }, Modifier.weight(1f), tag = when (kind) { LassoKind.Smart -> "Smart lasso"; LassoKind.Freeform -> "Freehand"; LassoKind.Rectangle -> "Rectangle" }) { InkSymbol(if (kind == LassoKind.Rectangle) InkIcon.RectangleSelect else InkIcon.Lasso) } }
                         }
                         ToolAction(InkIcon.Layers, stringResource(R.string.editor_select_all), stringResource(R.string.editor_select_all_detail)) {
                             selectedIds = page.strokes.filter { editableLayer(it.layerId) }.map { it.id }.toSet()
@@ -1048,7 +1050,7 @@ internal fun NotebookEditor(
                     page.texts.forEach { text ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(text.text.take(60), Modifier.weight(1f).clickable { editingTextId = text.id; draft = text.text; sheet = "edit text" }, fontSize = 13.sp)
-                            InkToolButton(InkIcon.Trash, stringResource(R.string.editor_delete_text_box), { if (editableLayer(text.layerId)) applyPage(page.copy(texts = page.texts.filterNot { it.id == text.id })) }, enabled = editableLayer(text.layerId))
+                            InkToolButton(InkIcon.Trash, stringResource(R.string.editor_delete_text_box), { if (editableLayer(text.layerId)) applyPage(page.copy(texts = page.texts.filterNot { it.id == text.id })) }, enabled = editableLayer(text.layerId), tag = english.getString(R.string.editor_delete_text_box))
                         }
                     }
                     Text(stringResource(R.string.editor_text_boxes_hint), fontSize = 11.sp, color = ChromeMuted)
@@ -1161,7 +1163,7 @@ internal fun NotebookEditor(
                         Text(if (selectedIds.isEmpty()) stringResource(R.string.editor_tags_for_notebook) else pluralStringResource(R.plurals.editor_tag_selected_strokes, selectedIds.size, selectedIds.size), fontSize = 11.sp, color = ChromeMuted)
                         notebook.tags.forEach { tag -> Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("#$tag", Modifier.weight(1f), fontSize = 13.sp)
-                            InkToolButton(InkIcon.Trash, stringResource(R.string.editor_remove_tag, tag), { onNotebookChange(notebook.copy(tags = notebook.tags - tag)) })
+                            InkToolButton(InkIcon.Trash, stringResource(R.string.editor_remove_tag, tag), { onNotebookChange(notebook.copy(tags = notebook.tags - tag)) }, tag = english.getString(R.string.editor_remove_tag, tag))
                         } }
                     }
                 }
@@ -1186,7 +1188,7 @@ internal fun NotebookEditor(
                     notebook.attachments.forEach { attachment ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(attachment.name, Modifier.weight(1f).clickable { runCatching { files.openAttachment(attachment) }.onFailure { message = resources.getString(R.string.editor_error_no_app) } }, fontSize = 13.sp)
-                            InkToolButton(InkIcon.Trash, stringResource(R.string.editor_remove_attachment), { onNotebookChange(notebook.copy(attachments = notebook.attachments.filterNot { it.id == attachment.id })) })
+                            InkToolButton(InkIcon.Trash, stringResource(R.string.editor_remove_attachment), { onNotebookChange(notebook.copy(attachments = notebook.attachments.filterNot { it.id == attachment.id })) }, tag = english.getString(R.string.editor_remove_attachment))
                         }
                     }
                 }
@@ -1472,7 +1474,7 @@ internal fun NotebookEditor(
                 val maxBrushes = if (compactBar) ((screenWidthDp - 308) / 36).coerceIn(1, 5) else 5
                 val renameNotebookLabel = stringResource(R.string.editor_rename_notebook)
                 Row(Modifier.fillMaxWidth().height(54.dp).background(Color(0xFFFAFAFA)), verticalAlignment = Alignment.CenterVertically) {
-                    InkToolButton(InkIcon.Expand, stringResource(R.string.editor_focus_mode), { focusMode = true }, Modifier.width(48.dp), buttonSize = 44.dp)
+                    InkToolButton(InkIcon.Expand, stringResource(R.string.editor_focus_mode), { focusMode = true }, Modifier.width(48.dp), buttonSize = 44.dp, tag = english.getString(R.string.editor_focus_mode))
                     Box(Modifier.width(1.dp).fillMaxHeight().background(ChromeLine))
                     InkToolButton(InkIcon.Back, backLabel, { save(); onBack() }, buttonSize = 32.dp)
                     if (compactBar) Spacer(Modifier.weight(1f)) else Box(Modifier.weight(1f).padding(horizontal = 5.dp).clickable { draft = notebook.title; sheet = "rename" }.semantics { contentDescription = renameNotebookLabel }) {
@@ -1488,18 +1490,18 @@ internal fun NotebookEditor(
                     ChromeDivider()
                     InkToolButton(InkIcon.Eraser, stringResource(R.string.editor_eraser), {
                         if (selectedBrush.eraser && mode == CanvasMode.Write) sheet = "eraser" else selectEraser()
-                    }, selected = selectedBrush.eraser && mode == CanvasMode.Write && sheet == null)
-                    InkToolButton(InkIcon.Undo, stringResource(R.string.editor_undo), ::undo, enabled = undoStack.isNotEmpty())
-                    InkToolButton(InkIcon.Redo, stringResource(R.string.editor_redo), ::redo, enabled = redoStack.isNotEmpty())
+                    }, selected = selectedBrush.eraser && mode == CanvasMode.Write && sheet == null, tag = english.getString(R.string.editor_eraser))
+                    InkToolButton(InkIcon.Undo, stringResource(R.string.editor_undo), ::undo, enabled = undoStack.isNotEmpty(), tag = english.getString(R.string.editor_undo))
+                    InkToolButton(InkIcon.Redo, stringResource(R.string.editor_redo), ::redo, enabled = redoStack.isNotEmpty(), tag = english.getString(R.string.editor_redo))
                     ChromeDivider()
                     if (!notebook.infiniteCanvas) {
                     val pageManagerLabel = stringResource(R.string.editor_page_manager_position, safeIndex + 1, notebook.pages.size)
-                    InkToolButton(InkIcon.Previous, stringResource(R.string.editor_previous_page), { canvas?.flushInput(); pageIndex = safeIndex - 1 }, enabled = safeIndex > 0, buttonSize = 28.dp)
+                    InkToolButton(InkIcon.Previous, stringResource(R.string.editor_previous_page), { canvas?.flushInput(); pageIndex = safeIndex - 1 }, enabled = safeIndex > 0, buttonSize = 28.dp, tag = english.getString(R.string.editor_previous_page))
                     Box(Modifier.width(42.dp).height(44.dp).clickable { canvas?.flushInput(); showPages = true }.semantics { contentDescription = pageManagerLabel }, contentAlignment = Alignment.Center) { Text("${safeIndex + 1}/${notebook.pages.size}", fontSize = 11.sp) }
-                    if (safeIndex < notebook.pages.lastIndex) InkToolButton(InkIcon.Next, stringResource(R.string.editor_next_page), { canvas?.flushInput(); pageIndex = safeIndex + 1 }, buttonSize = 28.dp)
-                    else InkToolButton(InkIcon.PlusSmall, stringResource(R.string.editor_add_page), { addPage("Last Page") }, buttonSize = 28.dp)
-                    } else InkToolButton(InkIcon.Tag, stringResource(R.string.editor_canvas_pins), { sheet = "pins" })
-                    if (saveError != null) InkToolButton(InkIcon.More, stringResource(R.string.editor_save_failed_retry), { message = saveError; save() })
+                    if (safeIndex < notebook.pages.lastIndex) InkToolButton(InkIcon.Next, stringResource(R.string.editor_next_page), { canvas?.flushInput(); pageIndex = safeIndex + 1 }, buttonSize = 28.dp, tag = english.getString(R.string.editor_next_page))
+                    else InkToolButton(InkIcon.PlusSmall, stringResource(R.string.editor_add_page), { addPage("Last Page") }, buttonSize = 28.dp, tag = english.getString(R.string.editor_add_page))
+                    } else InkToolButton(InkIcon.Tag, stringResource(R.string.editor_canvas_pins), { sheet = "pins" }, tag = english.getString(R.string.editor_canvas_pins))
+                    if (saveError != null) InkToolButton(InkIcon.More, stringResource(R.string.editor_save_failed_retry), { message = saveError; save() }, tag = english.getString(R.string.editor_save_failed_retry))
                     Spacer(Modifier.width(3.dp))
                 }
                 Box(Modifier.fillMaxWidth().height(1.dp).background(ChromeLine))
@@ -1663,13 +1665,13 @@ internal fun NotebookEditor(
                                 InkToolButton(InkIcon.Locate, stringResource(R.string.editor_zoom_box_to_view), {
                                     val w = box.width(); val h = box.height()
                                     moveBox(android.graphics.RectF(viewportCenterX - w / 2f, viewportCenterY - h / 2f, viewportCenterX + w / 2f, viewportCenterY + h / 2f).let { if (notebook.infiniteCanvas) it else android.graphics.RectF((it.left).coerceIn(0f, 1f - w), it.top.coerceIn(0f, (1f - h).coerceAtLeast(0f)), it.left.coerceIn(0f, 1f - w) + w, it.top.coerceIn(0f, (1f - h).coerceAtLeast(0f)) + h) })
-                                })
+                                }, tag = english.getString(R.string.editor_zoom_box_to_view))
                                 Spacer(Modifier.weight(1f))
-                                InkToolButton(InkIcon.Previous, stringResource(R.string.editor_zoom_box_left), { step(-1) })
-                                InkToolButton(InkIcon.Next, stringResource(R.string.editor_zoom_box_right), { step(1) })
-                                InkToolButton(InkIcon.Undo, stringResource(R.string.editor_undo), { undo() })
-                                InkToolButton(InkIcon.Redo, stringResource(R.string.editor_redo), { redo() })
-                                InkToolButton(InkIcon.Close, stringResource(R.string.editor_close_zoom_window), { zoomBox = null; if (mode == CanvasMode.ZoomWindow) mode = CanvasMode.Write })
+                                InkToolButton(InkIcon.Previous, stringResource(R.string.editor_zoom_box_left), { step(-1) }, tag = english.getString(R.string.editor_zoom_box_left))
+                                InkToolButton(InkIcon.Next, stringResource(R.string.editor_zoom_box_right), { step(1) }, tag = english.getString(R.string.editor_zoom_box_right))
+                                InkToolButton(InkIcon.Undo, stringResource(R.string.editor_undo), { undo() }, tag = english.getString(R.string.editor_undo))
+                                InkToolButton(InkIcon.Redo, stringResource(R.string.editor_redo), { redo() }, tag = english.getString(R.string.editor_redo))
+                                InkToolButton(InkIcon.Close, stringResource(R.string.editor_close_zoom_window), { zoomBox = null; if (mode == CanvasMode.ZoomWindow) mode = CanvasMode.Write }, tag = english.getString(R.string.editor_close_zoom_window))
                             }
                             HorizontalDivider(color = ChromeLine)
                             AndroidView(factory = { ctx -> InkCanvasView(ctx) { updated -> applyPage(page.copy(strokes = updated)) } },
@@ -1790,7 +1792,7 @@ internal fun NotebookEditor(
                                     Spacer(Modifier.width(8.dp))
                                     Text(pluralStringResource(R.plurals.editor_paste_items, clipboard.size, clipboard.size), color = ChromeInk, fontSize = 14.sp)
                                 }
-                                InkToolButton(InkIcon.Close, stringResource(R.string.editor_clear_clipboard), { clipboard = emptyList() })
+                                InkToolButton(InkIcon.Close, stringResource(R.string.editor_clear_clipboard), { clipboard = emptyList() }, tag = english.getString(R.string.editor_clear_clipboard))
                             }
                         }
                     }
@@ -1803,14 +1805,14 @@ internal fun NotebookEditor(
                                 Text(stringResource(when (selectedText?.kind) { "timestamp" -> R.string.editor_card_date; "audio" -> R.string.editor_card_recording; "link-note", "link-web", "link-file" -> R.string.editor_card_link; else -> if (selectedObjectIsText) R.string.editor_text_box else R.string.editor_image }), fontSize = 11.sp, modifier = Modifier.padding(horizontal = 8.dp))
                                 if (selectedText?.kind == "plain" || selectedText?.kind == "timestamp") InkToolButton(InkIcon.Rename, stringResource(R.string.editor_edit_selected), {
                                     selectedText?.let { editingTextId = it.id; draft = it.text; sheet = if (it.kind == "timestamp") "timestamp" else "edit text" }
-                                })
+                                }, tag = english.getString(R.string.editor_edit_selected))
                                 if (selectedText == null || selectedText.kind == "plain") {
-                                    InkToolButton(InkIcon.FlipHorizontal, stringResource(R.string.editor_mirror_horizontal), { transformObject(flipX = true) })
-                                    InkToolButton(InkIcon.FlipVertical, stringResource(R.string.editor_mirror_vertical), { transformObject(flipY = true) })
-                                    InkToolButton(InkIcon.Rotate, stringResource(R.string.editor_rotate_left), { transformObject(rotation = -90f) })
-                                    InkToolButton(InkIcon.RotateRight, stringResource(R.string.editor_rotate_right), { transformObject(rotation = 90f) })
+                                    InkToolButton(InkIcon.FlipHorizontal, stringResource(R.string.editor_mirror_horizontal), { transformObject(flipX = true) }, tag = english.getString(R.string.editor_mirror_horizontal))
+                                    InkToolButton(InkIcon.FlipVertical, stringResource(R.string.editor_mirror_vertical), { transformObject(flipY = true) }, tag = english.getString(R.string.editor_mirror_vertical))
+                                    InkToolButton(InkIcon.Rotate, stringResource(R.string.editor_rotate_left), { transformObject(rotation = -90f) }, tag = english.getString(R.string.editor_rotate_left))
+                                    InkToolButton(InkIcon.RotateRight, stringResource(R.string.editor_rotate_right), { transformObject(rotation = 90f) }, tag = english.getString(R.string.editor_rotate_right))
                                 }
-                                if (selectedText != null && selectedText.kind in listOf("link-note", "link-web", "link-file", "audio")) InkToolButton(InkIcon.Next, stringResource(R.string.editor_open_selected), { openEmbedded(selectedText) })
+                                if (selectedText != null && selectedText.kind in listOf("link-note", "link-web", "link-file", "audio")) InkToolButton(InkIcon.Next, stringResource(R.string.editor_open_selected), { openEmbedded(selectedText) }, tag = english.getString(R.string.editor_open_selected))
                                 InkToolButton(InkIcon.Trash, if (selectedText?.kind != "plain" && selectedText != null) stringResource(R.string.editor_remove_marker) else stringResource(R.string.editor_delete_selected_object), {
                                     if (selectedText != null && selectedText.kind != "plain") markerToDelete = selectedText.id
                                     else {
@@ -1819,8 +1821,8 @@ internal fun NotebookEditor(
                                             images = page.images.filterNot { it.id == selectedObjectId && editableLayer(it.layerId) }))
                                         canvas?.deselectObject()
                                     }
-                                })
-                                InkToolButton(InkIcon.Close, stringResource(R.string.editor_deselect_object), { canvas?.deselectObject() })
+                                }, tag = if (selectedText?.kind != "plain" && selectedText != null) "Remove marker" else "Delete selected object")
+                                InkToolButton(InkIcon.Close, stringResource(R.string.editor_deselect_object), { canvas?.deselectObject() }, tag = english.getString(R.string.editor_deselect_object))
                             }
                         }
                     }
@@ -1987,6 +1989,7 @@ private fun NotebookPageCanvas(
 
 @Composable
 private fun RecordingMiniPlayer(attachment: NoteAttachment, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    val english = rememberEnglishResources()
     var ready by remember(attachment.id) { mutableStateOf(false) }
     var playing by remember(attachment.id) { mutableStateOf(false) }
     var duration by remember(attachment.id) { mutableIntStateOf(0) }
@@ -2018,7 +2021,7 @@ private fun RecordingMiniPlayer(attachment: NoteAttachment, onClose: () -> Unit,
             Row(verticalAlignment = Alignment.CenterVertically) {
                 InkSymbol(InkIcon.Microphone, Modifier.size(20.dp))
                 Text(attachment.name.removeSuffix(".m4a"), Modifier.weight(1f).padding(start = 8.dp), maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp)
-                InkToolButton(InkIcon.Close, stringResource(R.string.editor_close_player), onClose)
+                InkToolButton(InkIcon.Close, stringResource(R.string.editor_close_player), onClose, tag = english.getString(R.string.editor_close_player))
             }
             if (error) Text(stringResource(R.string.editor_error_play_recording), fontSize = 12.sp)
             else {
