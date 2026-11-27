@@ -461,10 +461,13 @@ internal class NotebookFiles(private val context: Context) {
         // PdfRenderer requires a seekable descriptor; SAF providers may return a pipe.
         val localPdf = File(context.cacheDir, "pdf-import-${UUID.randomUUID()}.pdf")
         try {
-            input(uri).use { source -> localPdf.outputStream().use { boundedCopy(source, it, 128L * 1024 * 1024) } }
+            copyForImport(uri, localPdf)
             val descriptor = ParcelFileDescriptor.open(localPdf, ParcelFileDescriptor.MODE_READ_ONLY)
             descriptor.use { PdfRenderer(it).use { renderer ->
-                requireUser(renderer.pageCount in 1..MAX_PDF_PAGES, R.string.error_pdf_page_count, 1, MAX_PDF_PAGES) { "Import a PDF with 1–$MAX_PDF_PAGES pages." }
+                requireUser(renderer.pageCount >= 1, R.string.error_pdf_page_count, 1, MAX_PDF_PAGES) { "Import a PDF with 1–$MAX_PDF_PAGES pages." }
+                // Each page becomes a picture, so pages (not file size) are what a notebook import is capped on.
+                requireUser(renderer.pageCount <= MAX_PDF_PAGES, R.string.error_pdf_too_many_pages, renderer.pageCount, MAX_PDF_PAGES) {
+                    "This PDF has ${renderer.pageCount} pages; a notebook holds up to $MAX_PDF_PAGES. Open it as a book instead." }
                 return (0 until renderer.pageCount).map { index ->
                     renderer.openPage(index).use { page ->
                         val scale = minOf(1200f / page.width, 1920f / page.height)
@@ -491,7 +494,7 @@ internal class NotebookFiles(private val context: Context) {
     fun importEpubPages(uri: Uri): Pair<String?, List<NotebookPage>> {
         val localEpub = File(context.cacheDir, "epub-import-${UUID.randomUUID()}.epub")
         try {
-            input(uri).use { source -> localEpub.outputStream().use { boundedCopy(source, it, 128L * 1024 * 1024) } }
+            copyForImport(uri, localEpub)
             val zip = try { java.util.zip.ZipFile(localEpub) } catch (notZip: java.util.zip.ZipException) { throw UserInputException(R.string.error_epub_not_epub, "This file is not an EPUB book.", cause = notZip) }
             zip.use {
                 fun read(path: String): String? = zip.getEntry(path)?.let { entry ->
@@ -600,9 +603,25 @@ internal class NotebookFiles(private val context: Context) {
     private fun exportFile(title: String, extension: String) = File(exportDir, "${safeName(title)}-${UUID.randomUUID()}.$extension")
     private fun safeName(name: String) = name.toSafeFileName("Notebook")
 
-    private fun boundedCopy(input: InputStream, output: OutputStream, limit: Long): Long {
+    /**
+     * Copies a PDF or EPUB picked for "Import as notebook" to [target] (a seekable local file). Same limits as the
+     * reader import: up to 1 GiB, and only when the copy fits in free storage, so a large book never fills the disk.
+     */
+    private fun copyForImport(uri: Uri, target: File) {
+        val size = runCatching {
+            context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.SIZE), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst() && !cursor.isNull(0)) cursor.getLong(0) else -1L
+            }
+        }.getOrNull() ?: -1L
+        requireUser(size <= ReaderStore.MAX_DOCUMENT_BYTES, R.string.error_document_too_large) { "Documents must be smaller than 1 GiB." }
+        if (size > 0) requireUser(target.parentFile!!.usableSpace > size + ReaderStore.FREE_SPACE_MARGIN, R.string.error_not_enough_storage) {
+            "Not enough free storage to import this document." }
+        input(uri).use { source -> target.outputStream().use { boundedCopy(source, it, ReaderStore.MAX_DOCUMENT_BYTES, R.string.error_document_too_large) } }
+    }
+
+    private fun boundedCopy(input: InputStream, output: OutputStream, limit: Long, @androidx.annotation.StringRes tooLarge: Int = R.string.error_file_too_large): Long {
         val buffer = ByteArray(8192); var total = 0L
-        while (true) { val count = input.read(buffer); if (count < 0) break; total += count; requireUser(total <= limit, R.string.error_file_too_large) { "Selected file is too large." }; output.write(buffer, 0, count) }
+        while (true) { val count = input.read(buffer); if (count < 0) break; total += count; requireUser(total <= limit, tooLarge) { "Selected file is too large." }; output.write(buffer, 0, count) }
         return total
     }
 
@@ -620,7 +639,7 @@ internal class NotebookFiles(private val context: Context) {
         !path.startsWith('/') && !path.contains('\\') && path.split('/').all { it.isNotBlank() && it != "." && it != ".." } &&
         (path == "notebook.json" || path == "notebook.json.zst" || path == "manifest.json" || path == "library.json" || path == "library.json.zst" || path.startsWith("notebooks/") || path.startsWith("assets/"))
 
-    private companion object {
+    companion object {
         const val MAX_BACKUP_ENTRIES = 1000
         const val MAX_JSON_BYTES = 32L * 1024 * 1024
         const val MAX_JSON_CONTAINER_BYTES = MAX_JSON_BYTES + 1024L * 1024

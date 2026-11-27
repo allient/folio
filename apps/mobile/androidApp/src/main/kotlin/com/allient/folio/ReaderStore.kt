@@ -202,7 +202,7 @@ internal class ReaderStore(private val context: Context) : Closeable {
     companion object {
         /** Books are streamed to disk and Pdfium renders one page at a time, so size costs storage, not memory. */
         const val MAX_DOCUMENT_BYTES = 1024L * 1024 * 1024
-        private const val FREE_SPACE_MARGIN = 64L * 1024 * 1024
+        const val FREE_SPACE_MARGIN = 64L * 1024 * 1024
         fun writeDocument(d: ReaderDocument): JSONObject = JSONObject().put("id", d.id).put("title", d.title).put("author", d.author).put("format", d.format)
             .put("path", d.path).put("cover", JSONObject().put("path", d.coverPath)).put("hash", d.contentHash).put("pageCount", d.pageCount).put("locator", d.locator).put("progress", d.progress).put("openedAt", d.openedAt).put("sourceUri",d.sourceUri).put("folderId", d.folderId)
             .put("favorite", d.favorite).put("createdAt", d.createdAt).put("deletedAt", d.deletedAt)

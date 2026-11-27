@@ -1,5 +1,4 @@
-Folio 1.0.14
-- Folio ahora está en inglés, español, portugués, francés, alemán, hindi y chino. Usa el idioma de tu dispositivo, o elige uno en Preferencias → Idioma.
-- Nuevo diseño de Preferencias y de la copia de seguridad.
-- En horizontal, las páginas mantienen su forma, centradas, y se desplazan.
-- Correcciones al pasar de página en horizontal.
+Folio 1.0.15
+- Importar un PDF o EPUB como cuaderno: ahora admite archivos de hasta 1 GB (antes: 128 MB).
+- Un PDF de más de 200 páginas ahora explica el límite y sugiere importarlo como libro.
+- Folio revisa el espacio libre antes de copiar un archivo grande.

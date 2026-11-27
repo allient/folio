@@ -31,6 +31,7 @@
     <string name="error_backup_damaged">Diese Sicherung ist beschädigt oder keine gültige Folio-Sicherung.</string>
     <string name="error_image_unsupported">Dieses Bildformat kann nicht geöffnet werden.</string>
     <string name="error_pdf_page_count">Importiere ein PDF mit %1$d–%2$d Seiten.</string>
+    <string name="error_pdf_too_many_pages">Dieses PDF hat %1$d Seiten, ein Notizbuch fasst höchstens %2$d. Importiere es zum Lesen stattdessen als Buch.</string>
     <string name="error_file_too_large">Die ausgewählte Datei ist zu groß.</string>
     <string name="error_epub_not_epub">Diese Datei ist kein EPUB-Buch.</string>
     <string name="error_epub_chapter_too_large">Dieses EPUB enthält ein Kapitel, das zum Importieren zu groß ist.</string>

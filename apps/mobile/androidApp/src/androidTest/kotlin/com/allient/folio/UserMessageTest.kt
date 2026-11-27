@@ -28,6 +28,44 @@ class UserMessageTest {
 
     @After fun tearDown() { preferences.edit().clear().commit(); sandbox.deleteRecursively() }
 
+    /** A valid one-page PDF padded with an unused stream object to [padBytes]. */
+    private fun paddedPdf(padBytes: Long): File = File(sandbox, "large.pdf").also { file ->
+        file.outputStream().buffered().use { out ->
+            val offsets = mutableListOf<Long>(); var written = 0L
+            fun put(text: String) { val bytes = text.toByteArray(Charsets.ISO_8859_1); out.write(bytes); written += bytes.size }
+            put("%PDF-1.4\n")
+            offsets += written; put("1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n")
+            offsets += written; put("2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n")
+            offsets += written; put("3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >> endobj\n")
+            offsets += written; put("4 0 obj << /Length $padBytes >> stream\n")
+            val zeros = ByteArray(1 shl 20); var left = padBytes
+            while (left > 0) { val n = minOf(left, zeros.size.toLong()).toInt(); out.write(zeros, 0, n); written += n; left -= n }
+            put("\nendstream endobj\n")
+            val xref = written
+            put("xref\n0 5\n0000000000 65535 f \n"); offsets.forEach { put("%010d 00000 n \n".format(it)) }
+            put("trailer << /Size 5 /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n")
+        }
+    }
+
+    @Test fun pdfLargerThan128MiBImportsAsANotebook() {
+        val pages = NotebookFiles(target).importPdfPages(Uri.fromFile(paddedPdf(140L * 1024 * 1024)))
+        assertEquals(1, pages.size)
+        pages.flatMap { it.images }.forEach { File(it.path).delete() }
+    }
+
+    @Test fun pdfWithTooManyPagesSuggestsOpeningItAsABook() {
+        val pdf = File(sandbox, "long.pdf")
+        android.graphics.pdf.PdfDocument().run {
+            repeat(NotebookFiles.MAX_PDF_PAGES + 1) { index -> finishPage(startPage(android.graphics.pdf.PdfDocument.PageInfo.Builder(100, 100, index + 1).create())) }
+            pdf.outputStream().use { writeTo(it) }; close()
+        }
+        val error = runCatching { NotebookFiles(target).importPdfPages(Uri.fromFile(pdf)) }.exceptionOrNull()
+        assertTrue(error is IllegalArgumentException)
+        val spanish = resources("es")
+        assertEquals(spanish.getString(R.string.error_pdf_too_many_pages, NotebookFiles.MAX_PDF_PAGES + 1, NotebookFiles.MAX_PDF_PAGES),
+            error!!.userMessage(spanish, R.string.error_import_file))
+    }
+
     @Test fun typedErrorShowsItsResourceInTheAppLanguageAndKeepsEnglishForLogs() {
         val error = UserInputException(R.string.error_epub_too_long, "This book is too long (more than 600 pages).", listOf(600))
         assertTrue(error is IllegalArgumentException)

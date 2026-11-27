@@ -89,8 +89,8 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         // fastlane passes -PversionCode (next code on Play) and -PversionName.
-        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 14
-        versionName = (findProperty("versionName") as String?) ?: "1.0.14"
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 15
+        versionName = (findProperty("versionName") as String?) ?: "1.0.15"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     packaging {

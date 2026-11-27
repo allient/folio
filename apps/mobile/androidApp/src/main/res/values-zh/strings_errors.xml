@@ -31,6 +31,7 @@
     <string name="error_backup_damaged">此备份已损坏或不是有效的 Folio 备份。</string>
     <string name="error_image_unsupported">无法打开此图片格式。</string>
     <string name="error_pdf_page_count">请导入 %1$d–%2$d 页的 PDF。</string>
+    <string name="error_pdf_too_many_pages">此 PDF 共有 %1$d 页，笔记本最多只能容纳 %2$d 页。如需阅读，请改为作为书籍导入。</string>
     <string name="error_file_too_large">所选文件过大。</string>
     <string name="error_epub_not_epub">此文件不是 EPUB 书籍。</string>
     <string name="error_epub_chapter_too_large">此 EPUB 中有章节过大，无法导入。</string>
