@@ -119,21 +119,21 @@ internal fun TrashScreen(
 
 /** A titled group of settings rows on one white panel, rows separated by hairlines. */
 @Composable
-private fun PreferenceGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
+internal fun PreferenceGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
     val style = LocalHomeStyle.current
     Text(title, Modifier.padding(start = 4.dp, top = 28.dp, bottom = 8.dp), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = HomeMuted)
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(style.card)).background(Color.White).border(1.dp, HomeHairline, RoundedCornerShape(style.card)), content = content)
 }
 
 @Composable
-private fun PreferenceDivider() = HorizontalDivider(Modifier.padding(start = 16.dp), color = HomeHairline)
+internal fun PreferenceDivider() = HorizontalDivider(Modifier.padding(start = 16.dp), color = HomeHairline)
 
 /**
  * One setting: its name and a short explanation on the left, its control on the right. [below] is shown under the text
  * across the full width (the accent swatches).
  */
 @Composable
-private fun PreferenceRow(title: String, detail: String? = null, modifier: Modifier = Modifier, below: (@Composable () -> Unit)? = null,
+internal fun PreferenceRow(title: String, detail: String? = null, modifier: Modifier = Modifier, below: (@Composable () -> Unit)? = null,
                           trailing: @Composable () -> Unit = {}) {
     Column(modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.Center) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -177,7 +177,7 @@ private fun <T> PreferenceSelect(options: List<Pair<T, String>>, selected: T, ta
 }
 
 @Composable
-private fun PreferenceSwitch(checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun PreferenceSwitch(checked: Boolean, onChange: (Boolean) -> Unit) {
     val style = LocalHomeStyle.current
     Switch(checked, onCheckedChange = null, colors = SwitchDefaults.colors(checkedTrackColor = style.accent, checkedThumbColor = Color.White,
         uncheckedTrackColor = HomeHairline, uncheckedBorderColor = HomeLine, uncheckedThumbColor = Color.White))

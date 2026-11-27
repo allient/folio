@@ -488,4 +488,5 @@
     <string name="prefs_group_general">General</string>
     <string name="prefs_group_library">Library</string>
     <string name="prefs_group_appearance">Appearance</string>
+    <string name="backup_group_file">Backup file</string>
 </resources>

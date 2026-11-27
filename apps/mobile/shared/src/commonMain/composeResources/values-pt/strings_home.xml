@@ -480,4 +480,5 @@
     <string name="prefs_group_general">Geral</string>
     <string name="prefs_group_library">Biblioteca</string>
     <string name="prefs_group_appearance">Aparência</string>
+    <string name="backup_group_file">Arquivo de backup</string>
 </resources>

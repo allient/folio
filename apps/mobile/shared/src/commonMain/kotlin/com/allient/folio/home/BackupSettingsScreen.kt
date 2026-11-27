@@ -1,8 +1,14 @@
 package com.allient.folio.home
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,10 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -48,12 +51,16 @@ data class BackupSettingsUi(
     val showsFolder: Boolean get() = enabled || folder != null
 }
 
+/** Status dot colours: backing up normally, needs attention, off. */
+private val BackupOk = Color(0xFF2F7A68)
+private val BackupWarn = Color(0xFFC9803A)
+private val BackupOff = Color(0xFFB5B8B4)
+
 @Composable
 fun BackupSettingsScreen(state: BackupSettingsUi, onBack: () -> Unit, onEnabled: (Boolean) -> Unit,
                          onChooseFolder: () -> Unit, onBackUpNow: () -> Unit, onRestore: () -> Unit,
                          onExportBackup: () -> Unit = {}, onRestoreVersion: (String) -> Unit = {}) {
-    val ink = MaterialTheme.colorScheme.onSurface
-    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    val style = LocalHomeStyle.current
     val busy = state.running || state.choosingFolder
     var confirmRestore by remember { mutableStateOf<BackupVersionUi?>(null) }
     confirmRestore?.let { version ->
@@ -62,105 +69,122 @@ fun BackupSettingsScreen(state: BackupSettingsUi, onBack: () -> Unit, onEnabled:
             confirmButton = { TextButton(onClick = { confirmRestore = null; onRestoreVersion(version.id) }, modifier = Modifier.testTag("backup-restore-confirm")) { Text(stringResource(Res.string.home_restore)) } },
             dismissButton = { TextButton(onClick = { confirmRestore = null }) { Text(stringResource(Res.string.home_cancel)) } })
     }
-    Column(Modifier.fillMaxSize().testTag("backup-settings-screen").background(MaterialTheme.colorScheme.surface)) {
+    Column(Modifier.fillMaxSize().testTag("backup-settings-screen").background(HomeBackground)) {
         // Same header as the library's Trash, Preferences and About screens.
         Row(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.testTag("backup-settings-back")) { HomeIconButton(Symbol.Back, stringResource(Res.string.home_back), false, onBack, tag = "back") }
             Text(stringResource(Res.string.backup_settings_title), Modifier.padding(start = 4.dp), fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 28.dp),
+        HorizontalDivider(color = HomeHairline)
+        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).padding(bottom = 40.dp),
             horizontalAlignment = Alignment.CenterHorizontally) {
-            Column(Modifier.widthIn(max = 680.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                Surface(shape = RoundedCornerShape(20.dp), color = Color(0xFFE8F0EB), modifier = Modifier.size(64.dp)) {
-                    Canvas(Modifier.padding(17.dp)) {
-                        val p = Path().apply {
-                            moveTo(size.width * .05f, size.height * .25f); lineTo(size.width * .4f, size.height * .25f)
-                            lineTo(size.width * .52f, size.height * .4f); lineTo(size.width * .95f, size.height * .4f)
-                            lineTo(size.width * .95f, size.height * .85f); lineTo(size.width * .05f, size.height * .85f); close()
+            Column(Modifier.widthIn(max = 720.dp).fillMaxWidth()) {
+                BackupStatusPanel(state, busy, onBackUpNow)
+
+                PreferenceGroup(stringResource(Res.string.backup_smart_title)) {
+                    val smartLabel = stringResource(Res.string.backup_smart_title)
+                    PreferenceRow(stringResource(if (state.enabled) Res.string.backup_on_status else Res.string.backup_choose_to_start),
+                        stringResource(if (state.enabled) Res.string.backup_on_detail else Res.string.backup_off_detail),
+                        Modifier.toggleable(state.enabled, enabled = !state.choosingFolder && !state.savingNotes, role = Role.Switch) { onEnabled(it) }
+                            .testTag("backup-enabled").semantics { contentDescription = smartLabel }) {
+                        PreferenceSwitch(state.enabled) { onEnabled(it) }
+                    }
+                    if (state.showsFolder) {
+                        PreferenceDivider()
+                        PreferenceRow(stringResource(Res.string.backup_folder)) {
+                            OutlinedButton(onClick = onChooseFolder, enabled = !busy && !state.savingNotes, shape = RoundedCornerShape(style.item),
+                                border = BorderStroke(1.dp, HomeLine), modifier = Modifier.heightIn(min = 40.dp).testTag("backup-choose-folder")) {
+                                Text(stringResource(Res.string.backup_change_folder), color = HomeInk, fontSize = 14.sp)
+                            }
                         }
-                        drawPath(p, ink, style = Stroke(1.8.dp.toPx()))
-                        drawLine(ink, Offset(size.width * .28f, size.height * .62f), Offset(size.width * .72f, size.height * .62f), 1.8.dp.toPx())
+                        // The folder name sits under its row title, full width, so long paths wrap instead of squeezing the button.
+                        Text(state.folder ?: stringResource(Res.string.backup_no_folder_selected), Modifier.padding(start = 16.dp, end = 16.dp, bottom = 14.dp).offset(y = (-6).dp)
+                            .testTag("backup-folder-path"), fontSize = 13.sp, lineHeight = 18.sp, color = if (state.folder != null) HomeInk else HomeMuted)
+                    }
+                    if (!state.enabled && state.lastFile != null) {
+                        PreferenceDivider()
+                        Text(stringResource(Res.string.backup_files_kept), Modifier.padding(16.dp), fontSize = 12.sp, color = HomeMuted)
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(Res.string.backup_smart_title), fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
-                    Text(stringResource(Res.string.backup_explanation), color = muted, fontSize = 15.sp, lineHeight = 22.sp, modifier = Modifier.testTag("backup-explanation"))
-                }
-                Surface(shape = RoundedCornerShape(24.dp), color = Color(0xFFF6F8F6), border = BorderStroke(1.dp, Color(0xFFE2E7E3))) {
-                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Column(Modifier.weight(1f).padding(end = 16.dp)) {
-                                Text(stringResource(Res.string.backup_smart_title), fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                                Text(stringResource(if (state.enabled) Res.string.backup_on_status else Res.string.backup_choose_to_start), fontSize = 13.sp, color = muted, modifier = Modifier.padding(top = 5.dp))
-                            }
-                            val smartLabel = stringResource(Res.string.backup_smart_title)
-                            Switch(state.enabled, onCheckedChange = onEnabled, enabled = !state.choosingFolder && !state.savingNotes,
-                                modifier = Modifier.testTag("backup-enabled").semantics { contentDescription = smartLabel })
-                        }
-                        Text(stringResource(if (state.enabled) Res.string.backup_on_detail else Res.string.backup_off_detail), fontSize = 13.sp, lineHeight = 20.sp, color = muted)
-                        if (!state.enabled && state.lastFile != null) Text(stringResource(Res.string.backup_files_kept), fontSize = 12.sp, color = muted)
-                    }
-                }
-                if (state.showsFolder) {
-                    Surface(shape = RoundedCornerShape(24.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-                        Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(stringResource(Res.string.backup_folder), fontSize = 13.sp, color = muted)
-                            Text(state.folder ?: stringResource(Res.string.backup_no_folder_selected), fontSize = 17.sp, fontWeight = FontWeight.Medium, modifier = Modifier.testTag("backup-folder-path"))
-                            OutlinedButton(onClick = onChooseFolder, enabled = !busy && !state.savingNotes,
-                                shape = RoundedCornerShape(14.dp), modifier = Modifier.testTag("backup-choose-folder").heightIn(min = 48.dp)) { Text(stringResource(Res.string.backup_change_folder)) }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(stringResource(Res.string.backup_last), Modifier.weight(1f), fontSize = 13.sp, color = muted)
-                                Surface(shape = RoundedCornerShape(20.dp), color = if (state.error != null) Color(0xFFFCEAE7) else Color(0xFFE8F0EB)) {
-                                    Text(stringResource(when { state.choosingFolder -> Res.string.backup_state_setting_up; state.running -> Res.string.backup_state_running; state.error != null -> Res.string.backup_state_attention; state.enabled -> Res.string.backup_state_on; else -> Res.string.backup_state_off }),
-                                        Modifier.padding(horizontal = 12.dp, vertical = 6.dp), fontSize = 11.sp)
-                                }
-                            }
-                            Text(state.status, fontSize = 15.sp, modifier = Modifier.testTag("backup-last-success"))
-                            state.lastFile?.let { Text(it, fontSize = 12.sp, color = muted) }
-                            if (state.savingNotes) Text(stringResource(Res.string.backup_saving_notes), fontSize = 12.sp, color = muted)
-                            Button(onClick = onBackUpNow, enabled = state.enabled && !busy && !state.savingNotes,
-                                modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("backup-now"), shape = RoundedCornerShape(16.dp)) {
-                                if (state.running) { CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp); Spacer(Modifier.width(10.dp)) }
-                                Text(stringResource(if (state.running) Res.string.backup_state_running else Res.string.backup_now))
-                            }
-                            if (state.versions.isNotEmpty()) {
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                                Text(stringResource(Res.string.backup_versions), fontSize = 13.sp, color = muted)
-                                state.versions.forEach { version ->
-                                    Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("backup-version"), verticalAlignment = Alignment.CenterVertically) {
-                                        Column(Modifier.weight(1f)) {
-                                            Text(version.date, fontSize = 15.sp)
-                                            Text(version.size, fontSize = 12.sp, color = muted)
-                                        }
-                                        TextButton(onClick = { confirmRestore = version }, enabled = !busy && !state.savingNotes) { Text(stringResource(Res.string.home_restore)) }
-                                    }
-                                }
+
+                if (state.versions.isNotEmpty()) PreferenceGroup(stringResource(Res.string.backup_versions)) {
+                    state.versions.forEachIndexed { index, version ->
+                        if (index > 0) PreferenceDivider()
+                        PreferenceRow(version.date, version.size, Modifier.testTag("backup-version")) {
+                            TextButton(onClick = { confirmRestore = version }, enabled = !busy && !state.savingNotes) {
+                                Text(stringResource(Res.string.home_restore), color = style.accent)
                             }
                         }
                     }
                 }
-                state.error?.let { error ->
-                    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.errorContainer) {
-                        Text(error, Modifier.padding(16.dp).testTag("backup-error"), color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 13.sp, lineHeight = 20.sp)
+
+                PreferenceGroup(stringResource(Res.string.backup_group_file)) {
+                    PreferenceRow(stringResource(Res.string.home_export_library), null,
+                        Modifier.clickable(enabled = !busy && !state.savingNotes, onClick = onExportBackup).testTag("backup-export-library")) {
+                        HomeSymbol(Symbol.ChevronRight, Modifier.size(16.dp))
+                    }
+                    PreferenceDivider()
+                    PreferenceRow(stringResource(Res.string.backup_restore_from), null,
+                        Modifier.clickable(enabled = !busy, onClick = onRestore).testTag("backup-restore")) {
+                        HomeSymbol(Symbol.ChevronRight, Modifier.size(16.dp))
                     }
                 }
-                Button(onClick = onExportBackup, enabled = !busy && !state.savingNotes,
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("backup-export-library"), shape = RoundedCornerShape(16.dp)) {
-                    Text(stringResource(Res.string.home_export_library))
-                }
-                Surface(shape = RoundedCornerShape(20.dp), color = Color(0xFFF6F7F9)) {
-                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                        Text(stringResource(Res.string.backup_documents_title), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                        Text(stringResource(Res.string.backup_documents_detail), fontSize = 13.sp, color = muted, lineHeight = 21.sp)
-                        Text(stringResource(Res.string.backup_format_detail), fontSize = 12.sp, color = muted, lineHeight = 19.sp)
+
+                // Help, as small print: how to pick a folder and what a backup holds.
+                Column(Modifier.padding(start = 4.dp, end = 4.dp, top = 24.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(stringResource(Res.string.backup_explanation), fontSize = 12.sp, lineHeight = 18.sp, color = HomeMuted, modifier = Modifier.testTag("backup-explanation"))
+                    Column {
+                        Text(stringResource(Res.string.backup_documents_title), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = HomeInk)
+                        Text(stringResource(Res.string.backup_documents_detail), fontSize = 12.sp, lineHeight = 18.sp, color = HomeMuted)
                     }
+                    Text(stringResource(Res.string.backup_format_detail), fontSize = 12.sp, lineHeight = 18.sp, color = HomeMuted)
                 }
-                OutlinedButton(onClick = onRestore, enabled = !busy, shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp).testTag("backup-restore")) { Text(stringResource(Res.string.backup_restore_from)) }
-                Spacer(Modifier.height(8.dp))
             }
+        }
+    }
+}
+
+/**
+ * The top of the screen answers "are my notes backed up?": a status dot and the state in large type, the last backup
+ * underneath, any problem in red, and Back up now.
+ */
+@Composable
+private fun BackupStatusPanel(state: BackupSettingsUi, busy: Boolean, onBackUpNow: () -> Unit) {
+    val style = LocalHomeStyle.current
+    val dot = when { state.error != null -> BackupWarn; state.enabled || busy -> BackupOk; else -> BackupOff }
+    val label = stringResource(when {
+        state.choosingFolder -> Res.string.backup_state_setting_up; state.running -> Res.string.backup_state_running
+        state.error != null -> Res.string.backup_state_attention; state.enabled -> Res.string.backup_state_on; else -> Res.string.backup_state_off })
+    Column(Modifier.padding(top = 20.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).background(Color.White)
+        .border(1.dp, HomeHairline, RoundedCornerShape(style.card)).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val wide = maxWidth >= 520.dp
+            val text = @Composable {
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Box(Modifier.size(12.dp).clip(CircleShape).background(dot))
+                        Text(label, fontSize = 24.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, letterSpacing = (-.3).sp)
+                    }
+                    if (state.status.isNotEmpty()) Text(state.status, Modifier.padding(top = 6.dp).testTag("backup-last-success"), fontSize = 14.sp, color = HomeInk)
+                    state.lastFile?.let { Text(it, Modifier.padding(top = 2.dp), fontSize = 12.sp, color = HomeMuted, maxLines = 1, overflow = TextOverflow.MiddleEllipsis) }
+                    if (state.savingNotes) Text(stringResource(Res.string.backup_saving_notes), Modifier.padding(top = 2.dp), fontSize = 12.sp, color = HomeMuted)
+                }
+            }
+            val button = @Composable { modifier: Modifier ->
+                Button(onClick = onBackUpNow, enabled = state.enabled && !busy && !state.savingNotes, shape = RoundedCornerShape(style.item),
+                    colors = ButtonDefaults.buttonColors(containerColor = style.accent), modifier = modifier.heightIn(min = 48.dp).testTag("backup-now")) {
+                    if (state.running) { CircularProgressIndicator(Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp); Spacer(Modifier.width(10.dp)) }
+                    Text(stringResource(if (state.running) Res.string.backup_state_running else Res.string.backup_now))
+                }
+            }
+            if (wide) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(Modifier.weight(1f)) { text() }
+                button(Modifier)
+            } else Column(verticalArrangement = Arrangement.spacedBy(16.dp)) { text(); button(Modifier.fillMaxWidth()) }
+        }
+        state.error?.let { error ->
+            Text(error, Modifier.fillMaxWidth().clip(RoundedCornerShape(style.item)).background(Color(0xFFFCEAE7)).padding(14.dp).testTag("backup-error"),
+                color = Color(0xFF8A2A1D), fontSize = 13.sp, lineHeight = 19.sp)
         }
     }
 }
