@@ -1,12 +1,4 @@
-<p align="center">
-  <a href="https://allient.io">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/allient-logo-white.svg">
-      <img src=".github/assets/allient-logo.svg" height="32" alt="Allient">
-    </picture>
-  </a><br>
-  <sub>Folio is an open-source project made with ❤️ by <a href="https://allient.io">Allient</a></sub>
-</p>
+<a href="https://allient.io"><picture><source media="(prefers-color-scheme: dark)" srcset=".github/assets/made-at-allient-dark.svg"><img src=".github/assets/made-at-allient.svg" alt="Made at Allient" align="right"></picture></a>
 
 <p align="center">
   <img src="packages/brand/png/folio-icon-primary-192.png" width="96" height="96" alt="Folio icon">

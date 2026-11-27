@@ -271,25 +271,27 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
         ScreenHeader("About", onBack)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 680.dp).fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.dp)) {
                     com.allient.folio.FolioIcon(Modifier.size(84.dp))
-                    Column {
+                    Column(Modifier.weight(1f)) {
                         Text("Folio", fontSize = 30.sp, fontWeight = FontWeight.SemiBold, color = HomeInk, letterSpacing = (-.5).sp)
                         Text("Handwritten Notes & eReader", Modifier.padding(top = 2.dp), fontSize = 15.sp, color = com.allient.folio.FolioBrand.Sage)
                         Text("Version $version", Modifier.padding(top = 10.dp).clip(RoundedCornerShape(style.pill)).background(style.soft).padding(horizontal = 12.dp, vertical = 4.dp).testTag("about-version"),
                             fontSize = 13.sp, color = HomeInk)
                     }
-                }
-                Row(Modifier.padding(top = 20.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).border(1.dp, HomeHairline, RoundedCornerShape(style.card))
-                    .clickable(role = Role.Button, onClickLabel = "Open allient.io") { openAllient() }.padding(horizontal = 16.dp, vertical = 12.dp).testTag("about-maintainer"),
-                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Maintained by the Allient team", fontSize = 15.sp, fontWeight = FontWeight.Medium, color = HomeInk)
-                        Text("allient.io", fontSize = 13.sp, color = HomeMuted)
+                    // Small "Made at Allient" badge, like the one in the README; opens allient.io inside the app.
+                    Row(Modifier.align(Alignment.Top).padding(top = 6.dp).clip(RoundedCornerShape(4.dp)).height(IntrinsicSize.Min)
+                        .clickable(role = Role.Button, onClickLabel = "Open allient.io") { openAllient() }
+                        .semantics(mergeDescendants = true) { contentDescription = "Made at Allient" }.testTag("about-maintainer"),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Text("Made at", Modifier.fillMaxHeight().background(Color(0xFFE4E7EB)).padding(horizontal = 8.dp, vertical = 4.dp),
+                            fontSize = 12.sp, color = Color(0xFF4B5563))
+                        Box(Modifier.fillMaxHeight().background(Color(0xFFF3F4F6)).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
+                            com.allient.folio.AllientLogo(Modifier.height(13.dp))
+                        }
                     }
-                    com.allient.folio.AllientLogo(Modifier.height(24.dp))
                 }
-                Column(Modifier.padding(top = 16.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).background(style.soft.copy(alpha = .5f)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(top = 24.dp).fillMaxWidth().clip(RoundedCornerShape(style.card)).background(style.soft.copy(alpha = .5f)).padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Your notes stay on this device", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = HomeInk)
                     Text("There are no accounts and no cloud sync. Notebooks, folders and reading notes live in the app's private storage, so turn on Smart backups or export a .folio file before you uninstall or clear the app's data.",
                         fontSize = 14.sp, lineHeight = 21.sp, color = HomeInk)
@@ -322,8 +324,8 @@ internal fun AboutScreen(version: String, onBack: () -> Unit) {
                         if (index < libraries.lastIndex) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = HomeHairline)
                     }
                 }
-                Text("Folio is open source under the Apache License 2.0. Made by Allient.", Modifier.padding(top = 24.dp, bottom = 8.dp).clickable(role = Role.Button, onClickLabel = "Open allient.io") { openAllient() }.testTag("about-allient"),
-                    fontSize = 13.sp, color = HomeMuted)
+                Text("Folio is open source under the Apache License 2.0. Made by Allient.", Modifier.padding(top = 24.dp, bottom = 8.dp).clickable(role = Role.Button, onClickLabel = "Open allient.io") { openAllient() }.testTag("about-allient").fillMaxWidth(),
+                    fontSize = 13.sp, color = HomeMuted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             }
         }
     }
