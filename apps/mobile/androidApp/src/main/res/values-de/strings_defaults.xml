@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Default names given to new content. Saved as the user's own text, so they stay in the language they were created in. -->
+    <string name="default_first_notebook">Meine erste Notiz</string>
+    <string name="default_imported_notebook">Importiertes Notizbuch</string>
+    <string name="default_recording_name">Aufnahme %1$s</string>
+</resources>
